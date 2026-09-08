@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=yes">
 <title>Tournoi Pickleball 8-16 Joueurs - 3 Terrains</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Fallback Font Awesome en cas de blocage -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onerror="this.onerror=null;this.href='https://use.fontawesome.com/releases/v6.4.0/css/all.css'">
 <style>
   :root{
     --primary:#9c27b0; --secondary:#3498db; --accent:#27ae60; --warning:#ff9800; --light:#f5f5f5; --dark:#2c3e50;
@@ -24,14 +25,15 @@
   .tab.active{display:block}
   .card{background:white;padding:10px;border-radius:8px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid #e6e6e6}
   .card-title{font-weight:700;color:var(--primary);display:block;margin-bottom:6px;font-size:0.9rem;border-left:3px solid var(--primary);padding-left:6px}
-  .btn{padding:8px 12px;border-radius:6px;border:none;cursor:pointer;background:var(--primary);color:white;font-weight:600;margin:3px;font-size:0.8rem;min-height:36px}
+  .btn{padding:8px 12px;border-radius:6px;border:none;cursor:pointer;background:var(--primary);color:white;font-weight:600;margin:3px;font-size:0.8rem;min-height:36px;transition:all 0.2s}
+  .btn:active{transform:scale(0.95)}
   .btn.secondary{background:var(--secondary)}
   .btn.danger{background:var(--danger)}
   .btn.success{background:var(--success)}
   .btn:hover{opacity:0.9}
   .player-input{width:100%;padding:8px;border:2px solid #ddd;border-radius:5px;font-size:0.85rem;min-height:36px}
   .player-row{display:flex;gap:6px;align-items:center;margin:6px 0}
-  .player-number{width:28px;height:28px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:0.8rem}
+  .player-number{width:28px;height:28px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:0.8rem;flex-shrink:0}
   .notice{position:fixed;bottom:12px;right:12px;background:var(--success);color:white;padding:6px 12px;border-radius:4px;display:none;z-index:1000;font-size:0.8rem;max-width:80%}
   .match{border:2px solid #f0f0f0;padding:10px;margin:6px 0;border-radius:6px;background:#fafafa}
   .court-header{font-weight:bold;color:var(--primary);margin-bottom:6px;font-size:0.85rem}
@@ -258,7 +260,7 @@
       <button class="btn" onclick="shufflePositions()"><i class="fas fa-shuffle"></i> Mélanger</button>
       <button class="btn secondary" onclick="generateValidatedTournament()"><i class="fas fa-play"></i> Générer avec Validation</button>
       <button class="btn success" onclick="saveData()"><i class="fas fa-save"></i> Sauvegarder</button>
-      <button class="btn danger" onclick="resetAll()"><i class="fas fa-trash"></i> Réinitialiser</button>
+      <button class="btn danger" onclick="resetAll(event)"><i class="fas fa-trash"></i> Réinitialiser</button>
       <button class="btn tv-allowed" style="background:#0d1b2a" onclick="openTvMode()"><i class="fas fa-tv"></i> Mode TV</button>
     </div>
     
@@ -283,10 +285,10 @@
   </header>
 
   <div class="tabs">
-    <button class="tab-btn active" onclick="showTab('playersTab')"><i class="fas fa-users"></i> Joueurs</button>
-    <button class="tab-btn" onclick="showTab('matchesTab')"><i class="fas fa-trophy"></i> Matchs</button>
-    <button class="tab-btn" onclick="showTab('rankingTab')"><i class="fas fa-chart-bar"></i> Classement</button>
-    <button class="tab-btn" onclick="showTab('statsTab')"><i class="fas fa-chart-pie"></i> Statistiques</button>
+    <button class="tab-btn active" onclick="showTab('playersTab', this)"><i class="fas fa-users"></i> Joueurs</button>
+    <button class="tab-btn" onclick="showTab('matchesTab', this)"><i class="fas fa-trophy"></i> Matchs</button>
+    <button class="tab-btn" onclick="showTab('rankingTab', this)"><i class="fas fa-chart-bar"></i> Classement</button>
+    <button class="tab-btn" onclick="showTab('statsTab', this)"><i class="fas fa-chart-pie"></i> Statistiques</button>
   </div>
 
   <div id="playersTab" class="tab active">
@@ -299,7 +301,7 @@
           <option value="9">9 joueurs (2 terrains)</option>
           <option value="10">10 joueurs (3 terrains - 1x1)</option>
           <option value="11">11 joueurs (3 terrains - 2x1)</option>
-          <option value="12">12 joueurs (3 terrains - 2x2)</option>
+          <option value="12" selected>12 joueurs (3 terrains - 2x2)</option>
           <option value="13">13 joueurs (3 terrains + repos)</option>
           <option value="14">14 joueurs (3 terrains + repos)</option>
           <option value="15">15 joueurs (3 terrains + repos)</option>
@@ -367,7 +369,6 @@
 <script>
 // ORGANISATION POUR 8-16 JOUEURS SUR 3 TERRAINS
 const grids = {
-  // 8 joueurs : 2 terrains (4 joueurs par tour)
   8: [
     [{players:[1,3,5,7]},{players:[2,4,6,8]}],
     [{players:[1,2,3,4]},{players:[5,6,7,8]}],
@@ -375,8 +376,6 @@ const grids = {
     [{players:[1,5,4,8]},{players:[2,6,3,7]}],
     [{players:[1,4,2,3]},{players:[5,8,6,7]}]
   ],
-  
-  // 9 joueurs : 2 terrains (4 joueurs par tour + 1 repos)
   9: [
     [{players:[2,3,4,5]},{players:[6,7,8,9]},{rest:1}],
     [{players:[1,6,3,7]},{players:[4,8,5,9]},{rest:2}],
@@ -384,8 +383,6 @@ const grids = {
     [{players:[1,2,3,5]},{players:[6,9,7,8]},{rest:4}],
     [{players:[1,9,2,6]},{players:[3,8,4,7]},{rest:5}]
   ],
-  
-  // 10 joueurs : 3 terrains (2 terrains 2x2 + 1 terrain 1x1)
   10: [
     [{players:[3,4,6,9]},{players:[5,10,7,8]},{players:[1,2],type:'1x1'}],
     [{players:[1,7,6,8]},{players:[9,10,2,5]},{players:[3,4],type:'1x1'}],
@@ -393,8 +390,6 @@ const grids = {
     [{players:[2,4,6,10]},{players:[1,9,3,5]},{players:[7,8],type:'1x1'}],
     [{players:[1,3,2,8]},{players:[7,5,4,6]},{players:[9,10],type:'1x1'}]
   ],
-  
-  // 11 joueurs : 3 terrains (2 terrains 2x2 + 1 terrain 2x1)
   11: [
     [{players:[4,6,5,7]},{players:[8,10,9,11]},{players:[1,2,3],type:'2x1'}],
     [{players:[1,5,8,11]},{players:[2,3,6,10]},{players:[4,7,9],type:'2x1'}],
@@ -402,8 +397,6 @@ const grids = {
     [{players:[2,7,5,10]},{players:[3,4,8,9]},{players:[1,6,11],type:'2x1'}],
     [{players:[6,11,7,8]},{players:[1,10,4,5]},{players:[3,9,2],type:'2x1'}]
   ],
-  
-  // 12 joueurs : 3 terrains (tous les terrains 2x2)
   12: [
     [{players:[7,5,12,9]},{players:[1,6,8,10]},{players:[4,2,3,11]}],
     [{players:[9,1,3,12]},{players:[10,2,7,8]},{players:[5,6,11,4]}],
@@ -411,8 +404,6 @@ const grids = {
     [{players:[9,8,3,6]},{players:[1,4,5,10]},{players:[2,7,12,11]}],
     [{players:[7,6,4,3]},{players:[2,11,1,8]},{players:[5,9,12,10]}]
   ],
-  
-  // 13 joueurs : 3 terrains + 1 repos
   13: [
     [{players:[1,2,3,4]},{players:[5,6,7,8]},{players:[9,10,11,13]},{rest:12}],
     [{players:[2,5,6,13]},{players:[8,9,10,3]},{players:[4,7,11,12]},{rest:1}],
@@ -420,8 +411,6 @@ const grids = {
     [{players:[1,3,6,10]},{players:[2,8,7,13]},{players:[4,12,9,11]},{rest:5}],
     [{players:[1,6,12,13]},{players:[2,7,3,9]},{players:[5,8,10,11]},{rest:4}]
   ],
-  
-  // 14 joueurs : 3 terrains + 2 repos
   14: [
     [{players:[1,3,2,4]},{players:[6,7,8,9]},{players:[11,12,13,14]},{rest:5},{rest:10}],
     [{players:[5,10,1,2]},{players:[6,12,3,7]},{players:[13,4,9,14]},{rest:8},{rest:11}],
@@ -429,8 +418,6 @@ const grids = {
     [{players:[1,6,10,12]},{players:[2,11,5,14]},{players:[7,8,13,9]},{rest:3},{rest:4}],
     [{players:[1,13,6,3]},{players:[2,8,10,11]},{players:[5,7,4,14]},{rest:9},{rest:12}]
   ],
-  
-  // 15 joueurs : 3 terrains + 3 repos
   15: [
     [{players:[2,4,7,10]},{players:[1,5,13,15]},{players:[9,14,8,6]},{rest:3},{rest:11},{rest:12}],
     [{players:[12,13,6,15]},{players:[1,14,2,9]},{players:[10,11,5,3]},{rest:4},{rest:7},{rest:8}],
@@ -438,8 +425,6 @@ const grids = {
     [{players:[15,9,8,14]},{players:[10,5,4,12]},{players:[7,13,3,11]},{rest:1},{rest:2},{rest:6}],
     [{players:[8,11,2,3]},{players:[6,12,4,1]},{players:[9,13,7,15]},{rest:5},{rest:10},{rest:14}]
   ],
-  
-  // 16 joueurs : 3 terrains + 4 repos
   16: [
     [{players:[3,14,5,13]},{players:[6,1,7,12]},{players:[8,10,11,4]},{rest:2},{rest:9},{rest:15},{rest:16}],
     [{players:[12,15,11,8]},{players:[4,7,16,9]},{players:[2,13,5,1]},{rest:3},{rest:6},{rest:10},{rest:14}],
@@ -450,19 +435,23 @@ const grids = {
 };
 
 let positions = [];
-let N = 8;
+let N = 12;
 let autoSaveTimer = null;
 let playerReplacements = {};
 let replacementLog = [];
 let matchScores = {};
 let specialMatchScores = {};
+let __appInitialized = false;
+let __remoteData = null;
+let currentRole = null;
 
 function showNotice(message) {
   const notice = document.getElementById('notice');
   if (notice) {
     notice.textContent = message;
     notice.style.display = 'block';
-    setTimeout(() => notice.style.display = 'none', 3000);
+    clearTimeout(notice._timer);
+    notice._timer = setTimeout(() => notice.style.display = 'none', 3000);
   }
 }
 
@@ -590,7 +579,7 @@ function shufflePositions() {
 
 function getGridForN() {
   if (grids[N]) return grids[N];
-  return grids[8];
+  return grids[12];
 }
 
 function getReplacementPlayer(round, court, position, originalPlayer) {
@@ -602,7 +591,7 @@ function getReplacementPlayer(round, court, position, originalPlayer) {
   return originalPlayer;
 }
 
-function logReplacement(round, court, position, oldPlayer, newPlayer, courtType = 'principal') {
+function logReplacement(round, court, position, oldPlayer, newPlayer, courtType) {
   const logEntry = {
     round: round + 1,
     court: courtType === 'principal' ? `Terrain ${court + 1}` : 'Terrain spécial',
@@ -664,7 +653,6 @@ function validateAllConstraints() {
   const violations = [];
   const warnings = [];
   
-  // Règle 1: Un joueur ne joue qu'une fois avec le même coéquipier
   players.forEach(playerId => {
     Object.entries(relationships[playerId].partners).forEach(([partnerId, count]) => {
       if (count > 1) {
@@ -677,7 +665,6 @@ function validateAllConstraints() {
     });
   });
   
-  // Règle 2: Un joueur ne joue que 2 fois contre le même adversaire
   players.forEach(playerId => {
     Object.entries(relationships[playerId].opponents).forEach(([opponentId, count]) => {
       if (count > 2) {
@@ -690,7 +677,6 @@ function validateAllConstraints() {
     });
   });
   
-  // Règle 3: Pas de confrontation consécutive avec le même adversaire
   const grid = getGridForN();
   for (let r = 0; r < grid.length - 1; r++) {
     players.forEach(playerId => {
@@ -709,7 +695,6 @@ function validateAllConstraints() {
     });
   }
   
-  // Règle 4: Maximum 1 repos par joueur (sauf impossibilité)
   players.forEach(playerId => {
     const restCount = relationships[playerId].rests.size;
     if (restCount > 1) {
@@ -788,7 +773,6 @@ function getOpponentsInRound(playerId, round) {
   for (let courtIdx = 0; courtIdx < grid[round].length; courtIdx++) {
     const courtObj = grid[round][courtIdx];
     
-    // Gérer le cas des repos
     if (courtObj.rest) continue;
     
     const pos = courtObj.players;
@@ -803,11 +787,9 @@ function getOpponentsInRound(playerId, round) {
     
     if (mapped.includes(playerId)) {
       if (courtObj.type === '1x1' && mapped.length === 2) {
-        // Match 1x1
         const opponent = mapped.find(p => p !== playerId);
         if (opponent) opponents.add(opponent);
       } else if (courtObj.type === '2x1' && mapped.length === 3) {
-        // Match 2x1
         const playerIndex = mapped.indexOf(playerId);
         if (playerIndex < 2) {
           if (mapped[2]) opponents.add(mapped[2]);
@@ -816,7 +798,6 @@ function getOpponentsInRound(playerId, round) {
           if (mapped[1]) opponents.add(mapped[1]);
         }
       } else if (mapped.length === 4) {
-        // Match normal
         const playerIndex = mapped.indexOf(playerId);
         const teamIndex = playerIndex < 2 ? 0 : 1;
         const opponentIndices = teamIndex === 0 ? [2, 3] : [0, 1];
@@ -865,11 +846,9 @@ function generateTournament() {
     const plays = new Set();
     let courtIndex = 0;
     
-    // Terrains normaux
     for (let c = 0; c < round.length; c++) {
       const courtObj = round[c];
       
-      // Gérer les repos
       if (courtObj.rest) {
         const restDiv = document.createElement('div');
         restDiv.style.cssText = 'margin-top:6px;padding:8px;background:#fff3cd;border-radius:5px;font-size:0.85rem;text-align:center';
@@ -1026,8 +1005,6 @@ function generateTournament() {
   });
 }
 
-// [Les autres fonctions restent identiques...]
-
 function loadReplacements() {
   Object.keys(playerReplacements).forEach(round => {
     Object.keys(playerReplacements[round]).forEach(court => {
@@ -1065,7 +1042,7 @@ function calculateRanking() {
     
     for (let court = 0; court < round.length; court++) {
       const courtObj = round[court];
-      if (courtObj.rest) continue; // Ignorer les repos
+      if (courtObj.rest) continue;
       
       const pos = courtObj.players;
       const originalMapped = pos.map(p => {
@@ -1220,7 +1197,8 @@ function updateRankingDisplay(stats) {
       `;
       
       if (medalClass) {
-        tr.querySelector('td:first-child').classList.add(medalClass);
+        const firstTd = tr.querySelector('td:first-child');
+        if (firstTd) firstTd.classList.add(medalClass);
       }
       
       tbody.appendChild(tr);
@@ -1666,7 +1644,7 @@ function saveData() {
     
     localStorage.setItem('padel_tournament_data_optimized', JSON.stringify(data));
 
-    if (window.currentRole === 'admin' && typeof window.fsSaveTournament === 'function') {
+    if (currentRole === 'admin' && typeof window.fsSaveTournament === 'function') {
       window.__isSavingSelf = true;
       window.fsSaveTournament(data).finally(() => {
         setTimeout(() => { window.__isSavingSelf = false; }, 1500);
@@ -1683,7 +1661,7 @@ function saveData() {
 
 function applyTournamentData(data) {
   positions = data.positions || [];
-  N = data.N || 8;
+  N = data.N || 12;
   matchScores = data.matchScores || {};
   specialMatchScores = data.specialMatchScores || {};
   playerReplacements = data.playerReplacements || {};
@@ -1707,16 +1685,14 @@ function applyTournamentData(data) {
   }
 }
 
-// Appelé quand Firestore renvoie une mise à jour venant d'un autre appareil
 function applyRemoteUpdate(data) {
-  if (window.__isSavingSelf) return; // on ignore l'écho de notre propre écriture
+  if (window.__isSavingSelf) return;
   applyTournamentData(data);
   showNotice('Mise à jour reçue');
 }
 
 function loadData() {
   try {
-    // Priorité aux données Firestore si disponibles (mode connecté)
     if (window.__remoteData) {
       applyTournamentData(window.__remoteData);
       return true;
@@ -1733,7 +1709,7 @@ function loadData() {
   }
 }
 
-function resetAll() {
+function resetAll(event) {
   const btn = event.target;
   if (btn.textContent.includes('Confirmer')) {
     doReset();
@@ -1751,14 +1727,14 @@ function resetAll() {
 
 function doReset() {
   positions = [];
-  N = 8;
+  N = 12;
   matchScores = {};
   specialMatchScores = {};
   playerReplacements = {};
   replacementLog = [];
   
   const select = document.getElementById('playerCount');
-  if (select) select.value = '8';
+  if (select) select.value = '12';
   
   for (let i = 1; i <= 16; i++) {
     const el = document.getElementById('player' + i);
@@ -1796,16 +1772,12 @@ function doReset() {
   
   localStorage.removeItem('padel_tournament_data_optimized');
 
-  if (window.currentRole === 'admin' && typeof window.fsSaveTournament === 'function') {
+  if (currentRole === 'admin' && typeof window.fsSaveTournament === 'function') {
     window.__isSavingSelf = true;
-    window.fsSaveTournament({ players: {}, positions: [], N: 8, matchScores: {}, specialMatchScores: {}, playerReplacements: {}, replacementLog: [] })
+    window.fsSaveTournament({ players: {}, positions: [], N: 12, matchScores: {}, specialMatchScores: {}, playerReplacements: {}, replacementLog: [] })
       .finally(() => { setTimeout(() => { window.__isSavingSelf = false; }, 1500); });
   }
 
-  const btn = event.target;
-  btn.innerHTML = '<i class="fas fa-trash"></i> Réinitialiser';
-  btn.style.background = '';
-  
   showNotice('Réinitialisation complète effectuée');
 }
 
@@ -1843,26 +1815,25 @@ function updatePlayerReplacement(round, court, position, newPlayerId) {
   }
 }
 
-function showTab(tabName) {
+function showTab(tabName, btn) {
   document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   
   const tab = document.getElementById(tabName);
   if (tab) tab.classList.add('active');
   
-  event.target.classList.add('active');
+  if (btn) btn.classList.add('active');
   
   showNotice('Onglet ' + tabName.replace('Tab', '') + ' activé');
 }
 
-// Initialisation — appelée par le module Firebase une fois l'utilisateur authentifié et le rôle connu
-window.initApp = function() {
+function initApp() {
   try {
     buildPlayerInputs();
     
     if (!loadData()) {
       positions = [];
-      N = 8;
+      N = 12;
       matchScores = {};
       specialMatchScores = {};
       playerReplacements = {};
@@ -1883,11 +1854,12 @@ window.initApp = function() {
     console.error('Erreur lors de l\'initialisation:', error);
     showNotice('Erreur d\'initialisation');
   }
-};
+}
 
-// Mode TV : bascule d'affichage automatique entre les matchs et le classement
+// Mode TV
 let __tvInterval = null;
-window.openTvMode = function() {
+
+function openTvMode() {
   document.getElementById('tvOverlay').classList.add('active');
   renderTvContent();
   let showingMatches = true;
@@ -1895,11 +1867,13 @@ window.openTvMode = function() {
     showingMatches = !showingMatches;
     renderTvContent(showingMatches ? 'matches' : 'ranking');
   }, 8000);
-};
-window.closeTvMode = function() {
+}
+
+function closeTvMode() {
   document.getElementById('tvOverlay').classList.remove('active');
   if (__tvInterval) { clearInterval(__tvInterval); __tvInterval = null; }
-};
+}
+
 function renderTvContent(mode) {
   const tv = document.getElementById('tvContent');
   if (!tv) return;
@@ -1911,125 +1885,162 @@ function renderTvContent(mode) {
     tv.innerHTML = matches && matches.innerHTML.trim() ? matches.innerHTML : '<p style="text-align:center">Aucun match généré pour le moment</p>';
   }
 }
-</script>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut }
-    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp }
-    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// Exposer les fonctions globalement
+window.loginWithGoogle = function() {
+  if (typeof signInWithRedirect === 'function') {
+    signInWithRedirect(auth, provider);
+  }
+};
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyB_CyX-kqltedx2bddoCjRFqQM5Vy657bs",
-    authDomain: "pickleball-unifie.firebaseapp.com",
-    projectId: "pickleball-unifie",
-    storageBucket: "pickleball-unifie.firebasestorage.app",
-    messagingSenderId: "922577338078",
-    appId: "1:922577338078:web:daa590933f04b654550c4f"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-  const provider = new GoogleAuthProvider();
-
-  // Identifiant dédié à CETTE application dans le projet Firebase partagé
-  const TOURNAMENT_ID = 'pickleball_8_16_3terrains';
-  const tournamentRef = doc(db, 'tournaments', TOURNAMENT_ID);
-
-  let unsubscribeSnapshot = null;
-  let pollFallback = null;
-
-  window.loginWithGoogle = function() { signInWithRedirect(auth, provider); };
-  window.logout = function() {
-    if (unsubscribeSnapshot) unsubscribeSnapshot();
-    if (pollFallback) clearInterval(pollFallback);
+window.logout = function() {
+  if (typeof signOut === 'function') {
     signOut(auth);
-  };
+  }
+};
 
-  window.fsSaveTournament = function(data) {
+window.fsSaveTournament = function(data) {
+  if (typeof setDoc === 'function' && tournamentRef) {
     return setDoc(tournamentRef, { ...data, updatedAt: serverTimestamp() }).catch(err => {
       console.error('Erreur Firestore save:', err);
-      showNoticeSafe('Erreur de synchronisation en ligne');
+      showNotice('Erreur de synchronisation en ligne');
     });
-  };
-
-  function showNoticeSafe(msg) { if (typeof window.showNotice === 'function') window.showNotice(msg); }
-
-  function setUserBar(user, role) {
-    const bar = document.getElementById('userBar');
-    if (!user) { bar.innerHTML = ''; return; }
-    const roleLabel = role === 'admin' ? 'Administrateur' : (role === 'spectateur' ? 'Spectateur (lecture seule)' : 'En attente de validation');
-    const roleClass = role === 'admin' ? 'admin' : (role === 'spectateur' ? 'spectateur' : 'attente');
-    bar.innerHTML = '<span>' + (user.displayName || user.email) + '</span>' +
-      '<span class="role-badge ' + roleClass + '">' + roleLabel + '</span>' +
-      '<button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Déconnexion</button>';
   }
+  return Promise.resolve();
+};
 
-  function showApp(role) {
-    document.getElementById('authOverlay').classList.add('hidden');
-    document.body.classList.toggle('readonly', role !== 'admin');
-    if (!window.__appInitialized) {
-      window.__appInitialized = true;
-      window.initApp();
+// Initialisation sans Firebase (pour test local)
+if (typeof initializeApp === 'undefined') {
+  document.getElementById('authOverlay').classList.add('hidden');
+  currentRole = 'admin';
+  initApp();
+}
+</script>
+
+<!-- Firebase Module - chargé après le script principal pour éviter les conflits -->
+<script type="module">
+  try {
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut }
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp }
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB_CyX-kqltedx2bddoCjRFqQM5Vy657bs",
+      authDomain: "pickleball-unifie.firebaseapp.com",
+      projectId: "pickleball-unifie",
+      storageBucket: "pickleball-unifie.firebasestorage.app",
+      messagingSenderId: "922577338078",
+      appId: "1:922577338078:web:daa590933f04b654550c4f"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    const TOURNAMENT_ID = 'pickleball_8_16_3terrains';
+    const tournamentRef = doc(db, 'tournaments', TOURNAMENT_ID);
+
+    let unsubscribeSnapshot = null;
+    let pollFallback = null;
+
+    // Redéfinir les fonctions avec les bonnes références
+    window.loginWithGoogle = function() { signInWithRedirect(auth, provider); };
+    window.logout = function() {
+      if (unsubscribeSnapshot) unsubscribeSnapshot();
+      if (pollFallback) clearInterval(pollFallback);
+      signOut(auth);
+    };
+
+    window.fsSaveTournament = function(data) {
+      return setDoc(tournamentRef, { ...data, updatedAt: serverTimestamp() }).catch(err => {
+        console.error('Erreur Firestore save:', err);
+        showNotice('Erreur de synchronisation en ligne');
+      });
+    };
+
+    function setUserBar(user, role) {
+      const bar = document.getElementById('userBar');
+      if (!user) { bar.innerHTML = ''; return; }
+      const roleLabel = role === 'admin' ? 'Administrateur' : (role === 'spectateur' ? 'Spectateur (lecture seule)' : 'En attente de validation');
+      const roleClass = role === 'admin' ? 'admin' : (role === 'spectateur' ? 'spectateur' : 'attente');
+      bar.innerHTML = '<span>' + (user.displayName || user.email) + '</span>' +
+        '<span class="role-badge ' + roleClass + '">' + roleLabel + '</span>' +
+        '<button onclick="window.logout()"><i class="fas fa-sign-out-alt"></i> Déconnexion</button>';
     }
-  }
 
-  async function resolveRole(user) {
-    const userDocRef = doc(db, 'users', user.uid);
-    const snap = await getDoc(userDocRef);
-    const role = snap.exists() ? (snap.data().role || 'attente') : 'attente';
-    window.currentRole = role;
-    window.currentUid = user.uid;
-    setUserBar(user, role);
-
-    if (role === 'attente') {
-      document.getElementById('authMessage').textContent =
-        "Compte connecté (" + (user.email || '') + ") mais en attente de validation par l'administrateur. " +
-        "Demandez-lui de créer le document users/" + user.uid + " avec le champ role dans la console Firestore.";
-      document.getElementById('authOverlay').classList.remove('hidden');
-      return;
-    }
-
-    showApp(role);
-    startTournamentSync();
-  }
-
-  function startTournamentSync() {
-    if (unsubscribeSnapshot) return;
-    unsubscribeSnapshot = onSnapshot(tournamentRef, (snap) => {
-      if (snap.exists()) {
-        const data = snap.data();
-        window.__remoteData = data;
-        if (window.__appInitialized && typeof window.applyRemoteUpdate === 'function') {
-          window.applyRemoteUpdate(data);
-        }
+    function showApp(role) {
+      document.getElementById('authOverlay').classList.add('hidden');
+      document.body.classList.toggle('readonly', role !== 'admin');
+      if (!window.__appInitialized) {
+        window.__appInitialized = true;
+        initApp();
       }
-    }, (err) => console.error('Erreur onSnapshot:', err));
-
-    // Repli par sondage : certains navigateurs mobiles suspendent le WebSocket en arrière-plan
-    pollFallback = setInterval(async () => {
-      try {
-        const snap = await getDoc(tournamentRef);
-        if (snap.exists()) window.__remoteData = snap.data();
-      } catch (e) { /* silencieux */ }
-    }, 4000);
-  }
-
-  getRedirectResult(auth).catch(err => console.error('Erreur redirect Firebase:', err));
-
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      resolveRole(user);
-    } else {
-      window.currentRole = null;
-      window.currentUid = null;
-      document.getElementById('authOverlay').classList.remove('hidden');
-      document.getElementById('authMessage').textContent = 'Connectez-vous pour accéder au tournoi.';
-      document.getElementById('userBar').innerHTML = '';
     }
-  });
+
+    async function resolveRole(user) {
+      const userDocRef = doc(db, 'users', user.uid);
+      const snap = await getDoc(userDocRef);
+      const role = snap.exists() ? (snap.data().role || 'attente') : 'attente';
+      currentRole = role;
+      window.currentRole = role;
+      setUserBar(user, role);
+
+      if (role === 'attente') {
+        document.getElementById('authMessage').textContent =
+          "Compte connecté (" + (user.email || '') + ") mais en attente de validation par l'administrateur. " +
+          "Demandez-lui de créer le document users/" + user.uid + " avec le champ role dans la console Firestore.";
+        document.getElementById('authOverlay').classList.remove('hidden');
+        return;
+      }
+
+      showApp(role);
+      startTournamentSync();
+    }
+
+    function startTournamentSync() {
+      if (unsubscribeSnapshot) return;
+      unsubscribeSnapshot = onSnapshot(tournamentRef, (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          window.__remoteData = data;
+          if (window.__appInitialized && typeof applyRemoteUpdate === 'function') {
+            applyRemoteUpdate(data);
+          }
+        }
+      }, (err) => console.error('Erreur onSnapshot:', err));
+
+      pollFallback = setInterval(async () => {
+        try {
+          const snap = await getDoc(tournamentRef);
+          if (snap.exists()) window.__remoteData = snap.data();
+        } catch (e) { /* silencieux */ }
+      }, 4000);
+    }
+
+    getRedirectResult(auth).catch(err => console.error('Erreur redirect Firebase:', err));
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        resolveRole(user);
+      } else {
+        currentRole = null;
+        window.currentRole = null;
+        document.getElementById('authOverlay').classList.remove('hidden');
+        document.getElementById('authMessage').textContent = 'Connectez-vous pour accéder au tournoi.';
+        document.getElementById('userBar').innerHTML = '';
+      }
+    });
+  } catch (e) {
+    // Mode hors ligne / fallback
+    console.log('Firebase non disponible, mode local uniquement');
+    document.getElementById('authOverlay').classList.add('hidden');
+    currentRole = 'admin';
+    window.currentRole = 'admin';
+    initApp();
+  }
 </script>
 </body>
 </html>
