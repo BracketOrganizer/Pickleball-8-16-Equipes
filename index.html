@@ -458,6 +458,11 @@
         .accueil-card .icon { font-size: 2rem; color: var(--primary); }
         .accueil-card .label { font-weight: 700; font-size: 0.85rem; color: var(--ink); }
         .accueil-card .sub { font-size: 0.65rem; color: var(--muted); }
+        .accueil-card.tv-card {
+            border-color: var(--secondary);
+            background: linear-gradient(135deg, #f0f8ff, #e8f4f8);
+        }
+        .accueil-card.tv-card .icon { color: var(--secondary); }
 
         /* MODAL */
         .modal-bg {
@@ -815,9 +820,6 @@
                 <button class="btn danger" id="btnReset" onclick="resetAll()">
                     <i class="fas fa-trash"></i> Réinitialiser
                 </button>
-                <button class="btn" id="btnTV" onclick="goToTV()" style="background:#1a1a2e;">
-                    <i class="fas fa-tv"></i> Écran
-                </button>
                 <button class="btn ghost" onclick="logout()">
                     <i class="fas fa-sign-out-alt"></i> Quitter
                 </button>
@@ -864,9 +866,9 @@
                         <div class="label">Programme</div>
                         <div class="sub">Matchs par joueur</div>
                     </div>
-                    <div class="accueil-card" onclick="goToTV()">
+                    <div class="accueil-card tv-card" onclick="goToTV()">
                         <div class="icon"><i class="fas fa-tv"></i></div>
-                        <div class="label">Écran</div>
+                        <div class="label">📺 Écran</div>
                         <div class="sub">Affichage public</div>
                     </div>
                     <div class="accueil-card" onclick="showRanking()">
@@ -1497,6 +1499,26 @@
         if (!grid || grid.length === 0) {
             document.getElementById('matchesDisplay').innerHTML = '<p style="text-align:center;color:#666;padding:20px;">Aucun match généré. Attendez que l\'organisateur lance le tournoi.</p>';
         }
+    };
+
+    window.goToTV = function() {
+        document.getElementById('pageTV').classList.add('active');
+        document.body.classList.add('tv-mode');
+        updateTVClock();
+        if (tvInterval) clearInterval(tvInterval);
+        tvInterval = setInterval(updateTVClock, 1000);
+        updateTVContent();
+        startTVCycle();
+    };
+
+    window.exitTV = function() {
+        document.getElementById('pageTV').classList.remove('active');
+        document.body.classList.remove('tv-mode');
+        if (tvInterval) { clearInterval(tvInterval);
+            tvInterval = null; }
+        if (tvCycleTimeout) { clearTimeout(tvCycleTimeout);
+            tvCycleTimeout = null; }
+        if (USER_ROLE === 'spectator') showTab('accueilTab');
     };
 
     window.showPlayerList = function() {
@@ -2888,26 +2910,6 @@
     };
 
     // ─── TV MODE ─────────────────────────────────────────────────
-    window.goToTV = function() {
-        document.getElementById('pageTV').classList.add('active');
-        document.body.classList.add('tv-mode');
-        updateTVClock();
-        if (tvInterval) clearInterval(tvInterval);
-        tvInterval = setInterval(updateTVClock, 1000);
-        updateTVContent();
-        startTVCycle();
-    };
-
-    window.exitTV = function() {
-        document.getElementById('pageTV').classList.remove('active');
-        document.body.classList.remove('tv-mode');
-        if (tvInterval) { clearInterval(tvInterval);
-            tvInterval = null; }
-        if (tvCycleTimeout) { clearTimeout(tvCycleTimeout);
-            tvCycleTimeout = null; }
-        if (USER_ROLE === 'spectator') showTab('accueilTab');
-    };
-
     function startTVCycle() {
         if (tvCycleTimeout) clearTimeout(tvCycleTimeout);
         const mode = document.getElementById('tvModeSelect')?.value || 'cycle';
@@ -3589,6 +3591,8 @@
     window.printRanking = window.printRanking;
     window.printStats = window.printStats;
     window.printProgram = window.printProgram;
+    window.goToTV = window.goToTV;
+    window.exitTV = window.exitTV;
 
     console.log('🏓 Pickleball Unifié chargé avec Firebase !');
     console.log('👤 Rôle:', USER_ROLE);
