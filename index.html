@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700;900&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* ===== STYLES PRINCIPAUX (Inspirés de pickleball_unified.html) ===== */
+        /* ===== STYLES PRINCIPAUX ===== */
         :root {
             --primary: #9c27b0;
             --secondary: #3498db;
@@ -58,8 +58,6 @@
             padding: 15px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.1);
         }
-
-        /* HEADER */
         header {
             display: flex;
             flex-direction: column;
@@ -82,7 +80,6 @@
             font-weight: normal;
             color: var(--muted);
         }
-
         .controls {
             display: flex;
             gap: 6px;
@@ -105,18 +102,13 @@
             align-items: center;
             gap: 6px;
         }
-        .btn:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-        }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
         .btn.secondary { background: var(--secondary); }
         .btn.danger { background: var(--danger); }
         .btn.success { background: var(--success); }
         .btn.warning { background: var(--warning); }
         .btn.ghost { background: var(--s2); color: var(--ink); border: 1px solid var(--bdr); }
         .btn-sm { padding: 5px 10px; font-size: 0.75rem; min-height: 28px; }
-
-        /* TABS */
         .tabs {
             display: flex;
             gap: 2px;
@@ -141,26 +133,11 @@
             transition: background 0.2s;
             white-space: nowrap;
         }
-        .tab-btn.active {
-            background: var(--primary);
-            color: white;
-        }
-        .tab-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .tab {
-            display: none;
-            animation: fadeIn 0.2s ease;
-        }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .tab-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .tab { display: none; animation: fadeIn 0.2s ease; }
         .tab.active { display: block; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* CARDS */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         .card {
             background: white;
             padding: 12px;
@@ -178,8 +155,6 @@
             border-left: 3px solid var(--primary);
             padding-left: 8px;
         }
-
-        /* JOUEURS */
         .player-row {
             display: flex;
             gap: 6px;
@@ -207,8 +182,6 @@
             font-size: 0.85rem;
             min-height: 36px;
         }
-
-        /* MATCHES */
         .match {
             border: 2px solid #f0f0f0;
             padding: 10px;
@@ -246,13 +219,8 @@
             font-size: 0.9rem;
             min-height: 32px;
         }
-        .score-input:focus {
-            border-color: var(--primary);
-            outline: none;
-        }
+        .score-input:focus { border-color: var(--primary); outline: none; }
         .score-input.win { border-color: var(--success); background: #e8f5e8; }
-
-        /* CLASSEMENT */
         table.ranking {
             width: 100%;
             border-collapse: collapse;
@@ -274,8 +242,6 @@
         .gold { background: linear-gradient(135deg, #ffd700, #ffed4e); color: #856404; }
         .silver { background: linear-gradient(135deg, #c0c0c0, #e8e8e8); color: #495057; }
         .bronze { background: linear-gradient(135deg, #cd7f32, #e6893e); color: white; }
-
-        /* STATUS BAR */
         .status-bar {
             display: flex;
             justify-content: space-around;
@@ -294,8 +260,6 @@
             font-weight: 600;
             color: var(--dark);
         }
-
-        /* REPLACEMENT LOG */
         .replacement-log {
             max-height: 300px;
             overflow-y: auto;
@@ -327,8 +291,6 @@
         .replacement-badge.tour { background: #e3f2fd; color: #1976d2; }
         .replacement-badge.old { background: #ffebee; color: #c62828; }
         .replacement-badge.new { background: #e8f5e8; color: #2e7d32; }
-
-        /* SPECTATOR OVERLAY */
         .live-overlay {
             display: none;
             position: fixed;
@@ -350,8 +312,6 @@
         }
         .live-overlay-box h2 { color: var(--primary); margin-bottom: 10px; }
         .live-overlay-box p { color: var(--muted); margin-bottom: 20px; }
-
-        /* RESPONSIVE */
         @media (max-width: 600px) {
             body { padding: 4px; }
             .app { padding: 8px; border-radius: 12px; }
@@ -366,8 +326,6 @@
             .app { padding: 20px; }
             .team-row { flex-direction: row; }
         }
-
-        /* LOGIN SCREEN */
         #loginScreen {
             display: flex;
             align-items: center;
@@ -412,10 +370,7 @@
             border-radius: 8px;
             font-size: 1rem;
         }
-        .login-form input:focus {
-            border-color: var(--primary);
-            outline: none;
-        }
+        .login-form input:focus { border-color: var(--primary); outline: none; }
         .auth-msg {
             text-align: center;
             font-size: 0.9rem;
@@ -441,7 +396,6 @@
         }
         .login-divider::before { left: 0; }
         .login-divider::after { right: 0; }
-
         .btn-google {
             display: flex;
             align-items: center;
@@ -469,6 +423,46 @@
             transition: all 0.15s;
         }
         .btn-live:hover { opacity: 0.9; }
+        .spectator-badge {
+            display: inline-block;
+            background: var(--info);
+            color: white;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .round-border {
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+            background: #f8f9fa;
+        }
+        .round-title {
+            background: var(--primary);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 5px;
+            margin: -10px -10px 10px -10px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        #notice {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--success);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: none;
+            z-index: 999;
+            font-size: 0.9rem;
+            max-width: 80%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        #notice.error { background: var(--danger); }
     </style>
 </head>
 <body>
@@ -526,7 +520,7 @@
         <header>
             <h1>
                 <i class="fas fa-table-tennis-paddle-ball"></i> Tournoi Pickleball
-                <span class="hdr-user-info" id="hdrUserInfo">· 🔒 Spectateur</span>
+                <span class="hdr-user-info" id="hdrUserInfo">· <span class="spectator-badge">Spectateur</span></span>
             </h1>
             <div class="controls">
                 <button class="btn secondary" id="btnGenerate" onclick="generateValidatedTournament()">
@@ -630,7 +624,6 @@
             <div class="card">
                 <span class="card-title"><i class="fas fa-user-cog"></i> Gestion des utilisateurs</span>
                 <div id="adminArea">
-                    <p style="color: var(--muted);">Cette section est réservée aux administrateurs.</p>
                     <div id="adminUserList"></div>
                     <hr style="margin: 16px 0;">
                     <div>
@@ -663,6 +656,9 @@
         <button class="btn" onclick="closeLiveOverlay()"><i class="fas fa-arrow-left"></i> Retour</button>
     </div>
 </div>
+
+<!-- NOTICE -->
+<div id="notice"></div>
 
 <!-- ════════════════════════════════════════════════════════════
      SCRIPTS
@@ -706,9 +702,10 @@
 
     // ─── ÉTAT GLOBAL ─────────────────────────────────────────────
     let CURRENT_USER = null;
-    let USER_ROLE = 'spectator'; // 'spectator' | 'scorer' | 'admin'
+    let USER_ROLE = 'spectator';
     let unsubTournament = null;
     let unsubResults = null;
+    let unsubUserList = null;
 
     // ─── AUTH ────────────────────────────────────────────────────
     window.loginEmail = async function() {
@@ -736,16 +733,14 @@
     window.logout = async function() {
         try {
             await signOut(auth);
-        } catch (e) {
-            console.warn('Logout error:', e);
-        }
-        // Fermer les abonnements et réinitialiser l'interface
+        } catch (e) { console.warn('Logout error:', e); }
         unsubAll();
         USER_ROLE = 'spectator';
         CURRENT_USER = null;
         document.getElementById('appScreen').style.display = 'none';
         document.getElementById('loginScreen').style.display = 'flex';
         updateUIForRole();
+        showAuthMsg('Déconnecté', '');
     };
 
     async function ensureUserDoc(user) {
@@ -814,7 +809,6 @@
         }
 
         try {
-            // Créer via l'API REST pour ne pas déconnecter l'admin
             const res = await fetch(
                 `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseConfig.apiKey}`,
                 {
@@ -855,8 +849,6 @@
     }
 
     // ─── LISTE DES UTILISATEURS (Admin) ─────────────────────────
-    let unsubUserList = null;
-
     function loadUserList() {
         if (USER_ROLE !== 'admin') return;
         if (unsubUserList) return;
@@ -903,7 +895,6 @@
         if (!confirm('Supprimer définitivement cet utilisateur ?')) return;
         try {
             await deleteDoc(doc(db, 'users', uid));
-            // On laisse l'écoute en direct mettre à jour la liste
         } catch (e) {
             alert('Erreur: ' + e.message);
         }
@@ -921,7 +912,6 @@
             document.getElementById('appScreen').style.display = 'block';
             updateUIForRole();
 
-            // Charger les données du tournoi
             subscribeToTournament();
             subscribeToResults();
             if (USER_ROLE === 'admin') {
@@ -933,7 +923,6 @@
 
             showAuthMsg(`Connecté en tant que ${USER_ROLE}`, 'success');
         } else {
-            // Déconnexion ou utilisateur non connecté
             unsubAll();
             USER_ROLE = 'spectator';
             CURRENT_USER = null;
@@ -947,25 +936,21 @@
 
     // ─── MODE SPECTATEUR SANS COMPTE ────────────────────────────
     window.enterLiveMode = function() {
-        // On se connecte en tant que spectateur anonyme
-        // On simule un utilisateur spectateur sans authentification
-        if (CURRENT_USER) return; // déjà connecté
+        if (CURRENT_USER) return;
         USER_ROLE = 'spectator';
         CURRENT_USER = null;
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('appScreen').style.display = 'block';
         updateUIForRole();
-        subscribeToTournamentPublic();
-        subscribeToResultsPublic();
-        // Pas d'admin
+        subscribeToTournament();
+        subscribeToResults();
         document.getElementById('adminTabBtn').style.display = 'none';
     };
 
     // ─── ABONNEMENTS FIRESTORE ──────────────────────────────────
     let ST = {
-        players: [],
+        players: {},
         schedule: [],
-        results: {},
         positions: [],
         courts: 3,
         N: 8,
@@ -976,17 +961,15 @@
         activeRound: 0
     };
 
-    // Import des grilles depuis le scope global
-    const GRIDS = window.GRIDS || {};
-
     function subscribeToTournament() {
         if (unsubTournament) return;
         unsubTournament = onSnapshot(doc(db, 'tournament', 'current'), (snap) => {
             if (!snap.exists()) return;
             const data = snap.data();
-            if (data.players) ST.players = data.players;
-            if (data.schedule) ST.schedule = data.schedule;
-            if (data.positions) ST.positions = data.positions;
+            // Ne pas écraser avec des données vides
+            if (data.players && Object.keys(data.players).length > 0) ST.players = data.players;
+            if (data.schedule && data.schedule.length > 0) ST.schedule = data.schedule;
+            if (data.positions && data.positions.length > 0) ST.positions = data.positions;
             if (data.courts) ST.courts = data.courts;
             if (data.N) ST.N = data.N;
             if (data.matchScores) ST.matchScores = data.matchScores;
@@ -998,28 +981,13 @@
         }, (e) => console.warn('subscribeToTournament error:', e));
     }
 
-    function subscribeToTournamentPublic() {
-        // Même abonnement mais en lecture seule (même données)
-        if (unsubTournament) return;
-        subscribeToTournament();
-    }
-
     function subscribeToResults() {
         if (unsubResults) return;
         unsubResults = onSnapshot(collection(db, 'results'), (snap) => {
-            snap.docChanges().forEach(change => {
-                if (change.type === 'removed') {
-                    delete ST.results[change.doc.id];
-                } else {
-                    ST.results[change.doc.id] = change.doc.data();
-                }
-            });
+            // On ne stocke pas les résultats dans ST car on utilise matchScores/specialMatchScores
+            // Mais on pourrait les utiliser pour synchroniser
             refreshUI();
         }, (e) => console.warn('subscribeToResults error:', e));
-    }
-
-    function subscribeToResultsPublic() {
-        subscribeToResults();
     }
 
     function unsubAll() {
@@ -1028,20 +996,27 @@
         if (unsubUserList) { unsubUserList(); unsubUserList = null; }
     }
 
-    // ─── SAUVEGARDE ──────────────────────────────────────────────
+    // ─── SAUVEGARDE (version compatible Firestore) ──────────────
     async function saveTournament(fields) {
         if (USER_ROLE === 'spectator') {
             console.warn('Spectateur ne peut pas sauvegarder.');
             return;
         }
         try {
+            // Nettoyer les données pour Firestore (pas de tableaux imbriqués)
+            const cleanData = {};
+            for (const [key, value] of Object.entries(fields)) {
+                if (value !== undefined && value !== null) {
+                    cleanData[key] = value;
+                }
+            }
             await setDoc(doc(db, 'tournament', 'current'), {
-                ...fields,
+                ...cleanData,
                 updatedAt: serverTimestamp()
             }, { merge: true });
         } catch (e) {
             console.error('saveTournament error:', e);
-            alert('Erreur de sauvegarde: ' + e.message);
+            showNotice('❌ Erreur de sauvegarde: ' + e.message, 'error');
         }
     }
 
@@ -1069,21 +1044,17 @@
     // ─── INTERFACE ──────────────────────────────────────────────
     function updateUIForRole() {
         const roleMap = { admin: '👑 Admin', scorer: '✏️ Scorer', spectator: '🔒 Spectateur' };
-        document.getElementById('hdrUserInfo').textContent = `· ${roleMap[USER_ROLE] || 'Spectateur'}`;
+        document.getElementById('hdrUserInfo').innerHTML = `· <span class="spectator-badge">${roleMap[USER_ROLE] || 'Spectateur'}</span>`;
 
-        // Afficher/masquer les contrôles
         const isAdmin = USER_ROLE === 'admin';
         const isScorer = isAdmin || USER_ROLE === 'scorer';
         const isSpectator = USER_ROLE === 'spectator';
 
-        // Les boutons d'action (sauvegarder, réinitialiser) sont visibles pour admin/scorer
         document.querySelectorAll('.controls .btn:not(.ghost)').forEach(btn => {
             btn.style.display = isScorer ? '' : 'none';
         });
-        // Bouton "Générer" pour tout le monde
         document.getElementById('btnGenerate').style.display = isScorer ? '' : 'none';
 
-        // Désactiver les champs de saisie pour les spectateurs
         document.querySelectorAll('.score-input, .player-input, select').forEach(el => {
             if (isSpectator) {
                 el.setAttribute('readonly', true);
@@ -1094,39 +1065,39 @@
             }
         });
 
-        // Tab Admin
         document.getElementById('adminTabBtn').style.display = isAdmin ? '' : 'none';
-
-        // Message pour spectateur sur la page Matchs
-        const specInfo = document.getElementById('spectatorInfo');
-        if (specInfo) {
-            specInfo.style.display = isSpectator ? 'block' : 'none';
-        }
     }
 
     function refreshUI() {
-        // Mettre à jour les positions, les joueurs, les matchs, etc.
         if (ST.positions.length === 0 && ST.N > 0) {
             ST.positions = Array.from({ length: ST.N }, (_, i) => i + 1);
         }
+        // Synchroniser les positions avec le state global
+        window.positions = ST.positions;
+        window.N = ST.N;
+        window.courts = ST.courts;
+        window.matchScores = ST.matchScores;
+        window.specialMatchScores = ST.specialMatchScores;
+        window.playerReplacements = ST.playerReplacements;
+        window.replacementLog = ST.replacementLog;
+
         updateActiveCount();
         updatePositions();
         buildPlayerInputs();
-        if (ST.schedule.length > 0) {
+        if (ST.schedule && ST.schedule.length > 0) {
             renderMatches();
             calculateRanking();
             updateStats();
         }
         updateStatusBar();
-        // Si on est sur l'onglet admin, rafraîchir la liste
         if (USER_ROLE === 'admin' && document.getElementById('adminTab').classList.contains('active')) {
             loadUserList();
         }
     }
 
-    // ─── FONCTIONS DU JEU (déclarées globalement pour les onclick) ──
+    // ─── FONCTIONS DU JEU ──────────────────────────────────────
 
-    // Grilles de matchs (importées depuis l'ancien fichier)
+    // Grilles de matchs (compatibles)
     const GRIDS3 = {
         8: [
             [{ players: [1, 3, 5, 7] }, { players: [2, 4, 6, 8] }],
@@ -1357,18 +1328,17 @@
             const wrapper = document.createElement('div');
             wrapper.className = 'player-row';
             wrapper.style.display = i <= N ? 'flex' : 'none';
+            const name = ST.players[i] || 'Joueur ' + i;
             wrapper.innerHTML = `
                 <div class="player-number">${i}</div>
-                <input type="text" class="player-input" id="player${i}" placeholder="Joueur ${i}" value="${ST.players[i] || 'Joueur ' + i}">
+                <input type="text" class="player-input" id="player${i}" placeholder="Joueur ${i}" value="${name}">
             `;
             container.appendChild(wrapper);
         }
-        // Événements pour auto-sauvegarde
         for (let i = 1; i <= maxN; i++) {
             const input = document.getElementById('player' + i);
             if (input) {
                 input.addEventListener('input', function() {
-                    // Mettre à jour ST.players
                     ST.players[i] = this.value;
                     scheduleAutoSave();
                 });
@@ -1405,6 +1375,7 @@
             const j = Math.floor(Math.random() * (i + 1));
             [positions[i], positions[j]] = [positions[j], positions[i]];
         }
+        ST.positions = positions;
         updatePositions();
         scheduleAutoSave();
         showNotice('Positions mélangées');
@@ -1415,12 +1386,10 @@
         ensurePositions();
         const grid = getGridForN();
         if (!grid) {
-            showNotice('⚠️ Aucune grille disponible pour cette configuration.');
+            showNotice('⚠️ Aucune grille disponible pour cette configuration.', 'error');
             return;
         }
-        // Sauvegarder la grille dans ST.schedule
-        ST.schedule = grid;
-        // Réinitialiser les scores
+        ST.schedule = JSON.parse(JSON.stringify(grid)); // Copie propre
         ST.matchScores = {};
         ST.specialMatchScores = {};
         ST.playerReplacements = {};
@@ -1430,9 +1399,9 @@
         playerReplacements = {};
         replacementLog = [];
 
-        // Sauvegarder dans Firestore
-        saveTournament({
-            schedule: grid,
+        // Sauvegarder dans Firestore avec les données nettoyées
+        const dataToSave = {
+            schedule: ST.schedule,
             positions: positions,
             courts: courts,
             N: N,
@@ -1440,7 +1409,9 @@
             specialMatchScores: {},
             playerReplacements: {},
             replacementLog: []
-        });
+        };
+
+        saveTournament(dataToSave);
 
         renderMatches();
         calculateRanking();
@@ -1465,10 +1436,9 @@
             const round = grid[r];
             const roundDiv = document.createElement('div');
             roundDiv.className = 'round-border';
-            roundDiv.style.cssText = 'border:2px solid var(--primary); border-radius:8px; padding:10px; margin:10px 0; background:#f8f9fa;';
 
             const roundTitle = document.createElement('div');
-            roundTitle.style.cssText = 'background:var(--primary); color:white; padding:6px 10px; border-radius:5px; margin:-10px -10px 10px -10px; font-weight:bold; font-size:0.9rem;';
+            roundTitle.className = 'round-title';
             roundTitle.innerHTML = `<i class="fas fa-flag"></i> Tour ${r + 1}`;
             roundDiv.appendChild(roundTitle);
 
@@ -1491,7 +1461,6 @@
                 if (mapped.length >= 2) {
                     const matchDiv = document.createElement('div');
                     matchDiv.className = 'match';
-                    matchDiv.style.cssText = 'border:2px solid #f0f0f0; padding:10px; margin:6px 0; border-radius:6px; background:#fafafa;';
 
                     let courtLabel = `Terrain ${c + 1}`;
                     if (courtObj.type === '1x1') courtLabel += ' (1x1)';
@@ -1571,7 +1540,9 @@
                         if (!matchScores[round][court]) matchScores[round][court] = {};
                         matchScores[round][court][side] = score;
                     }
-                    // Sauvegarder automatiquement
+                    // Mettre à jour ST
+                    ST.matchScores = matchScores;
+                    ST.specialMatchScores = specialMatchScores;
                     saveTournament({
                         matchScores: matchScores,
                         specialMatchScores: specialMatchScores,
@@ -1763,13 +1734,14 @@
         const container = document.getElementById('statsArea');
         if (!container) return;
         const players = getActivePlayerNumbers();
-        const totalMatches = ST.schedule ? ST.schedule.reduce((sum, r) => sum + r.filter(c => !c.rest).length, 0) : 0;
-        let completed = 0;
         const grid = ST.schedule || getGridForN();
+        let totalMatches = 0;
+        let completed = 0;
         if (grid) {
             for (let r = 0; r < grid.length; r++) {
                 for (let c = 0; c < grid[r].length; c++) {
                     if (grid[r][c].rest) continue;
+                    totalMatches++;
                     let scores;
                     if (grid[r][c].type === '1x1' || grid[r][c].type === '2x1') {
                         scores = specialMatchScores[r] && specialMatchScores[r][c] ? specialMatchScores[r][c] : { 1: 0, 2: 0 };
@@ -1809,10 +1781,10 @@
                     <div style="font-size:1.2rem; font-weight:bold;">${USER_ROLE}</div>
                 </div>
             </div>
+            ${replacementLog.length > 0 ? `
             <div class="replacement-log" style="margin-top:12px;">
                 <div style="font-weight:600; padding:8px 12px; background:#f0f0f0;">Journal des remplacements</div>
-                ${replacementLog.length === 0 ? '<div style="padding:10px; color:#666;">Aucun remplacement</div>' :
-                replacementLog.map(entry => `
+                ${replacementLog.map(entry => `
                     <div class="replacement-item">
                         <div class="replacement-info">
                             <span class="replacement-badge tour">Tour ${entry.round}</span>
@@ -1824,7 +1796,7 @@
                         <span style="font-size:0.75rem; color:#666;">${entry.timestamp}</span>
                     </div>
                 `).join('')}
-            </div>
+            </div>` : ''}
         `;
     }
 
@@ -1867,7 +1839,8 @@
     }
 
     function updateActiveCount() {
-        document.getElementById('activeCountText').textContent = N;
+        const countText = document.getElementById('activeCountText');
+        if (countText) countText.textContent = N;
         document.getElementById('activePlayersCount').textContent = N;
     }
 
@@ -1875,17 +1848,18 @@
     function changeCourtsCount() {
         const select = document.getElementById('courtsCount');
         courts = parseInt(select.value);
+        ST.courts = courts;
         buildPlayerCountOptions(N);
         const pcSelect = document.getElementById('playerCount');
         N = parseInt(pcSelect.value);
+        ST.N = N;
         positions = Array.from({ length: N }, (_, i) => i + 1);
-        ST.players = {};
+        ST.positions = positions;
         buildPlayerInputs();
         updateActiveCount();
         updatePositions();
         scheduleAutoSave();
         showNotice(`${courts} terrains, ${N} joueurs`);
-        // Réinitialiser les matchs
         document.getElementById('matchesDisplay').innerHTML = '<p style="text-align:center;color:#666;padding:20px;">Cliquez sur "Générer" pour créer les matchs</p>';
         document.getElementById('rankingBody').innerHTML = '';
         document.getElementById('statsArea').innerHTML = '<p style="text-align:center;color:#666;padding:20px;">Les statistiques apparaîtront après génération du tournoi</p>';
@@ -1895,14 +1869,14 @@
     function changePlayerCount() {
         const select = document.getElementById('playerCount');
         N = parseInt(select.value);
+        ST.N = N;
         positions = Array.from({ length: N }, (_, i) => i + 1);
-        ST.players = {};
+        ST.positions = positions;
         buildPlayerInputs();
         updateActiveCount();
         updatePositions();
         scheduleAutoSave();
         showNotice(`${N} joueurs sélectionnés`);
-        // Réinitialiser les matchs
         document.getElementById('matchesDisplay').innerHTML = '<p style="text-align:center;color:#666;padding:20px;">Cliquez sur "Générer" pour créer les matchs</p>';
         document.getElementById('rankingBody').innerHTML = '';
         document.getElementById('statsArea').innerHTML = '<p style="text-align:center;color:#666;padding:20px;">Les statistiques apparaîtront après génération du tournoi</p>';
@@ -1958,20 +1932,25 @@
     // ─── RESET ──────────────────────────────────────────────────
     window.resetAll = function() {
         if (USER_ROLE === 'spectator') {
-            showNotice('❌ Les spectateurs ne peuvent pas réinitialiser.');
+            showNotice('❌ Les spectateurs ne peuvent pas réinitialiser.', 'error');
             return;
         }
         if (!confirm('Confirmer la réinitialisation complète ?')) return;
         positions = Array.from({ length: N }, (_, i) => i + 1);
+        ST.positions = positions;
         matchScores = {};
         specialMatchScores = {};
         playerReplacements = {};
         replacementLog = [];
-        ST.players = {};
+        ST.matchScores = {};
+        ST.specialMatchScores = {};
+        ST.playerReplacements = {};
+        ST.replacementLog = [];
         ST.schedule = [];
         for (let i = 1; i <= 20; i++) {
             const el = document.getElementById('player' + i);
             if (el) el.value = 'Joueur ' + i;
+            ST.players[i] = 'Joueur ' + i;
         }
         buildPlayerInputs();
         updatePositions();
@@ -1981,11 +1960,11 @@
         updateStatusBar();
         saveTournament({
             positions: positions,
+            schedule: [],
             matchScores: {},
             specialMatchScores: {},
             playerReplacements: {},
-            replacementLog: [],
-            schedule: []
+            replacementLog: []
         });
         showNotice('Réinitialisation effectuée');
     };
@@ -2017,7 +1996,6 @@
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
         const tab = document.getElementById(tabName);
         if (tab) tab.classList.add('active');
-        // Activer le bouton correspondant
         document.querySelectorAll('.tab-btn').forEach(btn => {
             if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(tabName)) {
                 btn.classList.add('active');
@@ -2026,16 +2004,17 @@
         if (tabName === 'adminTab' && USER_ROLE === 'admin') {
             loadUserList();
         }
-        if (tabName === 'matchesTab' && ST.schedule.length === 0) {
+        if (tabName === 'matchesTab' && (!ST.schedule || ST.schedule.length === 0)) {
             document.getElementById('matchesDisplay').innerHTML = '<p style="text-align:center;color:#666;padding:20px;">Cliquez sur "Générer" pour créer les matchs</p>';
         }
     };
 
     // ─── NOTICE ─────────────────────────────────────────────────
-    function showNotice(message) {
+    function showNotice(message, type) {
         const notice = document.getElementById('notice');
         if (notice) {
             notice.textContent = message;
+            notice.className = type === 'error' ? 'error' : '';
             notice.style.display = 'block';
             setTimeout(() => notice.style.display = 'none', 3000);
         }
@@ -2048,14 +2027,16 @@
 
     // ─── INIT ──────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialiser les options
         const courtsSelect = document.getElementById('courtsCount');
         courtsSelect.value = '3';
         buildPlayerCountOptions(8);
         const pcSelect = document.getElementById('playerCount');
         N = parseInt(pcSelect.value);
+        ST.N = N;
         courts = 3;
+        ST.courts = courts;
         positions = Array.from({ length: N }, (_, i) => i + 1);
+        ST.positions = positions;
         ST.players = {};
         for (let i = 1; i <= N; i++) {
             ST.players[i] = 'Joueur ' + i;
@@ -2065,7 +2046,6 @@
         updatePositions();
         updateStatusBar();
 
-        // Si l'utilisateur est déjà connecté (cas du rechargement)
         if (CURRENT_USER) {
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('appScreen').style.display = 'block';
@@ -2078,17 +2058,10 @@
             }
         }
 
-        // Ajouter le bouton de connexion pour les spectateurs
-        const liveBtn = document.createElement('button');
-        liveBtn.className = 'btn-live';
-        liveBtn.innerHTML = '<i class="fas fa-eye"></i> Mode Spectateur';
-        liveBtn.onclick = window.enterLiveMode;
-        document.querySelector('.login-box').prepend(liveBtn);
-
         showNotice('🏓 Application prête');
     });
 
-    // Exposer certaines fonctions pour les onclick HTML
+    // Exposer les fonctions pour les onclick HTML
     window.changeCourtsCount = changeCourtsCount;
     window.changePlayerCount = changePlayerCount;
     window.saveData = window.saveData;
@@ -2098,8 +2071,6 @@
     window.showTab = window.showTab;
 
     console.log('🏓 Pickleball Unifié chargé avec Firebase !');
-    console.log(`👤 Rôle: ${USER_ROLE}`);
-
 </script>
 
 </body>
