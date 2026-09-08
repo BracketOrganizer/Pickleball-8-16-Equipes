@@ -441,10 +441,10 @@
         }
         .btn-google:hover { background: #f5f5f5; }
 
-        /* ACCUEIL SPECTATEUR */
+        /* ACCUEIL GRID */
         .accueil-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: 12px;
             margin: 10px 0;
         }
@@ -452,16 +452,16 @@
             background: white;
             border: 2px solid var(--bdr);
             border-radius: 12px;
-            padding: 20px 16px;
+            padding: 16px 12px;
             text-align: center;
             cursor: pointer;
             transition: all 0.2s;
-            min-height: 120px;
+            min-height: 100px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
         }
         .accueil-card:hover {
             border-color: var(--primary);
@@ -469,25 +469,17 @@
             box-shadow: 0 4px 16px rgba(0,0,0,0.1);
         }
         .accueil-card .icon {
-            font-size: 2.2rem;
+            font-size: 2rem;
             color: var(--primary);
         }
         .accueil-card .label {
             font-weight: 700;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--ink);
         }
         .accueil-card .sub {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: var(--muted);
-        }
-        .accueil-card.locked {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        .accueil-card.locked:hover {
-            transform: none;
-            border-color: var(--bdr);
         }
 
         /* MODAL */
@@ -745,23 +737,6 @@
             display: none;
         }
 
-        /* PROGRAMME INDIVIDUEL */
-        .player-program-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px 12px;
-            border: 1px solid var(--bdr);
-            border-radius: 6px;
-            margin-bottom: 4px;
-            background: #fafafa;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-        .player-program-item:hover { background: var(--s1); border-color: var(--primary); }
-        .player-program-item .p-name { font-weight: 600; flex: 1; }
-        .player-program-item .p-stats { font-size: 0.75rem; color: var(--muted); }
-
         /* RESPONSIVE */
         @media (max-width: 600px) {
             body { padding: 4px; }
@@ -851,16 +826,16 @@
                 <span class="hdr-user-info" id="hdrUserInfo">· <span class="spectator-badge">Spectateur</span></span>
             </h1>
             <div class="controls no-print" id="staffControls">
-                <button class="btn secondary" id="btnGenerate" onclick="generateValidatedTournament()" style="display:none;">
+                <button class="btn secondary" id="btnGenerate" onclick="generateValidatedTournament()">
                     <i class="fas fa-play"></i> Générer
                 </button>
-                <button class="btn warning" id="btnShuffle" onclick="shufflePositions()" style="display:none;">
+                <button class="btn warning" id="btnShuffle" onclick="shufflePositions()">
                     <i class="fas fa-shuffle"></i> Mélanger
                 </button>
-                <button class="btn success" id="btnSave" onclick="saveData()" style="display:none;">
+                <button class="btn success" id="btnSave" onclick="saveData()">
                     <i class="fas fa-save"></i> Sauvegarder
                 </button>
-                <button class="btn danger" id="btnReset" onclick="resetAll()" style="display:none;">
+                <button class="btn danger" id="btnReset" onclick="resetAll()">
                     <i class="fas fa-trash"></i> Réinitialiser
                 </button>
                 <button class="btn" id="btnTV" onclick="goToTV()" style="background:#1a1a2e;">
@@ -882,7 +857,7 @@
             </div>
         </header>
 
-        <!-- ACCUEIL SPECTATEUR -->
+        <!-- ACCUEIL -->
         <div id="accueilTab" class="tab active">
             <div class="card">
                 <span class="card-title"><i class="fas fa-home"></i> Accueil</span>
@@ -919,15 +894,25 @@
                     </div>
                 </div>
             </div>
-            <div class="card" id="liveInfoCard">
+            <div class="card">
                 <span class="card-title"><i class="fas fa-info-circle"></i> État du tournoi</span>
                 <div id="liveInfoContent">
                     <p style="color:var(--muted);">Aucun tournoi actif.</p>
                 </div>
             </div>
+            <!-- Impression rapide (visible pour Scorer et Admin) -->
+            <div class="card no-print" id="quickPrintCard">
+                <span class="card-title"><i class="fas fa-print"></i> Impression rapide</span>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button class="btn ghost btn-sm" onclick="printPlayers()"><i class="fas fa-print"></i> Joueurs</button>
+                    <button class="btn ghost btn-sm" onclick="printMatches()"><i class="fas fa-print"></i> Matchs</button>
+                    <button class="btn ghost btn-sm" onclick="printCurrentRound()"><i class="fas fa-print"></i> Tour en cours</button>
+                    <button class="btn ghost btn-sm" onclick="printRanking()"><i class="fas fa-print"></i> Classement</button>
+                </div>
+            </div>
         </div>
 
-        <!-- TAB: JOUEURS (Admin/Scorer) -->
+        <!-- TAB: JOUEURS -->
         <div id="playersTab" class="tab">
             <div class="card">
                 <span class="card-title"><i class="fas fa-user-friends"></i> Configuration</span>
@@ -943,14 +928,15 @@
                     <div style="font-weight:600; min-width:100px; font-size:0.85rem;">Joueurs:</div>
                     <select id="playerCount" onchange="changePlayerCount()" style="padding:8px; border-radius:5px; border:2px solid #ddd; font-size:0.85rem;"></select>
                 </div>
+                <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;" class="no-print">
+                    <button class="btn secondary btn-sm" onclick="autoFillPlayers()"><i class="fas fa-magic"></i> Remplir auto</button>
+                    <button class="btn danger btn-sm" onclick="clearPlayers()"><i class="fas fa-eraser"></i> Vider</button>
+                    <button class="btn ghost btn-sm" onclick="printPlayers()"><i class="fas fa-print"></i> Imprimer</button>
+                </div>
             </div>
             <div class="card">
                 <span class="card-title"><i class="fas fa-user-friends"></i> Liste des joueurs</span>
                 <div id="playersInputs"></div>
-                <div style="margin-top: 10px;" class="no-print">
-                    <button class="btn secondary" onclick="autoFillPlayers()"><i class="fas fa-magic"></i> Remplir auto</button>
-                    <button class="btn danger" onclick="clearPlayers()"><i class="fas fa-eraser"></i> Vider</button>
-                </div>
             </div>
             <div class="card">
                 <span class="card-title"><i class="fas fa-random"></i> Tirage des positions</span>
@@ -962,6 +948,10 @@
         <div id="matchesTab" class="tab">
             <div class="card">
                 <span class="card-title"><i class="fas fa-calendar-alt"></i> Planning des Matchs</span>
+                <div style="margin-bottom:10px; display:flex; gap:8px; flex-wrap:wrap;" class="no-print">
+                    <button class="btn ghost btn-sm" onclick="printMatches()"><i class="fas fa-print"></i> Tous les matchs</button>
+                    <button class="btn ghost btn-sm" onclick="printCurrentRound()"><i class="fas fa-print"></i> Tour en cours</button>
+                </div>
                 <div id="matchesDisplay">
                     <p style="text-align:center;color:#666;padding:20px;">Cliquez sur "Générer" pour créer les matchs</p>
                 </div>
@@ -972,6 +962,9 @@
         <div id="rankingTab" class="tab">
             <div class="card">
                 <span class="card-title"><i class="fas fa-list-ol"></i> Classement</span>
+                <div style="margin-bottom:10px;" class="no-print">
+                    <button class="btn ghost btn-sm" onclick="printRanking()"><i class="fas fa-print"></i> Imprimer</button>
+                </div>
                 <div style="overflow-x:auto;">
                     <table class="ranking">
                         <thead>
@@ -987,6 +980,9 @@
         <div id="statsTab" class="tab">
             <div class="card">
                 <span class="card-title"><i class="fas fa-chart-line"></i> Statistiques Détaillées</span>
+                <div style="margin-bottom:10px;" class="no-print">
+                    <button class="btn ghost btn-sm" onclick="printStats()"><i class="fas fa-print"></i> Imprimer</button>
+                </div>
                 <div id="statsArea"></div>
             </div>
         </div>
@@ -1059,8 +1055,9 @@
 </div>
 
 <!-- ════════════════════════════════════════════════════════════
-     MODALE REMPLACEMENT
+     MODALES
      ════════════════════════════════════════════════════════════ -->
+<!-- MODALE REMPLACEMENT -->
 <div class="modal-bg" id="subModal">
     <div class="modal">
         <div class="modal-ttl">🔄 Remplacer un joueur</div>
@@ -1489,7 +1486,6 @@
             return;
         }
         showTab('matchesTab');
-        // Si pas de matchs, afficher un message
         const grid = ST.schedule || getGridForN();
         if (!grid || grid.length === 0) {
             document.getElementById('matchesDisplay').innerHTML = '<p style="text-align:center;color:#666;padding:20px;">Aucun match généré. Attendez que l\'organisateur lance le tournoi.</p>';
@@ -1532,7 +1528,6 @@
         const select = document.getElementById('programPlayerSelect');
         if (!modal || !select) return;
 
-        // Remplir la liste des joueurs
         select.innerHTML = '<option value="">Sélectionnez un joueur</option>';
         for (let i = 1; i <= N; i++) {
             const opt = document.createElement('option');
@@ -1541,7 +1536,6 @@
             select.appendChild(opt);
         }
 
-        // Afficher le programme du premier joueur
         if (N > 0) {
             select.value = 1;
             updateProgramDisplay(1);
@@ -1614,7 +1608,6 @@
                 <th style="padding:6px;">Résultat</th>
             </tr></thead><tbody>`;
         let wins = 0, draws = 0, losses = 0, pts = 0;
-        let found = false;
 
         for (let r = 0; r < grid.length; r++) {
             const round = grid[r];
@@ -1625,7 +1618,6 @@
                     if (court.rest === playerId) {
                         html += `<tr><td>${r+1}</td><td colspan="5" style="background:#fff3cd;color:#b87c00;">🟡 Repos</td></tr>`;
                         played = true;
-                        found = true;
                     }
                     continue;
                 }
@@ -1692,7 +1684,6 @@
                         <td class="${resultClass}">${result}</td>
                     </tr>`;
                     played = true;
-                    found = true;
                     break;
                 }
             }
@@ -1719,6 +1710,9 @@
             return;
         }
         showTab('rankingTab');
+        if (document.getElementById('rankingBody').innerHTML === '') {
+            calculateRanking();
+        }
     };
 
     window.showStats = function() {
@@ -1728,6 +1722,7 @@
             return;
         }
         showTab('statsTab');
+        updateStats();
     };
 
     // ─── ABONNEMENTS FIRESTORE ──────────────────────────────────
@@ -1758,7 +1753,6 @@
             if (data.playerReplacements) ST.playerReplacements = data.playerReplacements;
             if (data.replacementLog) ST.replacementLog = data.replacementLog;
             refreshUI();
-            updateLiveInfo();
         }, (e) => console.warn('subscribeToTournament error:', e));
     }
 
@@ -1778,8 +1772,8 @@
 
     // ─── SAUVEGARDE ──────────────────────────────────────────────
     async function saveTournament(fields) {
-        if (USER_ROLE === 'spectator' || USER_ROLE === 'scorer') {
-            console.warn('Seul l\'admin peut sauvegarder.');
+        if (USER_ROLE === 'spectator') {
+            console.warn('Spectateur ne peut pas sauvegarder.');
             return;
         }
         try {
@@ -1811,7 +1805,7 @@
         const isScorer = isAdmin || USER_ROLE === 'scorer';
         const isSpectator = USER_ROLE === 'spectator';
 
-        // Contrôles staff (Admin seulement pour la configuration)
+        // Contrôles staff (Admin seulement pour configuration avancée)
         const staffBtns = ['btnGenerate', 'btnShuffle', 'btnSave', 'btnReset'];
         staffBtns.forEach(id => {
             const el = document.getElementById(id);
@@ -1826,7 +1820,11 @@
         const liveBtn = document.getElementById('liveToggleBtn');
         if (liveBtn) liveBtn.style.display = isAdmin ? '' : 'none';
 
-        // Champs de saisie (Scorer peut modifier les noms)
+        // Impression rapide (visible pour Scorer et Admin)
+        const printCard = document.getElementById('quickPrintCard');
+        if (printCard) printCard.style.display = isScorer ? '' : 'none';
+
+        // Champs de saisie (Scorer peut modifier les noms, Admin aussi)
         document.querySelectorAll('.player-input').forEach(el => {
             if (isSpectator) {
                 el.disabled = true;
@@ -1852,11 +1850,6 @@
         document.querySelectorAll('.replacement-select').forEach(el => {
             el.disabled = !isAdmin;
             el.style.opacity = isAdmin ? '1' : '0.5';
-        });
-
-        // Boutons d'impression (Scorer et Admin)
-        document.querySelectorAll('.print-btn').forEach(el => {
-            el.style.display = isSpectator ? 'none' : '';
         });
     }
 
@@ -1927,7 +1920,6 @@
     }
 
     // ─── GRILLES DE MATCHS ──────────────────────────────────────
-    // [Grilles complètes identiques à la version précédente]
     const GRIDS3 = {
         8: [
             [{ players: [1, 3, 5, 7] }, { players: [2, 4, 6, 8] }],
@@ -2505,19 +2497,16 @@
                     });
                 }
             });
-            // Exclure le joueur actuel de la vérification
             const filteredInRound = inRound.filter(id => id !== oldPlayer);
             
             if (filteredInRound.includes(newPlayerId)) {
                 showNotice(`❌ ${getPlayerName(newPlayerId)} est déjà dans ce tour.`, 'error');
-                // Réinitialiser la sélection
                 const select = document.querySelector(`[data-round="${round}"][data-court="${court}"][data-position="${position}"]`);
                 if (select) select.value = oldPlayer;
                 return;
             }
 
             // ÉCHANGE : le joueur remplacé prend la place du remplaçant
-            // Chercher où se trouve le remplaçant dans ce tour
             let replacementFound = false;
             for (let c = 0; c < grid[round].length; c++) {
                 const courtObj = grid[round][c];
@@ -2531,7 +2520,6 @@
                 for (let posIdx = 0; posIdx < mapped.length; posIdx++) {
                     const currentPlayer = mapped[posIdx];
                     if (currentPlayer === newPlayerId) {
-                        // Le remplaçant était ici, on le remplace par l'ancien joueur
                         if (!playerReplacements[round]) playerReplacements[round] = {};
                         if (!playerReplacements[round][c]) playerReplacements[round][c] = {};
                         playerReplacements[round][c][posIdx] = oldPlayer;
@@ -2543,13 +2531,10 @@
             }
 
             if (!replacementFound) {
-                // Le joueur n'était pas dans ce tour (cas où on le remplace par un joueur qui ne joue pas ce tour)
-                // On l'ajoute simplement comme remplaçant
                 if (!playerReplacements[round]) playerReplacements[round] = {};
                 if (!playerReplacements[round][court]) playerReplacements[round][court] = {};
                 playerReplacements[round][court][position] = newPlayerId;
                 
-                // Journaliser
                 const logEntry = {
                     round: round + 1,
                     court: `Terrain ${court + 1}`,
@@ -2563,7 +2548,6 @@
                 
                 showNotice(`✅ ${getPlayerName(oldPlayer)} remplacé par ${getPlayerName(newPlayerId)}`);
             } else {
-                // Journaliser l'échange
                 const logEntry = {
                     round: round + 1,
                     court: `Terrain ${court + 1}`,
@@ -3061,6 +3045,16 @@
         if (tabName === 'matchesTab' && (!ST.schedule || ST.schedule.length === 0)) {
             document.getElementById('matchesDisplay').innerHTML = '<p style="text-align:center;color:#666;padding:20px;">Cliquez sur "Générer" pour créer les matchs</p>';
         }
+        if (tabName === 'playersTab' && USER_ROLE === 'spectator') {
+            // Les spectateurs voient seulement la liste, pas la configuration
+            document.querySelectorAll('#playersTab .player-row').forEach(el => {
+                if (el.querySelector('select')) el.style.display = 'none';
+            });
+        } else {
+            document.querySelectorAll('#playersTab .player-row').forEach(el => {
+                if (el.querySelector('select')) el.style.display = 'flex';
+            });
+        }
     };
 
     // ─── TV MODE ─────────────────────────────────────────────────
@@ -3086,7 +3080,6 @@
             tvInterval = null; }
         if (tvCycleTimeout) { clearTimeout(tvCycleTimeout);
             tvCycleTimeout = null; }
-        // Retour à l'accueil si spectateur
         if (USER_ROLE === 'spectator') showTab('accueilTab');
     };
 
@@ -3151,10 +3144,8 @@
 
         const mode = document.getElementById('tvModeSelect')?.value || 'cycle';
 
-        // Construire les écrans disponibles
         const screens = [];
         
-        // Écran 1: Matchs du tour en cours
         const currentRound = ST.activeRound || 0;
         if (grid[currentRound]) {
             const round = grid[currentRound];
@@ -3206,7 +3197,6 @@
             }
         }
 
-        // Écran 2: Classement
         const ranking = calculateRankingSimple();
         if (ranking && ranking.length > 0) {
             let standingsHtml = `<table class="tv-final-tbl">
@@ -3317,6 +3307,254 @@
         });
     }
 
+    // ─── IMPRESSION ─────────────────────────────────────────────
+    window.printPlayers = function() {
+        const win = window.open('', '_print', 'width=800,height=600');
+        let html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Liste des joueurs</title>';
+        html += `<style>body{font-family:Arial,sans-serif;padding:20px;}
+            table{width:100%;border-collapse:collapse;margin:10px 0;}
+            th,td{border:1px solid #ccc;padding:6px;text-align:left;}
+            th{background:#333;color:#fff;}
+            .header{text-align:center;font-size:18px;font-weight:bold;margin-bottom:10px;}
+            @media print{.no-print{display:none;}}
+        </style></head><body>
+        <div class="header">Liste des joueurs - ${N} joueurs</div>
+        <table><thead><tr><th>#</th><th>Nom</th></tr></thead><tbody>`;
+        for (let i = 1; i <= N; i++) {
+            html += `<tr><td>${i}</td><td>${getPlayerName(i)}</td></tr>`;
+        }
+        html += `</tbody></table>
+        <div class="no-print" style="margin-top:20px;">
+            <button onclick="window.print()">Imprimer</button>
+            <button onclick="window.close()">Fermer</button>
+        </div>
+        </body></html>`;
+        win.document.write(html);
+        win.document.close();
+        setTimeout(() => win.print(), 500);
+    };
+
+    window.printMatches = function() {
+        const win = window.open('', '_print', 'width=800,height=600');
+        let html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Tous les matchs</title>';
+        html += `<style>body{font-family:Arial,sans-serif;padding:20px;font-size:11px;}
+            .round{page-break-inside:avoid;margin-bottom:15px;}
+            .round-title{background:#333;color:#fff;padding:6px 10px;font-weight:bold;}
+            .match{border:1px solid #ccc;padding:8px;margin:4px 0;border-radius:4px;}
+            .team{font-weight:bold;}
+            .vs{color:#999;margin:0 6px;}
+            .score{font-weight:bold;color:#1e8c45;}
+            .rest{color:#b87c00;background:#fff3cd;padding:4px;}
+            .header{text-align:center;font-size:18px;font-weight:bold;margin-bottom:10px;}
+            @media print{.no-print{display:none;}}
+        </style></head><body>
+        <div class="header">Tous les matchs</div>`;
+        const grid = ST.schedule || getGridForN();
+        if (grid) {
+            for (let r = 0; r < grid.length; r++) {
+                html += `<div class="round"><div class="round-title">Tour ${r+1}</div>`;
+                for (let c = 0; c < grid[r].length; c++) {
+                    const court = grid[r][c];
+                    if (court.rest) {
+                        html += `<div class="rest">🟡 Repos : ${getPlayerName(court.rest)}</div>`;
+                        continue;
+                    }
+                    const pos = court.players;
+                    const mapped = pos.map(p => {
+                        if (p <= positions.length) return positions[p - 1];
+                        return null;
+                    }).filter(p => p !== null);
+                    const mappedWithRepl = mapped.map((p, idx) => getReplacementPlayer(r, c, idx, p));
+                    if (mappedWithRepl.length < 2) continue;
+                    
+                    let scores;
+                    if (court.type === '1x1' || court.type === '2x1') {
+                        scores = specialMatchScores[r] && specialMatchScores[r][c] ? specialMatchScores[r][c] : { 1: '', 2: '' };
+                    } else {
+                        scores = matchScores[r] && matchScores[r][c] ? matchScores[r][c] : { 1: '', 2: '' };
+                    }
+                    const s1 = scores[1] || '—';
+                    const s2 = scores[2] || '—';
+                    const done = scores[1] && scores[2] && parseInt(scores[1]) > 0 && parseInt(scores[2]) > 0;
+                    
+                    const team1 = court.type === '2x1' ? mappedWithRepl.slice(0, 2) : mappedWithRepl.slice(0, 2);
+                    const team2 = court.type === '2x1' ? [mappedWithRepl[2]] : mappedWithRepl.slice(2, 4);
+                    
+                    html += `<div class="match">
+                        <div><span class="team">${team1.map(p => getPlayerName(p)).join(' + ')}</span>
+                        <span class="vs">VS</span>
+                        <span class="team">${team2.map(p => getPlayerName(p)).join(' + ')}</span>
+                        <span class="score"> ${done ? `${s1} – ${s2}` : ''}</span>
+                        <span style="font-size:10px;color:#999;"> Terrain ${c+1}</span></div>
+                    </div>`;
+                }
+                html += `</div>`;
+            }
+        }
+        html += `<div class="no-print" style="margin-top:20px;">
+            <button onclick="window.print()">Imprimer</button>
+            <button onclick="window.close()">Fermer</button>
+        </div>
+        </body></html>`;
+        win.document.write(html);
+        win.document.close();
+        setTimeout(() => win.print(), 500);
+    };
+
+    window.printCurrentRound = function() {
+        const grid = ST.schedule || getGridForN();
+        if (!grid || grid.length === 0) { showNotice('❌ Aucun match généré.', 'error'); return; }
+        const r = ST.activeRound || 0;
+        if (r >= grid.length) { showNotice('❌ Tour invalide.', 'error'); return; }
+        const win = window.open('', '_print', 'width=800,height=600');
+        let html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Tour '+(r+1)+'</title>';
+        html += `<style>body{font-family:Arial,sans-serif;padding:20px;font-size:12px;}
+            .round{page-break-inside:avoid;}
+            .round-title{background:#333;color:#fff;padding:6px 10px;font-weight:bold;margin-bottom:10px;}
+            .match{border:1px solid #ccc;padding:8px;margin:4px 0;border-radius:4px;}
+            .team{font-weight:bold;}
+            .vs{color:#999;margin:0 6px;}
+            .score{font-weight:bold;color:#1e8c45;}
+            .rest{color:#b87c00;background:#fff3cd;padding:4px;}
+            .header{text-align:center;font-size:18px;font-weight:bold;margin-bottom:10px;}
+            @media print{.no-print{display:none;}}
+        </style></head><body>
+        <div class="header">Tour ${r+1}</div>
+        <div class="round">`;
+        for (let c = 0; c < grid[r].length; c++) {
+            const court = grid[r][c];
+            if (court.rest) {
+                html += `<div class="rest">🟡 Repos : ${getPlayerName(court.rest)}</div>`;
+                continue;
+            }
+            const pos = court.players;
+            const mapped = pos.map(p => {
+                if (p <= positions.length) return positions[p - 1];
+                return null;
+            }).filter(p => p !== null);
+            const mappedWithRepl = mapped.map((p, idx) => getReplacementPlayer(r, c, idx, p));
+            if (mappedWithRepl.length < 2) continue;
+            
+            let scores;
+            if (court.type === '1x1' || court.type === '2x1') {
+                scores = specialMatchScores[r] && specialMatchScores[r][c] ? specialMatchScores[r][c] : { 1: '', 2: '' };
+            } else {
+                scores = matchScores[r] && matchScores[r][c] ? matchScores[r][c] : { 1: '', 2: '' };
+            }
+            const s1 = scores[1] || '—';
+            const s2 = scores[2] || '—';
+            const done = scores[1] && scores[2] && parseInt(scores[1]) > 0 && parseInt(scores[2]) > 0;
+            
+            const team1 = court.type === '2x1' ? mappedWithRepl.slice(0, 2) : mappedWithRepl.slice(0, 2);
+            const team2 = court.type === '2x1' ? [mappedWithRepl[2]] : mappedWithRepl.slice(2, 4);
+            
+            html += `<div class="match">
+                <div><span class="team">${team1.map(p => getPlayerName(p)).join(' + ')}</span>
+                <span class="vs">VS</span>
+                <span class="team">${team2.map(p => getPlayerName(p)).join(' + ')}</span>
+                <span class="score"> ${done ? `${s1} – ${s2}` : ''}</span>
+                <span style="font-size:10px;color:#999;"> Terrain ${c+1}</span></div>
+            </div>`;
+        }
+        html += `</div>
+        <div class="no-print" style="margin-top:20px;">
+            <button onclick="window.print()">Imprimer</button>
+            <button onclick="window.close()">Fermer</button>
+        </div>
+        </body></html>`;
+        win.document.write(html);
+        win.document.close();
+        setTimeout(() => win.print(), 500);
+    };
+
+    window.printRanking = function() {
+        const ranking = calculateRankingSimple();
+        if (!ranking || ranking.length === 0) { showNotice('❌ Aucun classement disponible.', 'error'); return; }
+        const win = window.open('', '_print', 'width=800,height=600');
+        let html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Classement</title>';
+        html += `<style>body{font-family:Arial,sans-serif;padding:20px;font-size:12px;}
+            table{width:100%;border-collapse:collapse;margin:10px 0;}
+            th,td{border:1px solid #ccc;padding:6px;text-align:center;}
+            th{background:#333;color:#fff;}
+            .header{text-align:center;font-size:18px;font-weight:bold;margin-bottom:10px;}
+            .gold{background:#ffd700;}
+            .silver{background:#c0c0c0;}
+            .bronze{background:#cd7f32;color:#fff;}
+            .pts{font-weight:bold;color:#1e8c45;}
+            @media print{.no-print{display:none;}}
+        </style></head><body>
+        <div class="header">Classement</div>
+        <table><thead><tr><th>#</th><th>Joueur</th><th>Points</th><th>V</th><th>N</th><th>D</th><th>+/-</th></tr></thead><tbody>`;
+        ranking.forEach((p, i) => {
+            const cls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+            const diff = p.scored - p.conceded;
+            html += `<tr class="${cls}">
+                <td>${i+1}</td>
+                <td style="text-align:left;">${p.name}</td>
+                <td class="pts">${p.points || 0}</td>
+                <td>${p.wins || 0}</td>
+                <td>${p.draws || 0}</td>
+                <td>${p.losses || 0}</td>
+                <td>${diff > 0 ? '+' : ''}${diff}</td>
+            </tr>`;
+        });
+        html += `</tbody></table>
+        <div class="no-print" style="margin-top:20px;">
+            <button onclick="window.print()">Imprimer</button>
+            <button onclick="window.close()">Fermer</button>
+        </div>
+        </body></html>`;
+        win.document.write(html);
+        win.document.close();
+        setTimeout(() => win.print(), 500);
+    };
+
+    window.printStats = function() {
+        const win = window.open('', '_print', 'width=800,height=600');
+        let html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Statistiques</title>';
+        html += `<style>body{font-family:Arial,sans-serif;padding:20px;font-size:12px;}
+            .stat{background:#f5f5f5;padding:10px;margin:5px 0;border-radius:4px;}
+            .header{text-align:center;font-size:18px;font-weight:bold;margin-bottom:10px;}
+            @media print{.no-print{display:none;}}
+        </style></head><body>
+        <div class="header">Statistiques</div>`;
+        const players = getActivePlayerNumbers();
+        const grid = ST.schedule || getGridForN();
+        let totalMatches = 0, completed = 0;
+        if (grid) {
+            for (let r = 0; r < grid.length; r++) {
+                for (let c = 0; c < grid[r].length; c++) {
+                    if (grid[r][c].rest) continue;
+                    totalMatches++;
+                    let scores;
+                    if (grid[r][c].type === '1x1' || grid[r][c].type === '2x1') {
+                        scores = specialMatchScores[r] && specialMatchScores[r][c] ? specialMatchScores[r][c] : { 1: 0, 2: 0 };
+                    } else {
+                        scores = matchScores[r] && matchScores[r][c] ? matchScores[r][c] : { 1: 0, 2: 0 };
+                    }
+                    if ((scores[1] && parseInt(scores[1]) > 0) || (scores[2] && parseInt(scores[2]) > 0)) completed++;
+                }
+            }
+        }
+        html += `<div class="stat"><strong>Joueurs :</strong> ${players.length}</div>`;
+        html += `<div class="stat"><strong>Matchs :</strong> ${completed} / ${totalMatches} terminés</div>`;
+        let totalRepl = 0;
+        Object.keys(playerReplacements).forEach(r => {
+            Object.keys(playerReplacements[r]).forEach(c => {
+                totalRepl += Object.keys(playerReplacements[r][c]).length;
+            });
+        });
+        html += `<div class="stat"><strong>Remplacements :</strong> ${totalRepl}</div>`;
+        html += `<div class="no-print" style="margin-top:20px;">
+            <button onclick="window.print()">Imprimer</button>
+            <button onclick="window.close()">Fermer</button>
+        </div>
+        </body></html>`;
+        win.document.write(html);
+        win.document.close();
+        setTimeout(() => win.print(), 500);
+    };
+
     // ─── NOTICE ─────────────────────────────────────────────────
     function showNotice(message, type) {
         const notice = document.getElementById('notice');
@@ -3375,6 +3613,11 @@
     window.resetAll = window.resetAll;
     window.showTab = window.showTab;
     window.updatePlayerReplacement = window.updatePlayerReplacement;
+    window.printPlayers = window.printPlayers;
+    window.printMatches = window.printMatches;
+    window.printCurrentRound = window.printCurrentRound;
+    window.printRanking = window.printRanking;
+    window.printStats = window.printStats;
 
     console.log('🏓 Pickleball Unifié chargé avec Firebase !');
     console.log('👤 Rôle:', USER_ROLE);
