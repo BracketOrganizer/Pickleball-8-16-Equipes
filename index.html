@@ -104,6 +104,33 @@
         .btn.ghost { background: var(--s2); color: var(--ink); border: 1px solid var(--bdr); }
         .btn-sm { padding: 5px 10px; font-size: 0.75rem; min-height: 28px; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-live {
+            width: 100%;
+            padding: 14px;
+            border-radius: 10px;
+            border: 2px solid var(--primary);
+            background: var(--primary);
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-live:hover { opacity: 0.9; transform: scale(1.02); }
+        .btn-live-outline {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 2px solid var(--secondary);
+            background: transparent;
+            color: var(--secondary);
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-live-outline:hover { background: var(--secondary); color: white; }
+
         .tabs {
             display: flex;
             gap: 2px;
@@ -327,6 +354,8 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
         #notice.error { background: var(--danger); }
+
+        /* LOGIN SCREEN */
         #loginScreen {
             display: flex;
             align-items: center;
@@ -340,7 +369,7 @@
             border-radius: 16px;
             padding: 30px;
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
             box-shadow: 0 8px 40px rgba(0,0,0,0.15);
         }
         .login-brand {
@@ -411,19 +440,55 @@
             transition: all 0.15s;
         }
         .btn-google:hover { background: #f5f5f5; }
-        .btn-live {
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            border: 2px solid var(--primary);
-            background: var(--primary);
-            color: white;
-            font-weight: 700;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.15s;
+
+        /* ACCUEIL SPECTATEUR */
+        .accueil-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+            margin: 10px 0;
         }
-        .btn-live:hover { opacity: 0.9; }
+        .accueil-card {
+            background: white;
+            border: 2px solid var(--bdr);
+            border-radius: 12px;
+            padding: 20px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .accueil-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+        .accueil-card .icon {
+            font-size: 2.2rem;
+            color: var(--primary);
+        }
+        .accueil-card .label {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--ink);
+        }
+        .accueil-card .sub {
+            font-size: 0.7rem;
+            color: var(--muted);
+        }
+        .accueil-card.locked {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .accueil-card.locked:hover {
+            transform: none;
+            border-color: var(--bdr);
+        }
 
         /* MODAL */
         .modal-bg {
@@ -442,7 +507,7 @@
             border: 1px solid var(--bdr);
             border-radius: 14px;
             padding: 24px;
-            max-width: 460px;
+            max-width: 500px;
             width: 100%;
             max-height: 90vh;
             overflow-y: auto;
@@ -680,18 +745,22 @@
             display: none;
         }
 
-        /* PRINT */
-        @media print {
-            .no-print { display: none !important; }
-            .app { box-shadow: none !important; padding: 10px !important; max-width: 100% !important; }
-            .match { break-inside: avoid; border: 1px solid #ccc !important; }
-            .round-border { break-inside: avoid; border: 1px solid #ccc !important; }
-            .card { box-shadow: none !important; border: 1px solid #ccc !important; }
-            table.ranking th { background: #333 !important; }
-            .controls, .tabs, .status-bar, .btn { display: none !important; }
-            .tab { display: block !important; }
-            .tab-btn { display: none !important; }
+        /* PROGRAMME INDIVIDUEL */
+        .player-program-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border: 1px solid var(--bdr);
+            border-radius: 6px;
+            margin-bottom: 4px;
+            background: #fafafa;
+            cursor: pointer;
+            transition: all 0.15s;
         }
+        .player-program-item:hover { background: var(--s1); border-color: var(--primary); }
+        .player-program-item .p-name { font-weight: 600; flex: 1; }
+        .player-program-item .p-stats { font-size: 0.75rem; color: var(--muted); }
 
         /* RESPONSIVE */
         @media (max-width: 600px) {
@@ -703,11 +772,24 @@
             .score-input { width: 50px; font-size: 0.8rem; }
             .team-row { flex-direction: column; align-items: stretch; }
             .vs { margin: 2px 0; }
+            .accueil-grid { grid-template-columns: 1fr 1fr; }
             .tv-match-grid { grid-template-columns: 1fr; }
         }
         @media (min-width: 768px) {
             .app { padding: 20px; }
             .team-row { flex-direction: row; }
+            .accueil-grid { grid-template-columns: repeat(4, 1fr); }
+        }
+        @media print {
+            .no-print { display: none !important; }
+            .app { box-shadow: none !important; padding: 10px !important; max-width: 100% !important; }
+            .match { break-inside: avoid; border: 1px solid #ccc !important; }
+            .round-border { break-inside: avoid; border: 1px solid #ccc !important; }
+            .card { box-shadow: none !important; border: 1px solid #ccc !important; }
+            table.ranking th { background: #333 !important; }
+            .controls, .tabs, .status-bar, .btn { display: none !important; }
+            .tab { display: block !important; }
+            .tab-btn { display: none !important; }
         }
     </style>
 </head>
@@ -722,20 +804,18 @@
         <div class="login-sub">Tournoi Unifié · Gestion en ligne</div>
         <div class="auth-msg" id="authMsg"></div>
 
-        <div style="background: #f0f7ff; border-radius: 12px; padding: 15px; margin-bottom: 18px; border: 2px solid var(--info);">
-            <div style="font-weight: 700; text-align: center; color: var(--secondary); margin-bottom: 8px;">👁️ Accès Spectateur</div>
+        <!-- Accès Spectateur -->
+        <div style="background: #f0f7ff; border-radius: 12px; padding: 16px; margin-bottom: 18px; border: 2px solid var(--info);">
+            <div style="font-weight: 700; text-align: center; color: var(--secondary); margin-bottom: 10px; font-size: 1rem;">👁️ Accès Spectateur</div>
             <button class="btn-live" onclick="enterLiveMode()">
                 <i class="fas fa-eye"></i> Entrer en mode Spectateur
             </button>
-            <div style="font-size: 0.8rem; color: var(--muted); text-align: center; margin-top: 8px;">
+            <div style="font-size: 0.75rem; color: var(--muted); text-align: center; margin-top: 8px;">
                 Suivez le tournoi en temps réel — sans création de compte
-            </div>
-            <div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
-                <button class="btn btn-sm secondary" onclick="enterLiveModeAndShow('players')" style="flex:1;"><i class="fas fa-users"></i> Joueurs</button>
-                <button class="btn btn-sm secondary" onclick="enterLiveModeAndShow('program')" style="flex:1;"><i class="fas fa-calendar-alt"></i> Programme</button>
             </div>
         </div>
 
+        <!-- Connexion Staff -->
         <div style="border-top: 2px solid #eee; padding-top: 18px;">
             <div style="font-weight: 700; text-align: center; color: var(--primary); margin-bottom: 12px;">🔑 Accès Staff</div>
             <div class="login-form" id="loginForm">
@@ -770,20 +850,20 @@
                 <i class="fas fa-table-tennis-paddle-ball"></i> Tournoi Pickleball
                 <span class="hdr-user-info" id="hdrUserInfo">· <span class="spectator-badge">Spectateur</span></span>
             </h1>
-            <div class="controls no-print">
-                <button class="btn secondary" id="btnGenerate" onclick="generateValidatedTournament()">
+            <div class="controls no-print" id="staffControls">
+                <button class="btn secondary" id="btnGenerate" onclick="generateValidatedTournament()" style="display:none;">
                     <i class="fas fa-play"></i> Générer
                 </button>
-                <button class="btn warning" onclick="shufflePositions()">
+                <button class="btn warning" id="btnShuffle" onclick="shufflePositions()" style="display:none;">
                     <i class="fas fa-shuffle"></i> Mélanger
                 </button>
-                <button class="btn success" onclick="saveData()">
+                <button class="btn success" id="btnSave" onclick="saveData()" style="display:none;">
                     <i class="fas fa-save"></i> Sauvegarder
                 </button>
-                <button class="btn danger" onclick="resetAll()">
+                <button class="btn danger" id="btnReset" onclick="resetAll()" style="display:none;">
                     <i class="fas fa-trash"></i> Réinitialiser
                 </button>
-                <button class="btn" onclick="goToTV()" style="background:#1a1a2e;">
+                <button class="btn" id="btnTV" onclick="goToTV()" style="background:#1a1a2e;">
                     <i class="fas fa-tv"></i> Écran
                 </button>
                 <button class="btn ghost" onclick="logout()">
@@ -795,19 +875,60 @@
                 <div class="status-item"><i class="fas fa-trophy"></i> <span id="completedMatches">0</span> matchs</div>
                 <div class="status-item"><i class="fas fa-clock"></i> <span id="tournamentProgress">0%</span> complété</div>
                 <div class="status-item"><i class="fas fa-exchange-alt"></i> <span id="totalReplacements">0</span> remplacements</div>
+                <div class="status-item" id="liveStatusItem" style="display:none;">
+                    <i class="fas fa-circle" style="color:var(--danger);"></i>
+                    <span id="liveStatusText">Fermé</span>
+                </div>
             </div>
         </header>
 
-        <div class="tabs no-print">
-            <button class="tab-btn active" onclick="showTab('playersTab')"><i class="fas fa-users"></i> Joueurs</button>
-            <button class="tab-btn" onclick="showTab('matchesTab')"><i class="fas fa-trophy"></i> Matchs</button>
-            <button class="tab-btn" onclick="showTab('rankingTab')"><i class="fas fa-chart-bar"></i> Classement</button>
-            <button class="tab-btn" onclick="showTab('statsTab')"><i class="fas fa-chart-pie"></i> Stats</button>
-            <button class="tab-btn" id="adminTabBtn" onclick="showTab('adminTab')" style="display:none;"><i class="fas fa-crown"></i> Admin</button>
+        <!-- ACCUEIL SPECTATEUR -->
+        <div id="accueilTab" class="tab active">
+            <div class="card">
+                <span class="card-title"><i class="fas fa-home"></i> Accueil</span>
+                <div class="accueil-grid">
+                    <div class="accueil-card" onclick="goToLive()">
+                        <div class="icon"><i class="fas fa-play-circle"></i></div>
+                        <div class="label">Live</div>
+                        <div class="sub">Matchs en cours</div>
+                    </div>
+                    <div class="accueil-card" onclick="showPlayerList()">
+                        <div class="icon"><i class="fas fa-users"></i></div>
+                        <div class="label">Joueurs</div>
+                        <div class="sub">Liste des participants</div>
+                    </div>
+                    <div class="accueil-card" onclick="showProgramModal()">
+                        <div class="icon"><i class="fas fa-calendar-alt"></i></div>
+                        <div class="label">Programme</div>
+                        <div class="sub">Matchs par joueur</div>
+                    </div>
+                    <div class="accueil-card" onclick="goToTV()">
+                        <div class="icon"><i class="fas fa-tv"></i></div>
+                        <div class="label">Écran</div>
+                        <div class="sub">Affichage public</div>
+                    </div>
+                    <div class="accueil-card" onclick="showRanking()">
+                        <div class="icon"><i class="fas fa-trophy"></i></div>
+                        <div class="label">Classement</div>
+                        <div class="sub">Classement général</div>
+                    </div>
+                    <div class="accueil-card" onclick="showStats()">
+                        <div class="icon"><i class="fas fa-chart-bar"></i></div>
+                        <div class="label">Statistiques</div>
+                        <div class="sub">Stats détaillées</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card" id="liveInfoCard">
+                <span class="card-title"><i class="fas fa-info-circle"></i> État du tournoi</span>
+                <div id="liveInfoContent">
+                    <p style="color:var(--muted);">Aucun tournoi actif.</p>
+                </div>
+            </div>
         </div>
 
-        <!-- TAB: JOUEURS -->
-        <div id="playersTab" class="tab active">
+        <!-- TAB: JOUEURS (Admin/Scorer) -->
+        <div id="playersTab" class="tab">
             <div class="card">
                 <span class="card-title"><i class="fas fa-user-friends"></i> Configuration</span>
                 <div class="player-row">
@@ -829,23 +950,11 @@
                 <div style="margin-top: 10px;" class="no-print">
                     <button class="btn secondary" onclick="autoFillPlayers()"><i class="fas fa-magic"></i> Remplir auto</button>
                     <button class="btn danger" onclick="clearPlayers()"><i class="fas fa-eraser"></i> Vider</button>
-                    <button class="btn ghost" onclick="printPlayers()"><i class="fas fa-print"></i> Imprimer</button>
                 </div>
             </div>
             <div class="card">
                 <span class="card-title"><i class="fas fa-random"></i> Tirage des positions</span>
                 <div id="positionsList"></div>
-            </div>
-            <div class="card no-print">
-                <span class="card-title"><i class="fas fa-calendar-alt"></i> Programme individuel</span>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <select id="playerProgramSelect" style="padding:8px; border:2px solid #ddd; border-radius:5px; flex:1; min-width:150px;">
-                        <option value="">Sélectionnez un joueur</option>
-                    </select>
-                    <button class="btn secondary" onclick="showPlayerProgram()"><i class="fas fa-eye"></i> Voir</button>
-                    <button class="btn ghost" onclick="printPlayerProgram()"><i class="fas fa-print"></i> Imprimer</button>
-                </div>
-                <div id="playerProgramDisplay" style="margin-top: 10px; display: none; border: 1px solid #ddd; border-radius: 5px; padding: 10px; background: #fafafa;"></div>
             </div>
         </div>
 
@@ -853,10 +962,6 @@
         <div id="matchesTab" class="tab">
             <div class="card">
                 <span class="card-title"><i class="fas fa-calendar-alt"></i> Planning des Matchs</span>
-                <div style="margin-bottom: 10px; display: flex; gap: 8px; flex-wrap: wrap;" class="no-print">
-                    <button class="btn ghost" onclick="printMatches()"><i class="fas fa-print"></i> Imprimer tous les matchs</button>
-                    <button class="btn ghost" onclick="printCurrentRound()"><i class="fas fa-print"></i> Imprimer ce tour</button>
-                </div>
                 <div id="matchesDisplay">
                     <p style="text-align:center;color:#666;padding:20px;">Cliquez sur "Générer" pour créer les matchs</p>
                 </div>
@@ -867,11 +972,8 @@
         <div id="rankingTab" class="tab">
             <div class="card">
                 <span class="card-title"><i class="fas fa-list-ol"></i> Classement</span>
-                <div style="margin-bottom: 10px;" class="no-print">
-                    <button class="btn ghost" onclick="printRanking()"><i class="fas fa-print"></i> Imprimer</button>
-                </div>
                 <div style="overflow-x:auto;">
-                    <table class="ranking" id="rankingTable">
+                    <table class="ranking">
                         <thead>
                             <tr><th>Pos</th><th>Joueur</th><th>Pts +</th><th>Pts -</th><th>Diff</th><th>V</th><th>N</th><th>D</th></tr>
                         </thead>
@@ -885,9 +987,6 @@
         <div id="statsTab" class="tab">
             <div class="card">
                 <span class="card-title"><i class="fas fa-chart-line"></i> Statistiques Détaillées</span>
-                <div style="margin-bottom: 10px;" class="no-print">
-                    <button class="btn ghost" onclick="printStats()"><i class="fas fa-print"></i> Imprimer</button>
-                </div>
                 <div id="statsArea"></div>
             </div>
         </div>
@@ -913,6 +1012,16 @@
                         </div>
                         <button class="btn success" onclick="adminCreateUser()" style="margin-top:8px;"><i class="fas fa-plus"></i> Créer</button>
                         <div id="newUserMsg" style="margin-top: 6px; font-size: 0.9rem;"></div>
+                    </div>
+                    <hr style="margin: 16px 0;">
+                    <div>
+                        <h4>Contrôle du Live</h4>
+                        <button id="liveToggleBtn" class="btn warning" onclick="toggleLiveOpen()" style="width:100%;">
+                            🔴 Ouvrir le Live
+                        </button>
+                        <p style="font-size:0.8rem; color:var(--muted); margin-top:6px;">
+                            Quand le Live est ouvert, les spectateurs peuvent voir les matchs. Quand il est fermé, l'accès est bloqué.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -957,10 +1066,38 @@
         <div class="modal-ttl">🔄 Remplacer un joueur</div>
         <p id="subDesc" style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:14px;"></p>
         <div><label>Choisir le remplaçant</label><div class="sub-list" id="subList"></div></div>
-        <p class="mt12" style="font-size:11px;color:var(--danger);">⚠️ Le remplaçant prend la place pour tous les matchs restants.</p>
-        <div class="flex g8 mt12 fw" style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
-            <button class="btn warning" onclick="confirmSub()">✓ Confirmer</button>
+        <p class="mt12" style="font-size:11px;color:var(--warning);">⚠️ Le joueur remplacé prendra la place du remplaçant dans tous les matchs restants.</p>
+        <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+            <button class="btn warning" onclick="confirmSub()">✓ Confirmer l'échange</button>
             <button class="btn ghost" onclick="closeSubModal()">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODALE PROGRAMME INDIVIDUEL -->
+<div class="modal-bg" id="programModal">
+    <div class="modal" style="max-width: 600px;">
+        <div class="modal-ttl"><i class="fas fa-calendar-alt"></i> Programme individuel</div>
+        <div style="margin-bottom:12px;">
+            <select id="programPlayerSelect" style="width:100%; padding:10px; border:2px solid #ddd; border-radius:5px; font-size:1rem;">
+                <option value="">Sélectionnez un joueur</option>
+            </select>
+        </div>
+        <div id="programDisplay" style="max-height:500px; overflow-y:auto;"></div>
+        <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn secondary" onclick="printProgram()"><i class="fas fa-print"></i> Imprimer</button>
+            <button class="btn ghost" onclick="closeProgramModal()">Fermer</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODALE LISTE JOUEURS -->
+<div class="modal-bg" id="playerListModal">
+    <div class="modal" style="max-width: 500px;">
+        <div class="modal-ttl"><i class="fas fa-users"></i> Liste des joueurs</div>
+        <div id="playerListContent"></div>
+        <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn ghost" onclick="closePlayerListModal()">Fermer</button>
         </div>
     </div>
 </div>
@@ -971,6 +1108,9 @@
         <h2><i class="fas fa-lock"></i> Live fermé</h2>
         <p>Le tournoi n'est pas encore ouvert aux spectateurs.<br>Revenez un peu plus tard !</p>
         <button class="btn" onclick="closeLiveOverlay()"><i class="fas fa-arrow-left"></i> Retour</button>
+        <button class="btn secondary" onclick="closeLiveOverlayAndShowAccueil()" style="margin-top:8px;">
+            <i class="fas fa-home"></i> Accueil
+        </button>
     </div>
 </div>
 
@@ -1019,8 +1159,10 @@
     // ─── ÉTAT GLOBAL ─────────────────────────────────────────────
     let CURRENT_USER = null;
     let USER_ROLE = 'spectator';
+    let LIVE_OPEN = false;
     let unsubTournament = null;
     let unsubResults = null;
+    let unsubLiveStatus = null;
     let unsubUserList = null;
 
     // ─── AUTH ────────────────────────────────────────────────────
@@ -1215,6 +1357,62 @@
         }
     };
 
+    // ─── LIVE CONTROL ───────────────────────────────────────────
+    window.toggleLiveOpen = async function() {
+        if (USER_ROLE !== 'admin') {
+            showNotice('❌ Seul l\'admin peut contrôler le Live.', 'error');
+            return;
+        }
+        const newState = !LIVE_OPEN;
+        try {
+            await setDoc(doc(db, 'tournamentStatus', 'live'), {
+                liveOpen: newState,
+                updatedAt: serverTimestamp()
+            }, { merge: true });
+            LIVE_OPEN = newState;
+            updateLiveUI();
+            showNotice(newState ? '✅ Live ouvert' : '🔴 Live fermé');
+        } catch (e) {
+            showNotice('❌ Erreur: ' + e.message, 'error');
+        }
+    };
+
+    function updateLiveUI() {
+        const btn = document.getElementById('liveToggleBtn');
+        if (btn) {
+            btn.textContent = LIVE_OPEN ? '🟢 Live ouvert (cliquez pour fermer)' : '🔴 Live fermé (cliquez pour ouvrir)';
+            btn.style.background = LIVE_OPEN ? 'var(--success)' : 'var(--danger)';
+        }
+        const statusItem = document.getElementById('liveStatusItem');
+        if (statusItem) {
+            statusItem.style.display = 'flex';
+            const text = document.getElementById('liveStatusText');
+            if (text) {
+                text.textContent = LIVE_OPEN ? 'Ouvert' : 'Fermé';
+                text.style.color = LIVE_OPEN ? 'var(--success)' : 'var(--danger)';
+            }
+            const dot = statusItem.querySelector('i');
+            if (dot) {
+                dot.style.color = LIVE_OPEN ? 'var(--success)' : 'var(--danger)';
+            }
+        }
+    }
+
+    function subscribeLiveStatus() {
+        if (unsubLiveStatus) return;
+        unsubLiveStatus = onSnapshot(doc(db, 'tournamentStatus', 'live'), (snap) => {
+            if (snap.exists()) {
+                LIVE_OPEN = snap.data().liveOpen === true;
+                updateLiveUI();
+                // Si le live est fermé et que l'utilisateur est spectateur, afficher l'overlay
+                if (!LIVE_OPEN && USER_ROLE === 'spectator') {
+                    const overlay = document.getElementById('liveOverlay');
+                    if (overlay) overlay.classList.add('open');
+                }
+            }
+        }, (e) => console.warn('subscribeLiveStatus error:', e));
+    }
+
     // ─── AUTH STATE ──────────────────────────────────────────────
     onAuthStateChanged(auth, async (user) => {
         if (user) {
@@ -1229,14 +1427,19 @@
 
             subscribeToTournament();
             subscribeToResults();
+            subscribeLiveStatus();
+
             if (USER_ROLE === 'admin') {
                 loadUserList();
                 document.getElementById('adminTabBtn').style.display = '';
+                document.getElementById('liveToggleBtn').style.display = '';
             } else {
                 document.getElementById('adminTabBtn').style.display = 'none';
+                document.getElementById('liveToggleBtn').style.display = 'none';
             }
 
             showAuthMsg(`Connecté en tant que ${USER_ROLE}`, 'success');
+            showTab('accueilTab');
         } else {
             unsubAll();
             USER_ROLE = 'spectator';
@@ -1252,6 +1455,11 @@
     // ─── MODE SPECTATEUR ────────────────────────────────────────
     window.enterLiveMode = function() {
         if (CURRENT_USER) return;
+        if (!LIVE_OPEN) {
+            const overlay = document.getElementById('liveOverlay');
+            if (overlay) overlay.classList.add('open');
+            return;
+        }
         USER_ROLE = 'spectator';
         CURRENT_USER = null;
         document.getElementById('loginScreen').style.display = 'none';
@@ -1259,14 +1467,267 @@
         updateUIForRole();
         subscribeToTournament();
         subscribeToResults();
+        subscribeLiveStatus();
         document.getElementById('adminTabBtn').style.display = 'none';
-        showTab('matchesTab');
+        showTab('accueilTab');
     };
 
-    window.enterLiveModeAndShow = function(target) {
-        enterLiveMode();
-        if (target === 'players') showTab('playersTab');
-        else if (target === 'program') showTab('playersTab');
+    window.closeLiveOverlayAndShowAccueil = function() {
+        document.getElementById('liveOverlay').classList.remove('open');
+        showTab('accueilTab');
+    };
+
+    window.closeLiveOverlay = function() {
+        document.getElementById('liveOverlay').classList.remove('open');
+    };
+
+    // ─── NAVIGATION ─────────────────────────────────────────────
+    window.goToLive = function() {
+        if (!LIVE_OPEN && USER_ROLE === 'spectator') {
+            const overlay = document.getElementById('liveOverlay');
+            if (overlay) overlay.classList.add('open');
+            return;
+        }
+        showTab('matchesTab');
+        // Si pas de matchs, afficher un message
+        const grid = ST.schedule || getGridForN();
+        if (!grid || grid.length === 0) {
+            document.getElementById('matchesDisplay').innerHTML = '<p style="text-align:center;color:#666;padding:20px;">Aucun match généré. Attendez que l\'organisateur lance le tournoi.</p>';
+        }
+    };
+
+    window.showPlayerList = function() {
+        if (!LIVE_OPEN && USER_ROLE === 'spectator') {
+            const overlay = document.getElementById('liveOverlay');
+            if (overlay) overlay.classList.add('open');
+            return;
+        }
+        const modal = document.getElementById('playerListModal');
+        const content = document.getElementById('playerListContent');
+        if (!modal || !content) return;
+
+        let html = '';
+        for (let i = 1; i <= N; i++) {
+            const name = getPlayerName(i);
+            html += `<div style="display:flex; align-items:center; gap:10px; padding:8px 12px; border-bottom:1px solid #eee;">
+                <div class="player-number" style="width:24px; height:24px; font-size:0.7rem;">${i}</div>
+                <span style="font-weight:600;">${name}</span>
+            </div>`;
+        }
+        content.innerHTML = html || '<p style="color:var(--muted);">Aucun joueur.</p>';
+        modal.classList.add('open');
+    };
+
+    window.closePlayerListModal = function() {
+        document.getElementById('playerListModal').classList.remove('open');
+    };
+
+    window.showProgramModal = function() {
+        if (!LIVE_OPEN && USER_ROLE === 'spectator') {
+            const overlay = document.getElementById('liveOverlay');
+            if (overlay) overlay.classList.add('open');
+            return;
+        }
+        const modal = document.getElementById('programModal');
+        const select = document.getElementById('programPlayerSelect');
+        if (!modal || !select) return;
+
+        // Remplir la liste des joueurs
+        select.innerHTML = '<option value="">Sélectionnez un joueur</option>';
+        for (let i = 1; i <= N; i++) {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = getPlayerName(i);
+            select.appendChild(opt);
+        }
+
+        // Afficher le programme du premier joueur
+        if (N > 0) {
+            select.value = 1;
+            updateProgramDisplay(1);
+        } else {
+            document.getElementById('programDisplay').innerHTML = '<p style="color:var(--muted);">Aucun joueur.</p>';
+        }
+
+        select.onchange = function() {
+            const id = parseInt(this.value);
+            if (id) updateProgramDisplay(id);
+            else document.getElementById('programDisplay').innerHTML = '<p style="color:var(--muted);">Sélectionnez un joueur.</p>';
+        };
+
+        modal.classList.add('open');
+    };
+
+    window.closeProgramModal = function() {
+        document.getElementById('programModal').classList.remove('open');
+    };
+
+    window.printProgram = function() {
+        const select = document.getElementById('programPlayerSelect');
+        const id = parseInt(select.value);
+        if (!id) { showNotice('❌ Sélectionnez un joueur.', 'error'); return; }
+        const html = getProgramHTML(id);
+        const win = window.open('', '_print', 'width=800,height=600');
+        win.document.write(`
+            <!DOCTYPE html>
+            <html><head><meta charset="UTF-8"><title>Programme - ${getPlayerName(id)}</title>
+            <style>body{font-family:Arial,sans-serif;padding:20px;font-size:12px;}
+            table{width:100%;border-collapse:collapse;margin:10px 0;}
+            th,td{border:1px solid #ccc;padding:6px;text-align:center;}
+            th{background:#333;color:#fff;}
+            .header{text-align:center;font-size:18px;font-weight:bold;margin-bottom:10px;}
+            .victoire{color:#1e8c45;font-weight:bold;}
+            .defaite{color:#c0281a;font-weight:bold;}
+            .nul{color:#b87c00;font-weight:bold;}
+            .repos{color:#b87c00;background:#fff3cd;padding:4px;}
+            @media print{.no-print{display:none;}}
+            </style></head><body>
+            <div class="header">Programme individuel - ${getPlayerName(id)}</div>
+            ${html}
+            <div class="no-print" style="margin-top:20px;">
+                <button onclick="window.print()">Imprimer</button>
+                <button onclick="window.close()">Fermer</button>
+            </div>
+            </body></html>
+        `);
+        win.document.close();
+        setTimeout(() => win.print(), 500);
+    };
+
+    function updateProgramDisplay(playerId) {
+        const display = document.getElementById('programDisplay');
+        if (!display) return;
+        display.innerHTML = getProgramHTML(playerId);
+    }
+
+    function getProgramHTML(playerId) {
+        const grid = ST.schedule || getGridForN();
+        if (!grid || grid.length === 0) return '<p style="color:var(--muted);">Aucun match généré.</p>';
+
+        let html = `<table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+            <thead><tr style="background:#333;color:#fff;">
+                <th style="padding:6px;">Tour</th>
+                <th style="padding:6px;">Terrain</th>
+                <th style="padding:6px;">Partenaire</th>
+                <th style="padding:6px;">Adversaires</th>
+                <th style="padding:6px;">Score</th>
+                <th style="padding:6px;">Résultat</th>
+            </tr></thead><tbody>`;
+        let wins = 0, draws = 0, losses = 0, pts = 0;
+        let found = false;
+
+        for (let r = 0; r < grid.length; r++) {
+            const round = grid[r];
+            let played = false;
+            for (let c = 0; c < round.length; c++) {
+                const court = round[c];
+                if (court.rest) {
+                    if (court.rest === playerId) {
+                        html += `<tr><td>${r+1}</td><td colspan="5" style="background:#fff3cd;color:#b87c00;">🟡 Repos</td></tr>`;
+                        played = true;
+                        found = true;
+                    }
+                    continue;
+                }
+                const pos = court.players;
+                const mapped = pos.map(p => {
+                    if (p <= positions.length) return positions[p - 1];
+                    return null;
+                }).filter(p => p !== null);
+
+                const mappedWithRepl = mapped.map((p, idx) => getReplacementPlayer(r, c, idx, p));
+
+                if (mappedWithRepl.includes(playerId)) {
+                    const idx = mappedWithRepl.indexOf(playerId);
+                    let partner, opponents;
+                    let is1v1 = court.type === '1x1';
+                    let is2v1 = court.type === '2x1';
+
+                    if (is1v1 && mappedWithRepl.length === 2) {
+                        partner = '—';
+                        opponents = [mappedWithRepl[1 - idx]];
+                    } else if (is2v1 && mappedWithRepl.length === 3) {
+                        if (idx < 2) {
+                            partner = mappedWithRepl[1 - idx];
+                            opponents = [mappedWithRepl[2]];
+                        } else {
+                            partner = '—';
+                            opponents = [mappedWithRepl[0], mappedWithRepl[1]];
+                        }
+                    } else if (mappedWithRepl.length === 4) {
+                        const team = idx < 2 ? 0 : 1;
+                        const partnerIdx = team === 0 ? (idx === 0 ? 1 : 0) : (idx === 2 ? 3 : 2);
+                        partner = mappedWithRepl[partnerIdx];
+                        opponents = team === 0 ? [mappedWithRepl[2], mappedWithRepl[3]] : [mappedWithRepl[0], mappedWithRepl[1]];
+                    }
+
+                    let scores;
+                    if (is1v1 || is2v1) {
+                        scores = specialMatchScores[r] && specialMatchScores[r][c] ? specialMatchScores[r][c] : { 1: 0, 2: 0 };
+                    } else {
+                        scores = matchScores[r] && matchScores[r][c] ? matchScores[r][c] : { 1: 0, 2: 0 };
+                    }
+
+                    const isTeam1 = is1v1 ? idx === 0 : (is2v1 ? idx < 2 : idx < 2);
+                    const myScore = isTeam1 ? scores[1] : scores[2];
+                    const oppScore = isTeam1 ? scores[2] : scores[1];
+                    const done = myScore && oppScore && parseInt(myScore) > 0 && parseInt(oppScore) > 0;
+
+                    let result = '—';
+                    let resultClass = '';
+                    if (done) {
+                        const ms = parseInt(myScore);
+                        const os = parseInt(oppScore);
+                        if (ms > os) { result = 'Victoire'; resultClass = 'victoire'; wins++; pts += 3; }
+                        else if (ms < os) { result = 'Défaite'; resultClass = 'defaite'; losses++; }
+                        else { result = 'Nul'; resultClass = 'nul'; draws++; pts += 1; }
+                    }
+
+                    html += `<tr>
+                        <td>${r+1}</td>
+                        <td>${c+1}</td>
+                        <td>${partner ? getPlayerName(partner) : '—'}</td>
+                        <td>${opponents ? opponents.map(p => getPlayerName(p)).join(' + ') : '—'}</td>
+                        <td>${done ? `${myScore} – ${oppScore}` : '—'}</td>
+                        <td class="${resultClass}">${result}</td>
+                    </tr>`;
+                    played = true;
+                    found = true;
+                    break;
+                }
+            }
+            if (!played) {
+                html += `<tr><td>${r+1}</td><td colspan="5" style="color:#999;">—</td></tr>`;
+            }
+        }
+
+        html += `</tbody></table>`;
+        html += `<div style="margin-top:10px;display:flex;gap:20px;flex-wrap:wrap;font-weight:600;">
+            <div>🏆 Points: ${pts}</div>
+            <div style="color:#1e8c45;">✅ Victoires: ${wins}</div>
+            <div style="color:#b87c00;">➖ Nuls: ${draws}</div>
+            <div style="color:#c0281a;">❌ Défaites: ${losses}</div>
+        </div>`;
+
+        return html;
+    }
+
+    window.showRanking = function() {
+        if (!LIVE_OPEN && USER_ROLE === 'spectator') {
+            const overlay = document.getElementById('liveOverlay');
+            if (overlay) overlay.classList.add('open');
+            return;
+        }
+        showTab('rankingTab');
+    };
+
+    window.showStats = function() {
+        if (!LIVE_OPEN && USER_ROLE === 'spectator') {
+            const overlay = document.getElementById('liveOverlay');
+            if (overlay) overlay.classList.add('open');
+            return;
+        }
+        showTab('statsTab');
     };
 
     // ─── ABONNEMENTS FIRESTORE ──────────────────────────────────
@@ -1297,6 +1758,7 @@
             if (data.playerReplacements) ST.playerReplacements = data.playerReplacements;
             if (data.replacementLog) ST.replacementLog = data.replacementLog;
             refreshUI();
+            updateLiveInfo();
         }, (e) => console.warn('subscribeToTournament error:', e));
     }
 
@@ -1310,13 +1772,14 @@
     function unsubAll() {
         if (unsubTournament) { unsubTournament(); unsubTournament = null; }
         if (unsubResults) { unsubResults(); unsubResults = null; }
+        if (unsubLiveStatus) { unsubLiveStatus(); unsubLiveStatus = null; }
         if (unsubUserList) { unsubUserList(); unsubUserList = null; }
     }
 
     // ─── SAUVEGARDE ──────────────────────────────────────────────
     async function saveTournament(fields) {
-        if (USER_ROLE === 'spectator') {
-            console.warn('Spectateur ne peut pas sauvegarder.');
+        if (USER_ROLE === 'spectator' || USER_ROLE === 'scorer') {
+            console.warn('Seul l\'admin peut sauvegarder.');
             return;
         }
         try {
@@ -1348,39 +1811,53 @@
         const isScorer = isAdmin || USER_ROLE === 'scorer';
         const isSpectator = USER_ROLE === 'spectator';
 
-        // Contrôles généraux
-        document.querySelectorAll('.controls .btn:not(.ghost)').forEach(btn => {
-            if (btn.id === 'btnGenerate' || btn.onclick?.toString().includes('generate')) {
-                btn.style.display = isScorer ? '' : 'none';
-            } else if (btn.onclick?.toString().includes('shuffle')) {
-                btn.style.display = isScorer ? '' : 'none';
-            } else if (btn.onclick?.toString().includes('reset')) {
-                btn.style.display = isAdmin ? '' : 'none';
-            } else {
-                btn.style.display = isScorer ? '' : 'none';
-            }
-        });
-
-        // Bouton Générer
-        const genBtn = document.getElementById('btnGenerate');
-        if (genBtn) genBtn.style.display = isScorer ? '' : 'none';
-
-        // Champs de saisie
-        document.querySelectorAll('.score-input, .player-input, select:not(#courtsCount):not(#playerCount)').forEach(el => {
-            if (isSpectator) {
-                el.setAttribute('readonly', true);
-                el.disabled = true;
-                el.style.opacity = '0.7';
-            } else {
-                el.removeAttribute('readonly');
-                el.disabled = false;
-                el.style.opacity = '1';
-            }
+        // Contrôles staff (Admin seulement pour la configuration)
+        const staffBtns = ['btnGenerate', 'btnShuffle', 'btnSave', 'btnReset'];
+        staffBtns.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = isAdmin ? '' : 'none';
         });
 
         // Admin tab
         const adminBtn = document.getElementById('adminTabBtn');
         if (adminBtn) adminBtn.style.display = isAdmin ? '' : 'none';
+
+        // Live toggle dans Admin
+        const liveBtn = document.getElementById('liveToggleBtn');
+        if (liveBtn) liveBtn.style.display = isAdmin ? '' : 'none';
+
+        // Champs de saisie (Scorer peut modifier les noms)
+        document.querySelectorAll('.player-input').forEach(el => {
+            if (isSpectator) {
+                el.disabled = true;
+                el.style.opacity = '0.7';
+            } else {
+                el.disabled = false;
+                el.style.opacity = '1';
+            }
+        });
+
+        // Scores (Scorer et Admin)
+        document.querySelectorAll('.score-input').forEach(el => {
+            if (isSpectator) {
+                el.disabled = true;
+                el.style.opacity = '0.7';
+            } else {
+                el.disabled = false;
+                el.style.opacity = '1';
+            }
+        });
+
+        // Sélecteurs de remplacement (Admin uniquement)
+        document.querySelectorAll('.replacement-select').forEach(el => {
+            el.disabled = !isAdmin;
+            el.style.opacity = isAdmin ? '1' : '0.5';
+        });
+
+        // Boutons d'impression (Scorer et Admin)
+        document.querySelectorAll('.print-btn').forEach(el => {
+            el.style.display = isSpectator ? 'none' : '';
+        });
     }
 
     function refreshUI() {
@@ -1399,7 +1876,6 @@
         updateActiveCount();
         updatePositions();
         buildPlayerInputs();
-        updatePlayerProgramSelect();
         if (ST.schedule && ST.schedule.length > 0) {
             renderMatches();
             calculateRanking();
@@ -1407,12 +1883,51 @@
             updateTVContent();
         }
         updateStatusBar();
+        updateLiveInfo();
+
         if (USER_ROLE === 'admin' && document.getElementById('adminTab').classList.contains('active')) {
             loadUserList();
         }
     }
 
+    function updateLiveInfo() {
+        const container = document.getElementById('liveInfoContent');
+        if (!container) return;
+        const grid = ST.schedule || getGridForN();
+        if (!grid || grid.length === 0) {
+            container.innerHTML = '<p style="color:var(--muted);">Aucun tournoi actif. Attendez que l\'organisateur lance le tournoi.</p>';
+            return;
+        }
+
+        let total = 0, done = 0;
+        for (let r = 0; r < grid.length; r++) {
+            for (let c = 0; c < grid[r].length; c++) {
+                if (grid[r][c].rest) continue;
+                total++;
+                let scores;
+                if (grid[r][c].type === '1x1' || grid[r][c].type === '2x1') {
+                    scores = specialMatchScores[r] && specialMatchScores[r][c] ? specialMatchScores[r][c] : { 1: 0, 2: 0 };
+                } else {
+                    scores = matchScores[r] && matchScores[r][c] ? matchScores[r][c] : { 1: 0, 2: 0 };
+                }
+                if ((scores[1] && parseInt(scores[1]) > 0) || (scores[2] && parseInt(scores[2]) > 0)) done++;
+            }
+        }
+        const progress = total > 0 ? Math.round((done / total) * 100) : 0;
+        container.innerHTML = `
+            <div style="display:flex; gap:20px; flex-wrap:wrap;">
+                <div><strong>Joueurs :</strong> ${N}</div>
+                <div><strong>Tours :</strong> ${grid.length}</div>
+                <div><strong>Matchs :</strong> ${done} / ${total} terminés</div>
+                <div><strong>Progression :</strong> ${progress}%</div>
+                <div><strong>Live :</strong> <span style="color:${LIVE_OPEN ? 'var(--success)' : 'var(--danger)'};">${LIVE_OPEN ? '✅ Ouvert' : '🔴 Fermé'}</span></div>
+            </div>
+            ${LIVE_OPEN ? '' : '<p style="color:var(--warning); margin-top:8px;">⚠️ Le Live est fermé. Les spectateurs ne peuvent pas voir les matchs.</p>'}
+        `;
+    }
+
     // ─── GRILLES DE MATCHS ──────────────────────────────────────
+    // [Grilles complètes identiques à la version précédente]
     const GRIDS3 = {
         8: [
             [{ players: [1, 3, 5, 7] }, { players: [2, 4, 6, 8] }],
@@ -1651,7 +2166,6 @@
             `;
             container.appendChild(wrapper);
         }
-        // Événements pour Scorer et Admin (pas Spectateur)
         if (!isSpectator) {
             for (let i = 1; i <= maxN; i++) {
                 const input = document.getElementById('player' + i);
@@ -1690,8 +2204,8 @@
     }
 
     window.shufflePositions = function() {
-        if (USER_ROLE === 'spectator') {
-            showNotice('❌ Les spectateurs ne peuvent pas modifier les positions.', 'error');
+        if (USER_ROLE !== 'admin') {
+            showNotice('❌ Seul l\'admin peut mélanger les positions.', 'error');
             return;
         }
         for (let i = positions.length - 1; i > 0; i--) {
@@ -1706,8 +2220,8 @@
 
     // ─── GENERATE TOURNAMENT ────────────────────────────────────
     window.generateValidatedTournament = function() {
-        if (USER_ROLE === 'spectator') {
-            showNotice('❌ Les spectateurs ne peuvent pas générer le tournoi.', 'error');
+        if (USER_ROLE !== 'admin') {
+            showNotice('❌ Seul l\'admin peut générer le tournoi.', 'error');
             return;
         }
         ensurePositions();
@@ -1758,7 +2272,6 @@
         const isAdmin = USER_ROLE === 'admin';
         const isScorer = isAdmin || USER_ROLE === 'scorer';
 
-        // Construire la liste des joueurs disponibles pour les remplacements
         const activePlayers = getActivePlayerNumbers();
         const playerOptions = activePlayers.map(p => 
             `<option value="${p}">${getPlayerName(p)}</option>`
@@ -1775,16 +2288,16 @@
             roundDiv.appendChild(roundTitle);
 
             for (let c = 0; c < round.length; c++) {
-                const courtObj = round[c];
-                if (courtObj.rest) {
+                const court = round[c];
+                if (court.rest) {
                     const restDiv = document.createElement('div');
                     restDiv.style.cssText = 'margin-top:6px; padding:8px; background:#fff3cd; border-radius:5px; font-size:0.85rem; text-align:center;';
-                    restDiv.innerHTML = `<strong><i class="fas fa-coffee"></i> Repos :</strong> ${getPlayerName(courtObj.rest)}`;
+                    restDiv.innerHTML = `<strong><i class="fas fa-coffee"></i> Repos :</strong> ${getPlayerName(court.rest)}`;
                     roundDiv.appendChild(restDiv);
                     continue;
                 }
 
-                const pos = courtObj.players;
+                const pos = court.players;
                 const mapped = pos.map(p => {
                     if (p <= positions.length) return positions[p - 1];
                     return null;
@@ -1795,12 +2308,12 @@
                     matchDiv.className = 'match';
 
                     let courtLabel = `Terrain ${c + 1}`;
-                    if (courtObj.type === '1x1') courtLabel += ' (1x1)';
-                    else if (courtObj.type === '2x1') courtLabel += ' (2x1)';
+                    if (court.type === '1x1') courtLabel += ' (1x1)';
+                    else if (court.type === '2x1') courtLabel += ' (2x1)';
 
                     let html = `<div class="court-header">${courtLabel}</div>`;
 
-                    if (courtObj.type === '1x1' && mapped.length === 2) {
+                    if (court.type === '1x1' && mapped.length === 2) {
                         const scores = specialMatchScores[r] && specialMatchScores[r][c] ? specialMatchScores[r][c] : { 1: '', 2: '' };
                         html += `
                             <div class="team-row" style="justify-content:center;">
@@ -1825,7 +2338,7 @@
                                 ` : `<span style="font-weight:600;">${getPlayerName(mapped[1])}</span>`}
                             </div>
                         `;
-                    } else if (courtObj.type === '2x1' && mapped.length === 3) {
+                    } else if (court.type === '2x1' && mapped.length === 3) {
                         const scores = specialMatchScores[r] && specialMatchScores[r][c] ? specialMatchScores[r][c] : { 1: '', 2: '' };
                         html += `
                             <div class="team-row" style="justify-content:center;">
@@ -1906,10 +2419,8 @@
             container.appendChild(roundDiv);
         }
 
-        // Charger les remplacements existants
         loadReplacements();
 
-        // Écouter les changements de scores (Scorer et Admin uniquement)
         if (isScorer) {
             document.querySelectorAll('.score-input').forEach(input => {
                 input.addEventListener('input', function() {
@@ -1941,12 +2452,13 @@
                     updateStats();
                     updateStatusBar();
                     updateTVContent();
+                    updateLiveInfo();
                 });
             });
         }
     }
 
-    // ─── REPLACEMENTS ───────────────────────────────────────────
+    // ─── REPLACEMENTS (ÉCHANGE) ─────────────────────────────────
     function loadReplacements() {
         Object.keys(playerReplacements).forEach(round => {
             Object.keys(playerReplacements[round]).forEach(court => {
@@ -1972,9 +2484,6 @@
         const originalMapped = grid[round][court].players.map(p => positions[p - 1]);
         const oldPlayer = originalMapped[position];
 
-        if (!playerReplacements[round]) playerReplacements[round] = {};
-        if (!playerReplacements[round][court]) playerReplacements[round][court] = {};
-
         if (newPlayerId === '' || !newPlayerId) {
             delete playerReplacements[round][court][position];
             if (Object.keys(playerReplacements[round][court]).length === 0) {
@@ -1983,22 +2492,91 @@
             if (Object.keys(playerReplacements[round]).length === 0) {
                 delete playerReplacements[round];
             }
+            showNotice(`✅ ${getPlayerName(oldPlayer)} réintégré`);
         } else {
             newPlayerId = parseInt(newPlayerId);
-            playerReplacements[round][court][position] = newPlayerId;
             
-            // Journaliser le remplacement
-            const logEntry = {
-                round: round + 1,
-                court: `Terrain ${court + 1}`,
-                position: position,
-                oldPlayer: getPlayerName(oldPlayer),
-                newPlayer: getPlayerName(newPlayerId),
-                timestamp: new Date().toLocaleTimeString()
-            };
-            replacementLog.unshift(logEntry);
-            if (replacementLog.length > 50) replacementLog = replacementLog.slice(0, 50);
-            ST.replacementLog = replacementLog;
+            // Vérifier si le nouveau joueur est déjà dans un match de ce tour
+            const inRound = [];
+            grid[round].forEach(c => {
+                if (c.players) {
+                    c.players.forEach(pNum => {
+                        if (pNum <= positions.length) inRound.push(positions[pNum - 1]);
+                    });
+                }
+            });
+            // Exclure le joueur actuel de la vérification
+            const filteredInRound = inRound.filter(id => id !== oldPlayer);
+            
+            if (filteredInRound.includes(newPlayerId)) {
+                showNotice(`❌ ${getPlayerName(newPlayerId)} est déjà dans ce tour.`, 'error');
+                // Réinitialiser la sélection
+                const select = document.querySelector(`[data-round="${round}"][data-court="${court}"][data-position="${position}"]`);
+                if (select) select.value = oldPlayer;
+                return;
+            }
+
+            // ÉCHANGE : le joueur remplacé prend la place du remplaçant
+            // Chercher où se trouve le remplaçant dans ce tour
+            let replacementFound = false;
+            for (let c = 0; c < grid[round].length; c++) {
+                const courtObj = grid[round][c];
+                if (courtObj.rest) continue;
+                const pos = courtObj.players;
+                const mapped = pos.map(p => {
+                    if (p <= positions.length) return positions[p - 1];
+                    return null;
+                }).filter(p => p !== null);
+                
+                for (let posIdx = 0; posIdx < mapped.length; posIdx++) {
+                    const currentPlayer = mapped[posIdx];
+                    if (currentPlayer === newPlayerId) {
+                        // Le remplaçant était ici, on le remplace par l'ancien joueur
+                        if (!playerReplacements[round]) playerReplacements[round] = {};
+                        if (!playerReplacements[round][c]) playerReplacements[round][c] = {};
+                        playerReplacements[round][c][posIdx] = oldPlayer;
+                        replacementFound = true;
+                        break;
+                    }
+                }
+                if (replacementFound) break;
+            }
+
+            if (!replacementFound) {
+                // Le joueur n'était pas dans ce tour (cas où on le remplace par un joueur qui ne joue pas ce tour)
+                // On l'ajoute simplement comme remplaçant
+                if (!playerReplacements[round]) playerReplacements[round] = {};
+                if (!playerReplacements[round][court]) playerReplacements[round][court] = {};
+                playerReplacements[round][court][position] = newPlayerId;
+                
+                // Journaliser
+                const logEntry = {
+                    round: round + 1,
+                    court: `Terrain ${court + 1}`,
+                    oldPlayer: getPlayerName(oldPlayer),
+                    newPlayer: getPlayerName(newPlayerId),
+                    timestamp: new Date().toLocaleTimeString()
+                };
+                replacementLog.unshift(logEntry);
+                if (replacementLog.length > 50) replacementLog = replacementLog.slice(0, 50);
+                ST.replacementLog = replacementLog;
+                
+                showNotice(`✅ ${getPlayerName(oldPlayer)} remplacé par ${getPlayerName(newPlayerId)}`);
+            } else {
+                // Journaliser l'échange
+                const logEntry = {
+                    round: round + 1,
+                    court: `Terrain ${court + 1}`,
+                    oldPlayer: getPlayerName(oldPlayer),
+                    newPlayer: getPlayerName(newPlayerId),
+                    timestamp: new Date().toLocaleTimeString()
+                };
+                replacementLog.unshift(logEntry);
+                if (replacementLog.length > 50) replacementLog = replacementLog.slice(0, 50);
+                ST.replacementLog = replacementLog;
+                
+                showNotice(`🔄 Échange : ${getPlayerName(oldPlayer)} ↔ ${getPlayerName(newPlayerId)}`);
+            }
         }
 
         ST.playerReplacements = playerReplacements;
@@ -2006,70 +2584,10 @@
             playerReplacements: playerReplacements,
             replacementLog: replacementLog
         });
+        renderMatches();
         calculateRanking();
         updateStats();
-        showNotice('✅ Remplacement effectué');
-    };
-
-    // ─── MODALE REMPLACEMENT ────────────────────────────────────
-    window.openSubModal = function(round, court, position, playerId) {
-        if (USER_ROLE !== 'admin') {
-            showNotice('❌ Seul l\'admin peut remplacer des joueurs.', 'error');
-            return;
-        }
-        const grid = getGridForN();
-        if (!grid[round] || !grid[round][court]) return;
-
-        const p = getPlayerName(playerId);
-        document.getElementById('subDesc').innerHTML = `Remplacer <strong>${p}</strong> à partir du <strong>tour ${round + 1}</strong>.<br>Les scores des matchs déjà joués restent inchangés.`;
-
-        // Joueurs disponibles (pas déjà dans ce tour)
-        const inRound = [];
-        grid[round].forEach(c => {
-            if (c.players) {
-                c.players.forEach(pNum => {
-                    if (pNum <= positions.length) inRound.push(positions[pNum - 1]);
-                });
-            }
-        });
-        const available = getActivePlayerNumbers().filter(id => id !== playerId && !inRound.includes(id));
-
-        const listEl = document.getElementById('subList');
-        if (available.length === 0) {
-            listEl.innerHTML = '<div style="color:var(--muted);padding:8px;">Aucun remplaçant disponible.</div>';
-        } else {
-            listEl.innerHTML = available.map(id => `
-                <div class="sub-item" onclick="selectSub('${id}', this)">
-                    <span style="font-weight:600;">${getPlayerName(id)}</span>
-                </div>
-            `).join('');
-        }
-
-        // Stocker les infos pour la confirmation
-        window._subData = { round, court, position, playerId };
-        document.getElementById('subModal').classList.add('open');
-    };
-
-    window.selectSub = function(id, el) {
-        document.querySelectorAll('.sub-item').forEach(x => x.classList.remove('sel'));
-        el.classList.add('sel');
-        window._subData.newId = parseInt(id);
-    };
-
-    window.confirmSub = function() {
-        if (!window._subData || !window._subData.newId) {
-            showNotice('❌ Sélectionnez un remplaçant.', 'error');
-            return;
-        }
-        const { round, court, position, playerId, newId } = window._subData;
-        updatePlayerReplacement(round, court, position, newId);
-        closeSubModal();
-        renderMatches();
-    };
-
-    window.closeSubModal = function() {
-        document.getElementById('subModal').classList.remove('open');
-        window._subData = null;
+        updateTVContent();
     };
 
     // ─── CALCULATE RANKING ──────────────────────────────────────
@@ -2094,10 +2612,10 @@
         for (let r = 0; r < grid.length; r++) {
             const round = grid[r];
             for (let c = 0; c < round.length; c++) {
-                const courtObj = round[c];
-                if (courtObj.rest) continue;
+                const court = round[c];
+                if (court.rest) continue;
 
-                const pos = courtObj.players;
+                const pos = court.players;
                 const mapped = pos.map(p => {
                     if (p <= positions.length) return positions[p - 1];
                     return null;
@@ -2108,7 +2626,7 @@
                 );
 
                 let scores;
-                if (courtObj.type === '1x1' || courtObj.type === '2x1') {
+                if (court.type === '1x1' || court.type === '2x1') {
                     scores = specialMatchScores[r] && specialMatchScores[r][c] ? specialMatchScores[r][c] : { 1: 0, 2: 0 };
                 } else {
                     scores = matchScores[r] && matchScores[r][c] ? matchScores[r][c] : { 1: 0, 2: 0 };
@@ -2118,9 +2636,9 @@
                 const score2 = parseInt(scores[2]) || 0;
 
                 if (score1 > 0 || score2 > 0) {
-                    if (courtObj.type === '1x1' && mappedWithRepl.length === 2) {
+                    if (court.type === '1x1' && mappedWithRepl.length === 2) {
                         process1v1Stats(stats, mappedWithRepl, score1, score2);
-                    } else if (courtObj.type === '2x1' && mappedWithRepl.length === 3) {
+                    } else if (court.type === '2x1' && mappedWithRepl.length === 3) {
                         process2v1Stats(stats, mappedWithRepl, score1, score2);
                     } else if (mappedWithRepl.length === 4) {
                         processMatchStats(stats, mappedWithRepl, score1, score2);
@@ -2366,6 +2884,7 @@
 
     // ─── CHANGE PLAYER COUNT ────────────────────────────────────
     function changeCourtsCount() {
+        if (USER_ROLE !== 'admin') { showNotice('❌ Seul l\'admin peut modifier la configuration.', 'error'); return; }
         const select = document.getElementById('courtsCount');
         courts = parseInt(select.value);
         ST.courts = courts;
@@ -2378,16 +2897,17 @@
         buildPlayerInputs();
         updateActiveCount();
         updatePositions();
-        updatePlayerProgramSelect();
         scheduleAutoSave();
         showNotice(`${courts} terrains, ${N} joueurs`);
         document.getElementById('matchesDisplay').innerHTML = '<p style="text-align:center;color:#666;padding:20px;">Cliquez sur "Générer" pour créer les matchs</p>';
         document.getElementById('rankingBody').innerHTML = '';
         document.getElementById('statsArea').innerHTML = '<p style="text-align:center;color:#666;padding:20px;">Les statistiques apparaîtront après génération du tournoi</p>';
         updateStatusBar();
+        updateLiveInfo();
     }
 
     function changePlayerCount() {
+        if (USER_ROLE !== 'admin') { showNotice('❌ Seul l\'admin peut modifier la configuration.', 'error'); return; }
         const select = document.getElementById('playerCount');
         N = parseInt(select.value);
         ST.N = N;
@@ -2396,13 +2916,13 @@
         buildPlayerInputs();
         updateActiveCount();
         updatePositions();
-        updatePlayerProgramSelect();
         scheduleAutoSave();
         showNotice(`${N} joueurs sélectionnés`);
         document.getElementById('matchesDisplay').innerHTML = '<p style="text-align:center;color:#666;padding:20px;">Cliquez sur "Générer" pour créer les matchs</p>';
         document.getElementById('rankingBody').innerHTML = '';
         document.getElementById('statsArea').innerHTML = '<p style="text-align:center;color:#666;padding:20px;">Les statistiques apparaîtront après génération du tournoi</p>';
         updateStatusBar();
+        updateLiveInfo();
     }
 
     function buildPlayerCountOptions(preferredN) {
@@ -2422,8 +2942,8 @@
 
     // ─── AUTO FILL PLAYERS ──────────────────────────────────────
     window.autoFillPlayers = function() {
-        if (USER_ROLE === 'spectator') {
-            showNotice('❌ Les spectateurs ne peuvent pas modifier les joueurs.', 'error');
+        if (USER_ROLE !== 'admin' && USER_ROLE !== 'scorer') {
+            showNotice('❌ Seul le staff peut modifier les joueurs.', 'error');
             return;
         }
         const names = [
@@ -2444,8 +2964,8 @@
     };
 
     window.clearPlayers = function() {
-        if (USER_ROLE === 'spectator') {
-            showNotice('❌ Les spectateurs ne peuvent pas modifier les joueurs.', 'error');
+        if (USER_ROLE !== 'admin') {
+            showNotice('❌ Seul l\'admin peut vider la liste.', 'error');
             return;
         }
         for (let i = 1; i <= 20; i++) {
@@ -2458,176 +2978,6 @@
         scheduleAutoSave();
         showNotice('Liste des joueurs vidée');
     };
-
-    // ─── PROGRAMME INDIVIDUEL ───────────────────────────────────
-    function updatePlayerProgramSelect() {
-        const select = document.getElementById('playerProgramSelect');
-        if (!select) return;
-        select.innerHTML = '<option value="">Sélectionnez un joueur</option>';
-        for (let i = 1; i <= N; i++) {
-            const opt = document.createElement('option');
-            opt.value = i;
-            opt.textContent = getPlayerName(i);
-            select.appendChild(opt);
-        }
-    }
-
-    window.showPlayerProgram = function() {
-        const select = document.getElementById('playerProgramSelect');
-        const display = document.getElementById('playerProgramDisplay');
-        const playerId = parseInt(select.value);
-        if (!playerId) {
-            display.style.display = 'none';
-            return;
-        }
-        display.style.display = 'block';
-        display.innerHTML = getPlayerProgramHTML(playerId);
-    };
-
-    window.printPlayerProgram = function() {
-        const select = document.getElementById('playerProgramSelect');
-        const playerId = parseInt(select.value);
-        if (!playerId) {
-            showNotice('❌ Sélectionnez un joueur.', 'error');
-            return;
-        }
-        const html = getPlayerProgramHTML(playerId);
-        const win = window.open('', '_print', 'width=800,height=600');
-        win.document.write(`
-            <!DOCTYPE html>
-            <html><head><meta charset="UTF-8"><title>Programme - ${getPlayerName(playerId)}</title>
-            <style>body{font-family:Arial,sans-serif;padding:20px;font-size:12px;}
-            table{width:100%;border-collapse:collapse;margin:10px 0;}
-            th,td{border:1px solid #ccc;padding:6px;text-align:center;}
-            th{background:#333;color:#fff;}
-            .header{text-align:center;font-size:18px;font-weight:bold;margin-bottom:10px;}
-            .sub{color:#b87c00;background:#fff3cd;padding:4px;border-radius:4px;}
-            .victoire{color:#1e8c45;font-weight:bold;}
-            .defaite{color:#c0281a;font-weight:bold;}
-            .nul{color:#b87c00;font-weight:bold;}
-            @media print{.no-print{display:none;}}
-            </style></head><body>
-            <div class="header">Programme individuel - ${getPlayerName(playerId)}</div>
-            ${html}
-            <div class="no-print" style="margin-top:20px;">
-                <button onclick="window.print()">Imprimer</button>
-                <button onclick="window.close()">Fermer</button>
-            </div>
-            </body></html>
-        `);
-        win.document.close();
-        setTimeout(() => win.print(), 500);
-    };
-
-    function getPlayerProgramHTML(playerId) {
-        const grid = ST.schedule || getGridForN();
-        if (!grid || grid.length === 0) return '<p>Aucun match généré.</p>';
-
-        let html = `<table><thead><tr><th>Tour</th><th>Terrain</th><th>Partenaire</th><th>Adversaires</th><th>Score</th><th>Résultat</th></tr></thead><tbody>`;
-        let wins = 0, draws = 0, losses = 0, pts = 0;
-
-        for (let r = 0; r < grid.length; r++) {
-            const round = grid[r];
-            let found = false;
-            for (let c = 0; c < round.length; c++) {
-                const courtObj = round[c];
-                if (courtObj.rest) {
-                    if (courtObj.rest === playerId) {
-                        html += `<tr><td>${r+1}</td><td colspan="5" style="color:#b87c00;background:#fff3cd;">🟡 Repos</td></tr>`;
-                        found = true;
-                    }
-                    continue;
-                }
-                const pos = courtObj.players;
-                const mapped = pos.map(p => {
-                    if (p <= positions.length) return positions[p - 1];
-                    return null;
-                }).filter(p => p !== null);
-
-                const mappedWithRepl = mapped.map((p, idx) => getReplacementPlayer(r, c, idx, p));
-
-                if (mappedWithRepl.includes(playerId)) {
-                    const idx = mappedWithRepl.indexOf(playerId);
-                    let partner, opponents, is1v1 = false, is2v1 = false;
-                    
-                    if (courtObj.type === '1x1' && mappedWithRepl.length === 2) {
-                        is1v1 = true;
-                        partner = '—';
-                        opponents = [mappedWithRepl[1 - idx]];
-                    } else if (courtObj.type === '2x1' && mappedWithRepl.length === 3) {
-                        is2v1 = true;
-                        if (idx < 2) {
-                            partner = mappedWithRepl[1 - idx];
-                            opponents = [mappedWithRepl[2]];
-                        } else {
-                            partner = '—';
-                            opponents = [mappedWithRepl[0], mappedWithRepl[1]];
-                        }
-                    } else if (mappedWithRepl.length === 4) {
-                        const team = idx < 2 ? 0 : 1;
-                        const partnerIdx = team === 0 ? (idx === 0 ? 1 : 0) : (idx === 2 ? 3 : 2);
-                        partner = mappedWithRepl[partnerIdx];
-                        opponents = team === 0 ? [mappedWithRepl[2], mappedWithRepl[3]] : [mappedWithRepl[0], mappedWithRepl[1]];
-                    }
-
-                    let scores;
-                    if (courtObj.type === '1x1' || courtObj.type === '2x1') {
-                        scores = specialMatchScores[r] && specialMatchScores[r][c] ? specialMatchScores[r][c] : { 1: 0, 2: 0 };
-                    } else {
-                        scores = matchScores[r] && matchScores[r][c] ? matchScores[r][c] : { 1: 0, 2: 0 };
-                    }
-
-                    const isTeam1 = is1v1 ? idx === 0 : (is2v1 ? idx < 2 : idx < 2);
-                    const myScore = isTeam1 ? scores[1] : scores[2];
-                    const oppScore = isTeam1 ? scores[2] : scores[1];
-                    const done = myScore && oppScore && parseInt(myScore) > 0 && parseInt(oppScore) > 0;
-
-                    let result = '—';
-                    let resultClass = '';
-                    if (done) {
-                        const ms = parseInt(myScore);
-                        const os = parseInt(oppScore);
-                        if (ms > os) { result = 'Victoire'; resultClass = 'victoire'; wins++; pts += 3; }
-                        else if (ms < os) { result = 'Défaite'; resultClass = 'defaite'; losses++; }
-                        else { result = 'Nul'; resultClass = 'nul'; draws++; pts += 1; }
-                    }
-
-                    const partnerName = partner ? getPlayerName(partner) : '—';
-                    const opponentsNames = opponents.map(p => getPlayerName(p)).join(' + ');
-
-                    html += `<tr>
-                        <td>${r+1}</td>
-                        <td>${c+1}</td>
-                        <td>${partnerName}</td>
-                        <td>${opponentsNames}</td>
-                        <td>${done ? `${myScore} – ${oppScore}` : '—'}</td>
-                        <td class="${resultClass}">${result}</td>
-                    </tr>`;
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                // Vérifier si le joueur est remplaçant ce tour
-                let isSub = false;
-                // On vérifie si le joueur est dans les remplaçants du tour
-                // Note: les remplaçants sont gérés via playerReplacements
-                if (!isSub) {
-                    html += `<tr><td>${r+1}</td><td colspan="5" style="color:#999;">—</td></tr>`;
-                }
-            }
-        }
-
-        html += `</tbody></table>`;
-        html += `<div style="margin-top:10px;display:flex;gap:20px;flex-wrap:wrap;">
-            <div><strong>Points :</strong> ${pts}</div>
-            <div style="color:#1e8c45;"><strong>Victoires :</strong> ${wins}</div>
-            <div style="color:#b87c00;"><strong>Nuls :</strong> ${draws}</div>
-            <div style="color:#c0281a;"><strong>Défaites :</strong> ${losses}</div>
-        </div>`;
-
-        return html;
-    }
 
     // ─── RESET ──────────────────────────────────────────────────
     window.resetAll = function() {
@@ -2654,11 +3004,11 @@
         }
         buildPlayerInputs();
         updatePositions();
-        updatePlayerProgramSelect();
         document.getElementById('matchesDisplay').innerHTML = '<p style="text-align:center;color:#666;padding:20px;">Cliquez sur "Générer" pour créer les matchs</p>';
         document.getElementById('rankingBody').innerHTML = '';
         document.getElementById('statsArea').innerHTML = '<p style="text-align:center;color:#666;padding:20px;">Les statistiques apparaîtront après génération du tournoi</p>';
         updateStatusBar();
+        updateLiveInfo();
         saveTournament({
             positions: positions,
             schedule: [],
@@ -2672,8 +3022,8 @@
 
     // ─── SAVE ──────────────────────────────────────────────────
     window.saveData = function() {
-        if (USER_ROLE === 'spectator') {
-            showNotice('❌ Les spectateurs ne peuvent pas sauvegarder.', 'error');
+        if (USER_ROLE !== 'admin') {
+            showNotice('❌ Seul l\'admin peut sauvegarder.', 'error');
             return;
         }
         saveTournament({
@@ -2711,9 +3061,6 @@
         if (tabName === 'matchesTab' && (!ST.schedule || ST.schedule.length === 0)) {
             document.getElementById('matchesDisplay').innerHTML = '<p style="text-align:center;color:#666;padding:20px;">Cliquez sur "Générer" pour créer les matchs</p>';
         }
-        if (tabName === 'playersTab') {
-            updatePlayerProgramSelect();
-        }
     };
 
     // ─── TV MODE ─────────────────────────────────────────────────
@@ -2739,6 +3086,8 @@
             tvInterval = null; }
         if (tvCycleTimeout) { clearTimeout(tvCycleTimeout);
             tvCycleTimeout = null; }
+        // Retour à l'accueil si spectateur
+        if (USER_ROLE === 'spectator') showTab('accueilTab');
     };
 
     let tvCycleTimeout = null;
@@ -2800,13 +3149,12 @@
             return;
         }
 
-        const players = getActivePlayerNumbers();
         const mode = document.getElementById('tvModeSelect')?.value || 'cycle';
 
         // Construire les écrans disponibles
         const screens = [];
         
-        // Écran 1: Matchs du tour en cours ou à venir
+        // Écran 1: Matchs du tour en cours
         const currentRound = ST.activeRound || 0;
         if (grid[currentRound]) {
             const round = grid[currentRound];
@@ -2832,7 +3180,10 @@
                     const s1 = scores[1] || '—';
                     const s2 = scores[2] || '—';
                     const done = scores[1] && scores[2] && parseInt(scores[1]) > 0 && parseInt(scores[2]) > 0;
-                    const isLive = !done && ST.activeRound === currentRound;
+                    const isLive = !done;
+                    
+                    const team1 = court.type === '2x1' ? mappedWithRepl.slice(0, 2) : mappedWithRepl.slice(0, 2);
+                    const team2 = court.type === '2x1' ? [mappedWithRepl[2]] : mappedWithRepl.slice(2, 4);
                     
                     matchesHtml += `<div class="tv-match-row ${isLive ? 'tv-match-live' : ''}">
                         <div class="tv-match-meta">
@@ -2840,16 +3191,16 @@
                             <span class="tv-match-time">Tour ${currentRound+1}</span>
                         </div>
                         <div class="tv-match-teams">
-                            <div class="tv-team"><div class="tv-team-nm">${mappedWithRepl.slice(0, court.type === '2x1' ? 2 : 2).map(p => getPlayerName(p)).join(' + ')}</div></div>
+                            <div class="tv-team"><div class="tv-team-nm">${team1.map(p => getPlayerName(p)).join(' + ')}</div></div>
                             <span class="tv-score">${done ? s1 : '—'} – ${done ? s2 : '—'}</span>
-                            <div class="tv-team tv-team-r"><div class="tv-team-nm">${court.type === '2x1' ? getPlayerName(mappedWithRepl[2]) : mappedWithRepl.slice(2, 4).map(p => getPlayerName(p)).join(' + ')}</div></div>
+                            <div class="tv-team tv-team-r"><div class="tv-team-nm">${team2.map(p => getPlayerName(p)).join(' + ')}</div></div>
                         </div>
                     </div>`;
                 }
             }
             if (hasMatches) {
                 screens.push({
-                    title: `🏓 Tour ${currentRound+1} ${ST.activeRound === currentRound ? '· En cours' : ''}`,
+                    title: `🏓 Tour ${currentRound+1} · En cours`,
                     html: `<div class="tv-match-grid">${matchesHtml}</div>`
                 });
             }
@@ -2888,7 +3239,6 @@
             return;
         }
 
-        // Sélectionner l'écran selon le mode
         let screenIndex = 0;
         if (mode === 'standings' && screens.length > 1) screenIndex = 1;
         else if (mode === 'matches') screenIndex = 0;
@@ -2967,254 +3317,6 @@
         });
     }
 
-    // ─── IMPRESSION ─────────────────────────────────────────────
-    window.printPlayers = function() {
-        const win = window.open('', '_print', 'width=800,height=600');
-        let html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Liste des joueurs</title>';
-        html += `<style>body{font-family:Arial,sans-serif;padding:20px;}
-            table{width:100%;border-collapse:collapse;margin:10px 0;}
-            th,td{border:1px solid #ccc;padding:6px;text-align:left;}
-            th{background:#333;color:#fff;}
-            .header{text-align:center;font-size:18px;font-weight:bold;margin-bottom:10px;}
-            @media print{.no-print{display:none;}}
-        </style></head><body>
-        <div class="header">Liste des joueurs - ${N} joueurs</div>
-        <table><thead><tr><th>#</th><th>Nom</th></tr></thead><tbody>`;
-        for (let i = 1; i <= N; i++) {
-            html += `<tr><td>${i}</td><td>${getPlayerName(i)}</td></tr>`;
-        }
-        html += `</tbody></table>
-        <div class="no-print" style="margin-top:20px;">
-            <button onclick="window.print()">Imprimer</button>
-            <button onclick="window.close()">Fermer</button>
-        </div>
-        </body></html>`;
-        win.document.write(html);
-        win.document.close();
-        setTimeout(() => win.print(), 500);
-    };
-
-    window.printMatches = function() {
-        const win = window.open('', '_print', 'width=800,height=600');
-        let html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Tous les matchs</title>';
-        html += `<style>body{font-family:Arial,sans-serif;padding:20px;font-size:11px;}
-            .round{page-break-inside:avoid;margin-bottom:15px;}
-            .round-title{background:#333;color:#fff;padding:6px 10px;font-weight:bold;}
-            .match{border:1px solid #ccc;padding:8px;margin:4px 0;border-radius:4px;}
-            .team{font-weight:bold;}
-            .vs{color:#999;margin:0 6px;}
-            .score{font-weight:bold;color:#1e8c45;}
-            .rest{color:#b87c00;background:#fff3cd;padding:4px;}
-            .header{text-align:center;font-size:18px;font-weight:bold;margin-bottom:10px;}
-            @media print{.no-print{display:none;}}
-        </style></head><body>
-        <div class="header">Tous les matchs</div>`;
-        const grid = ST.schedule || getGridForN();
-        if (grid) {
-            for (let r = 0; r < grid.length; r++) {
-                html += `<div class="round"><div class="round-title">Tour ${r+1}</div>`;
-                for (let c = 0; c < grid[r].length; c++) {
-                    const court = grid[r][c];
-                    if (court.rest) {
-                        html += `<div class="rest">🟡 Repos : ${getPlayerName(court.rest)}</div>`;
-                        continue;
-                    }
-                    const pos = court.players;
-                    const mapped = pos.map(p => {
-                        if (p <= positions.length) return positions[p - 1];
-                        return null;
-                    }).filter(p => p !== null);
-                    const mappedWithRepl = mapped.map((p, idx) => getReplacementPlayer(r, c, idx, p));
-                    if (mappedWithRepl.length < 2) continue;
-                    
-                    let scores;
-                    if (court.type === '1x1' || court.type === '2x1') {
-                        scores = specialMatchScores[r] && specialMatchScores[r][c] ? specialMatchScores[r][c] : { 1: '', 2: '' };
-                    } else {
-                        scores = matchScores[r] && matchScores[r][c] ? matchScores[r][c] : { 1: '', 2: '' };
-                    }
-                    const s1 = scores[1] || '—';
-                    const s2 = scores[2] || '—';
-                    const done = scores[1] && scores[2] && parseInt(scores[1]) > 0 && parseInt(scores[2]) > 0;
-                    
-                    const team1 = court.type === '2x1' ? mappedWithRepl.slice(0, 2) : mappedWithRepl.slice(0, 2);
-                    const team2 = court.type === '2x1' ? [mappedWithRepl[2]] : mappedWithRepl.slice(2, 4);
-                    
-                    html += `<div class="match">
-                        <div><span class="team">${team1.map(p => getPlayerName(p)).join(' + ')}</span>
-                        <span class="vs">VS</span>
-                        <span class="team">${team2.map(p => getPlayerName(p)).join(' + ')}</span>
-                        <span class="score"> ${done ? `${s1} – ${s2}` : ''}</span>
-                        <span style="font-size:10px;color:#999;"> Terrain ${c+1}</span></div>
-                    </div>`;
-                }
-                html += `</div>`;
-            }
-        }
-        html += `<div class="no-print" style="margin-top:20px;">
-            <button onclick="window.print()">Imprimer</button>
-            <button onclick="window.close()">Fermer</button>
-        </div>
-        </body></html>`;
-        win.document.write(html);
-        win.document.close();
-        setTimeout(() => win.print(), 500);
-    };
-
-    window.printCurrentRound = function() {
-        const grid = ST.schedule || getGridForN();
-        if (!grid || grid.length === 0) { showNotice('❌ Aucun match généré.', 'error'); return; }
-        const r = ST.activeRound || 0;
-        if (r >= grid.length) { showNotice('❌ Tour invalide.', 'error'); return; }
-        const win = window.open('', '_print', 'width=800,height=600');
-        let html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Tour '+(r+1)+'</title>';
-        html += `<style>body{font-family:Arial,sans-serif;padding:20px;font-size:12px;}
-            .round{page-break-inside:avoid;}
-            .round-title{background:#333;color:#fff;padding:6px 10px;font-weight:bold;margin-bottom:10px;}
-            .match{border:1px solid #ccc;padding:8px;margin:4px 0;border-radius:4px;}
-            .team{font-weight:bold;}
-            .vs{color:#999;margin:0 6px;}
-            .score{font-weight:bold;color:#1e8c45;}
-            .rest{color:#b87c00;background:#fff3cd;padding:4px;}
-            .header{text-align:center;font-size:18px;font-weight:bold;margin-bottom:10px;}
-            @media print{.no-print{display:none;}}
-        </style></head><body>
-        <div class="header">Tour ${r+1}</div>
-        <div class="round">`;
-        for (let c = 0; c < grid[r].length; c++) {
-            const court = grid[r][c];
-            if (court.rest) {
-                html += `<div class="rest">🟡 Repos : ${getPlayerName(court.rest)}</div>`;
-                continue;
-            }
-            const pos = court.players;
-            const mapped = pos.map(p => {
-                if (p <= positions.length) return positions[p - 1];
-                return null;
-            }).filter(p => p !== null);
-            const mappedWithRepl = mapped.map((p, idx) => getReplacementPlayer(r, c, idx, p));
-            if (mappedWithRepl.length < 2) continue;
-            
-            let scores;
-            if (court.type === '1x1' || court.type === '2x1') {
-                scores = specialMatchScores[r] && specialMatchScores[r][c] ? specialMatchScores[r][c] : { 1: '', 2: '' };
-            } else {
-                scores = matchScores[r] && matchScores[r][c] ? matchScores[r][c] : { 1: '', 2: '' };
-            }
-            const s1 = scores[1] || '—';
-            const s2 = scores[2] || '—';
-            const done = scores[1] && scores[2] && parseInt(scores[1]) > 0 && parseInt(scores[2]) > 0;
-            
-            const team1 = court.type === '2x1' ? mappedWithRepl.slice(0, 2) : mappedWithRepl.slice(0, 2);
-            const team2 = court.type === '2x1' ? [mappedWithRepl[2]] : mappedWithRepl.slice(2, 4);
-            
-            html += `<div class="match">
-                <div><span class="team">${team1.map(p => getPlayerName(p)).join(' + ')}</span>
-                <span class="vs">VS</span>
-                <span class="team">${team2.map(p => getPlayerName(p)).join(' + ')}</span>
-                <span class="score"> ${done ? `${s1} – ${s2}` : ''}</span>
-                <span style="font-size:10px;color:#999;"> Terrain ${c+1}</span></div>
-            </div>`;
-        }
-        html += `</div>
-        <div class="no-print" style="margin-top:20px;">
-            <button onclick="window.print()">Imprimer</button>
-            <button onclick="window.close()">Fermer</button>
-        </div>
-        </body></html>`;
-        win.document.write(html);
-        win.document.close();
-        setTimeout(() => win.print(), 500);
-    };
-
-    window.printRanking = function() {
-        const ranking = calculateRankingSimple();
-        if (!ranking || ranking.length === 0) { showNotice('❌ Aucun classement disponible.', 'error'); return; }
-        const win = window.open('', '_print', 'width=800,height=600');
-        let html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Classement</title>';
-        html += `<style>body{font-family:Arial,sans-serif;padding:20px;font-size:12px;}
-            table{width:100%;border-collapse:collapse;margin:10px 0;}
-            th,td{border:1px solid #ccc;padding:6px;text-align:center;}
-            th{background:#333;color:#fff;}
-            .header{text-align:center;font-size:18px;font-weight:bold;margin-bottom:10px;}
-            .gold{background:#ffd700;}
-            .silver{background:#c0c0c0;}
-            .bronze{background:#cd7f32;color:#fff;}
-            .pts{font-weight:bold;color:#1e8c45;}
-            @media print{.no-print{display:none;}}
-        </style></head><body>
-        <div class="header">Classement</div>
-        <table><thead><tr><th>#</th><th>Joueur</th><th>Points</th><th>V</th><th>N</th><th>D</th><th>+/-</th></tr></thead><tbody>`;
-        ranking.forEach((p, i) => {
-            const cls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
-            const diff = p.scored - p.conceded;
-            html += `<tr class="${cls}">
-                <td>${i+1}</td>
-                <td style="text-align:left;">${p.name}</td>
-                <td class="pts">${p.points || 0}</td>
-                <td>${p.wins || 0}</td>
-                <td>${p.draws || 0}</td>
-                <td>${p.losses || 0}</td>
-                <td>${diff > 0 ? '+' : ''}${diff}</td>
-            </tr>`;
-        });
-        html += `</tbody></table>
-        <div class="no-print" style="margin-top:20px;">
-            <button onclick="window.print()">Imprimer</button>
-            <button onclick="window.close()">Fermer</button>
-        </div>
-        </body></html>`;
-        win.document.write(html);
-        win.document.close();
-        setTimeout(() => win.print(), 500);
-    };
-
-    window.printStats = function() {
-        const win = window.open('', '_print', 'width=800,height=600');
-        let html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Statistiques</title>';
-        html += `<style>body{font-family:Arial,sans-serif;padding:20px;font-size:12px;}
-            .stat{background:#f5f5f5;padding:10px;margin:5px 0;border-radius:4px;}
-            .header{text-align:center;font-size:18px;font-weight:bold;margin-bottom:10px;}
-            @media print{.no-print{display:none;}}
-        </style></head><body>
-        <div class="header">Statistiques</div>`;
-        const players = getActivePlayerNumbers();
-        const grid = ST.schedule || getGridForN();
-        let totalMatches = 0, completed = 0;
-        if (grid) {
-            for (let r = 0; r < grid.length; r++) {
-                for (let c = 0; c < grid[r].length; c++) {
-                    if (grid[r][c].rest) continue;
-                    totalMatches++;
-                    let scores;
-                    if (grid[r][c].type === '1x1' || grid[r][c].type === '2x1') {
-                        scores = specialMatchScores[r] && specialMatchScores[r][c] ? specialMatchScores[r][c] : { 1: 0, 2: 0 };
-                    } else {
-                        scores = matchScores[r] && matchScores[r][c] ? matchScores[r][c] : { 1: 0, 2: 0 };
-                    }
-                    if ((scores[1] && parseInt(scores[1]) > 0) || (scores[2] && parseInt(scores[2]) > 0)) completed++;
-                }
-            }
-        }
-        html += `<div class="stat"><strong>Joueurs :</strong> ${players.length}</div>`;
-        html += `<div class="stat"><strong>Matchs :</strong> ${completed} / ${totalMatches} terminés</div>`;
-        let totalRepl = 0;
-        Object.keys(playerReplacements).forEach(r => {
-            Object.keys(playerReplacements[r]).forEach(c => {
-                totalRepl += Object.keys(playerReplacements[r][c]).length;
-            });
-        });
-        html += `<div class="stat"><strong>Remplacements :</strong> ${totalRepl}</div>`;
-        html += `<div class="no-print" style="margin-top:20px;">
-            <button onclick="window.print()">Imprimer</button>
-            <button onclick="window.close()">Fermer</button>
-        </div>
-        </body></html>`;
-        win.document.write(html);
-        win.document.close();
-        setTimeout(() => win.print(), 500);
-    };
-
     // ─── NOTICE ─────────────────────────────────────────────────
     function showNotice(message, type) {
         const notice = document.getElementById('notice');
@@ -3225,11 +3327,6 @@
             setTimeout(() => notice.style.display = 'none', 3000);
         }
     }
-
-    // ─── LIVE OVERLAY ──────────────────────────────────────────
-    window.closeLiveOverlay = function() {
-        document.getElementById('liveOverlay').classList.remove('open');
-    };
 
     // ─── INIT ──────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function() {
@@ -3250,8 +3347,8 @@
         buildPlayerInputs();
         updateActiveCount();
         updatePositions();
-        updatePlayerProgramSelect();
         updateStatusBar();
+        updateLiveInfo();
 
         if (CURRENT_USER) {
             document.getElementById('loginScreen').style.display = 'none';
@@ -3259,6 +3356,7 @@
             updateUIForRole();
             subscribeToTournament();
             subscribeToResults();
+            subscribeLiveStatus();
             if (USER_ROLE === 'admin') {
                 document.getElementById('adminTabBtn').style.display = '';
                 loadUserList();
@@ -3280,6 +3378,7 @@
 
     console.log('🏓 Pickleball Unifié chargé avec Firebase !');
     console.log('👤 Rôle:', USER_ROLE);
+    console.log('🔓 Live ouvert:', LIVE_OPEN);
 </script>
 
 </body>
