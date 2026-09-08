@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700;900&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* ===== STYLES PRINCIPAUX ===== */
+        /* ===== STYLES ===== */
         :root {
             --primary: #9c27b0;
             --secondary: #3498db;
@@ -37,12 +37,7 @@
             --r: 8px;
             --shadow: 0 2px 8px rgba(0,0,0,0.06);
         }
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body {
             font-family: 'Segoe UI', 'Exo 2', Arial, sans-serif;
             background: var(--bg);
@@ -68,7 +63,6 @@
         h1 {
             font-size: 1.4rem;
             color: var(--primary);
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -260,37 +254,22 @@
             font-weight: 600;
             color: var(--dark);
         }
-        .replacement-log {
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid #e0e0e0;
+        .round-border {
+            border: 2px solid var(--primary);
             border-radius: 8px;
-            margin-top: 10px;
+            padding: 10px;
+            margin: 10px 0;
+            background: #f8f9fa;
         }
-        .replacement-item {
-            padding: 8px 12px;
-            border-bottom: 1px solid #f0f0f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.85rem;
+        .round-title {
+            background: var(--primary);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 5px;
+            margin: -10px -10px 10px -10px;
+            font-weight: bold;
+            font-size: 0.9rem;
         }
-        .replacement-item:last-child { border-bottom: none; }
-        .replacement-info {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .replacement-badge {
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            font-weight: 500;
-        }
-        .replacement-badge.tour { background: #e3f2fd; color: #1976d2; }
-        .replacement-badge.old { background: #ffebee; color: #c62828; }
-        .replacement-badge.new { background: #e8f5e8; color: #2e7d32; }
         .live-overlay {
             display: none;
             position: fixed;
@@ -312,20 +291,30 @@
         }
         .live-overlay-box h2 { color: var(--primary); margin-bottom: 10px; }
         .live-overlay-box p { color: var(--muted); margin-bottom: 20px; }
-        @media (max-width: 600px) {
-            body { padding: 4px; }
-            .app { padding: 8px; border-radius: 12px; }
-            h1 { font-size: 1.1rem; }
-            .tab-btn { font-size: 0.7rem; padding: 6px 8px; min-height: 32px; }
-            .controls .btn { font-size: 0.7rem; padding: 6px 10px; min-height: 32px; }
-            .score-input { width: 50px; font-size: 0.8rem; }
-            .team-row { flex-direction: column; align-items: stretch; }
-            .vs { margin: 2px 0; }
+        .spectator-badge {
+            display: inline-block;
+            background: var(--info);
+            color: white;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
         }
-        @media (min-width: 768px) {
-            .app { padding: 20px; }
-            .team-row { flex-direction: row; }
+        #notice {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--success);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: none;
+            z-index: 999;
+            font-size: 0.9rem;
+            max-width: 80%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
+        #notice.error { background: var(--danger); }
         #loginScreen {
             display: flex;
             align-items: center;
@@ -423,46 +412,20 @@
             transition: all 0.15s;
         }
         .btn-live:hover { opacity: 0.9; }
-        .spectator-badge {
-            display: inline-block;
-            background: var(--info);
-            color: white;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            font-weight: 600;
+        @media (max-width: 600px) {
+            body { padding: 4px; }
+            .app { padding: 8px; border-radius: 12px; }
+            h1 { font-size: 1.1rem; }
+            .tab-btn { font-size: 0.7rem; padding: 6px 8px; min-height: 32px; }
+            .controls .btn { font-size: 0.7rem; padding: 6px 10px; min-height: 32px; }
+            .score-input { width: 50px; font-size: 0.8rem; }
+            .team-row { flex-direction: column; align-items: stretch; }
+            .vs { margin: 2px 0; }
         }
-        .round-border {
-            border: 2px solid var(--primary);
-            border-radius: 8px;
-            padding: 10px;
-            margin: 10px 0;
-            background: #f8f9fa;
+        @media (min-width: 768px) {
+            .app { padding: 20px; }
+            .team-row { flex-direction: row; }
         }
-        .round-title {
-            background: var(--primary);
-            color: white;
-            padding: 6px 10px;
-            border-radius: 5px;
-            margin: -10px -10px 10px -10px;
-            font-weight: bold;
-            font-size: 0.9rem;
-        }
-        #notice {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: var(--success);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            display: none;
-            z-index: 999;
-            font-size: 0.9rem;
-            max-width: 80%;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-        #notice.error { background: var(--danger); }
     </style>
 </head>
 <body>
@@ -476,7 +439,6 @@
         <div class="login-sub">Tournoi Unifié · Gestion en ligne</div>
         <div class="auth-msg" id="authMsg"></div>
 
-        <!-- Accès Spectateur -->
         <div style="background: #f0f7ff; border-radius: 12px; padding: 15px; margin-bottom: 18px; border: 2px solid var(--info);">
             <div style="font-weight: 700; text-align: center; color: var(--secondary); margin-bottom: 8px;">👁️ Accès Spectateur</div>
             <button class="btn-live" onclick="enterLiveMode()">
@@ -487,7 +449,6 @@
             </div>
         </div>
 
-        <!-- Connexion Staff -->
         <div style="border-top: 2px solid #eee; padding-top: 18px;">
             <div style="font-weight: 700; text-align: center; color: var(--primary); margin-bottom: 12px;">🔑 Accès Staff</div>
             <div class="login-form" id="loginForm">
@@ -678,12 +639,11 @@
     import { initializeApp } from 'firebase/app';
     import {
         getAuth, onAuthStateChanged, signInWithEmailAndPassword,
-        createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider,
-        signOut, updateProfile
+        signInWithPopup, GoogleAuthProvider, signOut
     } from 'firebase/auth';
     import {
         getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot,
-        collection, query, where, serverTimestamp
+        collection, serverTimestamp
     } from 'firebase/firestore';
 
     const firebaseConfig = {
@@ -788,7 +748,7 @@
         }
     }
 
-    // ─── ADMIN : Création de compte ─────────────────────────────
+    // ─── ADMIN ──────────────────────────────────────────────────
     window.adminCreateUser = async function() {
         if (USER_ROLE !== 'admin') {
             showNewUserMsg('❌ Action réservée aux administrateurs.', 'error');
@@ -848,7 +808,6 @@
         }
     }
 
-    // ─── LISTE DES UTILISATEURS (Admin) ─────────────────────────
     function loadUserList() {
         if (USER_ROLE !== 'admin') return;
         if (unsubUserList) return;
@@ -934,7 +893,7 @@
         }
     });
 
-    // ─── MODE SPECTATEUR SANS COMPTE ────────────────────────────
+    // ─── MODE SPECTATEUR ────────────────────────────────────────
     window.enterLiveMode = function() {
         if (CURRENT_USER) return;
         USER_ROLE = 'spectator';
@@ -957,8 +916,7 @@
         matchScores: {},
         specialMatchScores: {},
         playerReplacements: {},
-        replacementLog: [],
-        activeRound: 0
+        replacementLog: []
     };
 
     function subscribeToTournament() {
@@ -966,7 +924,6 @@
         unsubTournament = onSnapshot(doc(db, 'tournament', 'current'), (snap) => {
             if (!snap.exists()) return;
             const data = snap.data();
-            // Ne pas écraser avec des données vides
             if (data.players && Object.keys(data.players).length > 0) ST.players = data.players;
             if (data.schedule && data.schedule.length > 0) ST.schedule = data.schedule;
             if (data.positions && data.positions.length > 0) ST.positions = data.positions;
@@ -976,16 +933,13 @@
             if (data.specialMatchScores) ST.specialMatchScores = data.specialMatchScores;
             if (data.playerReplacements) ST.playerReplacements = data.playerReplacements;
             if (data.replacementLog) ST.replacementLog = data.replacementLog;
-            if (data.activeRound !== undefined) ST.activeRound = data.activeRound;
             refreshUI();
         }, (e) => console.warn('subscribeToTournament error:', e));
     }
 
     function subscribeToResults() {
         if (unsubResults) return;
-        unsubResults = onSnapshot(collection(db, 'results'), (snap) => {
-            // On ne stocke pas les résultats dans ST car on utilise matchScores/specialMatchScores
-            // Mais on pourrait les utiliser pour synchroniser
+        unsubResults = onSnapshot(collection(db, 'results'), () => {
             refreshUI();
         }, (e) => console.warn('subscribeToResults error:', e));
     }
@@ -1003,48 +957,48 @@
             return;
         }
         try {
-            // Nettoyer les données pour Firestore (pas de tableaux imbriqués)
+            // Nettoyer les données : convertir les structures complexes en format Firestore
             const cleanData = {};
             for (const [key, value] of Object.entries(fields)) {
-                if (value !== undefined && value !== null) {
+                if (value === undefined || value === null) continue;
+                
+                // Si c'est un tableau de matchs, le garder tel quel (Firestore accepte les tableaux d'objets)
+                if (key === 'schedule' && Array.isArray(value)) {
+                    cleanData[key] = value;
+                } else if (key === 'players' && typeof value === 'object') {
+                    cleanData[key] = value;
+                } else if (key === 'positions' && Array.isArray(value)) {
+                    cleanData[key] = value;
+                } else if (key === 'matchScores' || key === 'specialMatchScores' || key === 'playerReplacements') {
+                    cleanData[key] = value || {};
+                } else if (key === 'replacementLog' && Array.isArray(value)) {
+                    cleanData[key] = value;
+                } else if (key === 'courts' || key === 'N') {
+                    cleanData[key] = value;
+                } else {
                     cleanData[key] = value;
                 }
             }
+            
             await setDoc(doc(db, 'tournament', 'current'), {
                 ...cleanData,
                 updatedAt: serverTimestamp()
             }, { merge: true });
+            
+            showNotice('✅ Données sauvegardées');
         } catch (e) {
             console.error('saveTournament error:', e);
             showNotice('❌ Erreur de sauvegarde: ' + e.message, 'error');
         }
     }
 
-    async function saveResult(key, ga, gb) {
-        if (USER_ROLE === 'spectator') {
-            console.warn('Spectateur ne peut pas sauvegarder les scores.');
-            return;
-        }
-        try {
-            if (ga === '' && gb === '') {
-                await deleteDoc(doc(db, 'results', key));
-            } else {
-                await setDoc(doc(db, 'results', key), {
-                    ga: ga === '' ? null : ga,
-                    gb: gb === '' ? null : gb,
-                    savedAt: serverTimestamp(),
-                    savedBy: CURRENT_USER?.uid || 'anonymous'
-                });
-            }
-        } catch (e) {
-            console.error('saveResult error:', e);
-        }
-    }
-
     // ─── INTERFACE ──────────────────────────────────────────────
     function updateUIForRole() {
         const roleMap = { admin: '👑 Admin', scorer: '✏️ Scorer', spectator: '🔒 Spectateur' };
-        document.getElementById('hdrUserInfo').innerHTML = `· <span class="spectator-badge">${roleMap[USER_ROLE] || 'Spectateur'}</span>`;
+        const userInfo = document.getElementById('hdrUserInfo');
+        if (userInfo) {
+            userInfo.innerHTML = `· <span class="spectator-badge">${roleMap[USER_ROLE] || 'Spectateur'}</span>`;
+        }
 
         const isAdmin = USER_ROLE === 'admin';
         const isScorer = isAdmin || USER_ROLE === 'scorer';
@@ -1053,7 +1007,8 @@
         document.querySelectorAll('.controls .btn:not(.ghost)').forEach(btn => {
             btn.style.display = isScorer ? '' : 'none';
         });
-        document.getElementById('btnGenerate').style.display = isScorer ? '' : 'none';
+        const genBtn = document.getElementById('btnGenerate');
+        if (genBtn) genBtn.style.display = isScorer ? '' : 'none';
 
         document.querySelectorAll('.score-input, .player-input, select').forEach(el => {
             if (isSpectator) {
@@ -1065,21 +1020,23 @@
             }
         });
 
-        document.getElementById('adminTabBtn').style.display = isAdmin ? '' : 'none';
+        const adminBtn = document.getElementById('adminTabBtn');
+        if (adminBtn) adminBtn.style.display = isAdmin ? '' : 'none';
     }
 
     function refreshUI() {
-        if (ST.positions.length === 0 && ST.N > 0) {
-            ST.positions = Array.from({ length: ST.N }, (_, i) => i + 1);
+        // Synchroniser les variables globales
+        window.positions = ST.positions || [];
+        window.N = ST.N || 8;
+        window.courts = ST.courts || 3;
+        window.matchScores = ST.matchScores || {};
+        window.specialMatchScores = ST.specialMatchScores || {};
+        window.playerReplacements = ST.playerReplacements || {};
+        window.replacementLog = ST.replacementLog || [];
+
+        if (window.positions.length === 0 && window.N > 0) {
+            window.positions = Array.from({ length: window.N }, (_, i) => i + 1);
         }
-        // Synchroniser les positions avec le state global
-        window.positions = ST.positions;
-        window.N = ST.N;
-        window.courts = ST.courts;
-        window.matchScores = ST.matchScores;
-        window.specialMatchScores = ST.specialMatchScores;
-        window.playerReplacements = ST.playerReplacements;
-        window.replacementLog = ST.replacementLog;
 
         updateActiveCount();
         updatePositions();
@@ -1389,7 +1346,8 @@
             showNotice('⚠️ Aucune grille disponible pour cette configuration.', 'error');
             return;
         }
-        ST.schedule = JSON.parse(JSON.stringify(grid)); // Copie propre
+        // Copie profonde pour éviter les références
+        ST.schedule = JSON.parse(JSON.stringify(grid));
         ST.matchScores = {};
         ST.specialMatchScores = {};
         ST.playerReplacements = {};
@@ -1399,8 +1357,8 @@
         playerReplacements = {};
         replacementLog = [];
 
-        // Sauvegarder dans Firestore avec les données nettoyées
-        const dataToSave = {
+        // Sauvegarder dans Firestore
+        saveTournament({
             schedule: ST.schedule,
             positions: positions,
             courts: courts,
@@ -1409,9 +1367,7 @@
             specialMatchScores: {},
             playerReplacements: {},
             replacementLog: []
-        };
-
-        saveTournament(dataToSave);
+        });
 
         renderMatches();
         calculateRanking();
@@ -1540,7 +1496,6 @@
                         if (!matchScores[round][court]) matchScores[round][court] = {};
                         matchScores[round][court][side] = score;
                     }
-                    // Mettre à jour ST
                     ST.matchScores = matchScores;
                     ST.specialMatchScores = specialMatchScores;
                     saveTournament({
@@ -1782,16 +1737,16 @@
                 </div>
             </div>
             ${replacementLog.length > 0 ? `
-            <div class="replacement-log" style="margin-top:12px;">
+            <div style="margin-top:12px; border:1px solid #e0e0e0; border-radius:8px; overflow:hidden;">
                 <div style="font-weight:600; padding:8px 12px; background:#f0f0f0;">Journal des remplacements</div>
                 ${replacementLog.map(entry => `
-                    <div class="replacement-item">
-                        <div class="replacement-info">
-                            <span class="replacement-badge tour">Tour ${entry.round}</span>
+                    <div style="padding:8px 12px; border-bottom:1px solid #f0f0f0; display:flex; justify-content:space-between; align-items:center; font-size:0.85rem;">
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                            <span style="background:#e3f2fd; color:#1976d2; padding:2px 8px; border-radius:12px; font-size:0.7rem; font-weight:500;">Tour ${entry.round}</span>
                             <span>${entry.court}</span>
-                            <span class="replacement-badge old">${entry.oldPlayer}</span>
+                            <span style="background:#ffebee; color:#c62828; padding:2px 8px; border-radius:12px; font-size:0.7rem; font-weight:500;">${entry.oldPlayer}</span>
                             <i class="fas fa-arrow-right" style="color:#666;"></i>
-                            <span class="replacement-badge new">${entry.newPlayer}</span>
+                            <span style="background:#e8f5e8; color:#2e7d32; padding:2px 8px; border-radius:12px; font-size:0.7rem; font-weight:500;">${entry.newPlayer}</span>
                         </div>
                         <span style="font-size:0.75rem; color:#666;">${entry.timestamp}</span>
                     </div>
@@ -1803,7 +1758,8 @@
     // ─── UPDATE STATUS BAR ──────────────────────────────────────
     function updateStatusBar() {
         const players = getActivePlayerNumbers();
-        document.getElementById('activePlayersCount').textContent = players.length;
+        const countEl = document.getElementById('activePlayersCount');
+        if (countEl) countEl.textContent = players.length;
 
         const grid = ST.schedule || getGridForN();
         let totalMatches = 0;
@@ -1825,9 +1781,11 @@
                 }
             }
         }
-        document.getElementById('completedMatches').textContent = completed;
+        const completedEl = document.getElementById('completedMatches');
+        if (completedEl) completedEl.textContent = completed;
         const progress = totalMatches > 0 ? Math.round((completed / totalMatches) * 100) : 0;
-        document.getElementById('tournamentProgress').textContent = progress + '%';
+        const progressEl = document.getElementById('tournamentProgress');
+        if (progressEl) progressEl.textContent = progress + '%';
 
         let totalReplacements = 0;
         Object.keys(playerReplacements).forEach(round => {
@@ -1835,13 +1793,15 @@
                 totalReplacements += Object.keys(playerReplacements[round][court]).length;
             });
         });
-        document.getElementById('totalReplacements').textContent = totalReplacements;
+        const replEl = document.getElementById('totalReplacements');
+        if (replEl) replEl.textContent = totalReplacements;
     }
 
     function updateActiveCount() {
         const countText = document.getElementById('activeCountText');
         if (countText) countText.textContent = N;
-        document.getElementById('activePlayersCount').textContent = N;
+        const countEl = document.getElementById('activePlayersCount');
+        if (countEl) countEl.textContent = N;
     }
 
     // ─── CHANGE PLAYER COUNT ────────────────────────────────────
@@ -1945,7 +1905,7 @@
         ST.matchScores = {};
         ST.specialMatchScores = {};
         ST.playerReplacements = {};
-        ST.replacementLog = [];
+        ST.replacementLog = {};
         ST.schedule = [];
         for (let i = 1; i <= 20; i++) {
             const el = document.getElementById('player' + i);
@@ -1969,7 +1929,7 @@
         showNotice('Réinitialisation effectuée');
     };
 
-    // ─── SAVE / LOAD ────────────────────────────────────────────
+    // ─── SAVE ──────────────────────────────────────────────────
     window.saveData = function() {
         saveTournament({
             positions: positions,
@@ -1979,10 +1939,9 @@
             specialMatchScores: specialMatchScores,
             playerReplacements: playerReplacements,
             replacementLog: replacementLog,
-            schedule: ST.schedule,
-            players: ST.players
+            schedule: ST.schedule || [],
+            players: ST.players || {}
         });
-        showNotice('✅ Données sauvegardées');
     };
 
     function scheduleAutoSave() {
@@ -2027,11 +1986,12 @@
 
     // ─── INIT ──────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialiser les éléments
         const courtsSelect = document.getElementById('courtsCount');
-        courtsSelect.value = '3';
+        if (courtsSelect) courtsSelect.value = '3';
         buildPlayerCountOptions(8);
         const pcSelect = document.getElementById('playerCount');
-        N = parseInt(pcSelect.value);
+        if (pcSelect) N = parseInt(pcSelect.value);
         ST.N = N;
         courts = 3;
         ST.courts = courts;
