@@ -117,6 +117,19 @@
             transition: all 0.15s;
         }
         .btn-live:hover { opacity: 0.9; transform: scale(1.02); }
+        .btn-live-outline {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 2px solid var(--secondary);
+            background: transparent;
+            color: var(--secondary);
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-live-outline:hover { background: var(--secondary); color: white; }
 
         .tabs {
             display: flex;
@@ -342,7 +355,7 @@
         }
         #notice.error { background: var(--danger); }
 
-        /* LOGIN SCREEN */
+        /* LOGIN SCREEN - STYLE AMERICANO */
         #loginScreen {
             display: flex;
             align-items: center;
@@ -428,91 +441,135 @@
         }
         .btn-google:hover { background: #f5f5f5; }
 
-        /* ACCUEIL GRID */
-        .accueil-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 12px;
-            margin: 10px 0;
+        /* ZONE SPECTATEUR AMERICANO */
+        .spectator-zone {
+            background: linear-gradient(135deg, #d9f0dc, #c3e8c9);
+            border-radius: 14px;
+            padding: 18px 16px;
+            margin-bottom: 18px;
+            border: 2px solid rgba(90, 170, 110, 0.35);
         }
-        .accueil-card {
-            background: white;
-            border: 2px solid var(--bdr);
-            border-radius: 12px;
-            padding: 16px 12px;
+        .spectator-zone-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: #2e6b3e;
             text-align: center;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+        .spectator-zone-sub {
+            font-size: 12px;
+            color: rgba(40, 90, 55, 0.75);
+            text-align: center;
+            margin-bottom: 14px;
+        }
+        .spectator-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .spectator-grid .btn-live {
+            padding: 16px 8px;
+            border-radius: 10px;
+            border: 2px solid #e04040;
+            background: linear-gradient(135deg, #7a1a1a, #c01515);
+            color: #fff;
+            font-family: 'Oswald', sans-serif;
+            font-size: 18px;
+            letter-spacing: 0.8px;
             cursor: pointer;
+            text-transform: uppercase;
             transition: all 0.2s;
-            min-height: 100px;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 7px;
+            font-weight: 700;
+            width: 100%;
         }
-        .accueil-card:hover {
-            border-color: var(--primary);
-            transform: translateY(-3px);
-            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        .spectator-grid .btn-live:hover { opacity: 0.9; transform: scale(1.02); }
+        .spectator-grid .btn-live .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #fff;
+            animation: blink 1.2s ease-in-out infinite;
+            flex-shrink: 0;
         }
-        .accueil-card .icon { font-size: 2rem; color: var(--primary); }
-        .accueil-card .label { font-weight: 700; font-size: 0.85rem; color: var(--ink); }
-        .accueil-card .sub { font-size: 0.65rem; color: var(--muted); }
-        .accueil-card.tv-card {
-            border-color: var(--secondary);
-            background: linear-gradient(135deg, #f0f8ff, #e8f4f8);
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .spectator-grid .btn-classement {
+            padding: 16px 8px;
+            border-radius: 10px;
+            border: 2px solid #6fd485;
+            background: linear-gradient(135deg, #4fa868, #3d8a54);
+            color: #fff;
+            font-family: 'Oswald', sans-serif;
+            font-size: 18px;
+            letter-spacing: 0.8px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            font-weight: 700;
+            width: 100%;
         }
-        .accueil-card.tv-card .icon { color: var(--secondary); }
+        .spectator-grid .btn-classement:hover { opacity: 0.9; transform: scale(1.02); }
+        .spectator-grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+        }
+        .spectator-grid-3 .btn-outline {
+            padding: 13px 6px;
+            background: rgba(255, 255, 255, 0.55);
+            border: 1.5px solid rgba(90, 170, 110, 0.35);
+            border-radius: 10px;
+            color: #2e6b3e;
+            font-family: 'Oswald', sans-serif;
+            font-size: 14px;
+            letter-spacing: 0.4px;
+            cursor: pointer;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.15s;
+            font-weight: 600;
+        }
+        .spectator-grid-3 .btn-outline:hover { background: rgba(255, 255, 255, 0.8); }
 
-        /* MODAL */
-        .modal-bg {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.55);
-            z-index: 500;
-            align-items: center;
-            justify-content: center;
+        /* ZONE STAFF AMERICANO */
+        .staff-zone {
+            background: var(--s2);
+            border: 2px solid var(--bdr2);
+            border-radius: 14px;
             padding: 16px;
         }
-        .modal-bg.open { display: flex; }
-        .modal {
-            background: white;
-            border: 1px solid var(--bdr);
-            border-radius: 14px;
-            padding: 24px;
-            max-width: 500px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-            animation: fadeIn 0.2s ease;
-        }
-        .modal-ttl {
+        .staff-zone-title {
             font-family: 'Oswald', sans-serif;
-            font-size: 20px;
+            font-size: 16px;
+            font-weight: 700;
             letter-spacing: 1px;
-            color: var(--primary);
-            margin-bottom: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            color: var(--warning);
+            text-align: center;
+            margin-bottom: 2px;
+            text-transform: uppercase;
         }
-        .sub-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 9px 12px;
-            border: 1.5px solid var(--bdr);
-            border-radius: 8px;
-            margin-bottom: 6px;
-            cursor: pointer;
-            transition: all .15s;
-            background: var(--s1);
+        .staff-zone-sub {
+            font-size: 11px;
+            color: var(--muted);
+            text-align: center;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .sub-item:hover { border-color: var(--warning); background: #fff3cd; }
-        .sub-item.sel { border-color: var(--warning); background: #fff3cd; box-shadow: 0 0 0 2px rgba(255,152,0,0.2); }
-        .sub-list { max-height: 220px; overflow-y: auto; margin-top: 8px; }
 
         /* TV MODE */
         body.tv-mode .app > header,
@@ -719,6 +776,56 @@
             display: none;
         }
 
+        /* MODAL */
+        .modal-bg {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 500;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .modal-bg.open { display: flex; }
+        .modal {
+            background: white;
+            border: 1px solid var(--bdr);
+            border-radius: 14px;
+            padding: 24px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            animation: fadeIn 0.2s ease;
+        }
+        .modal-ttl {
+            font-family: 'Oswald', sans-serif;
+            font-size: 20px;
+            letter-spacing: 1px;
+            color: var(--primary);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sub-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 12px;
+            border: 1.5px solid var(--bdr);
+            border-radius: 8px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all .15s;
+            background: var(--s1);
+        }
+        .sub-item:hover { border-color: var(--warning); background: #fff3cd; }
+        .sub-item.sel { border-color: var(--warning); background: #fff3cd; box-shadow: 0 0 0 2px rgba(255,152,0,0.2); }
+        .sub-list { max-height: 220px; overflow-y: auto; margin-top: 8px; }
+
         /* RESPONSIVE */
         @media (max-width: 600px) {
             body { padding: 4px; }
@@ -729,13 +836,14 @@
             .score-input { width: 50px; font-size: 0.8rem; }
             .team-row { flex-direction: column; align-items: stretch; }
             .vs { margin: 2px 0; }
-            .accueil-grid { grid-template-columns: 1fr 1fr; }
             .tv-match-grid { grid-template-columns: 1fr; }
+            .spectator-grid { grid-template-columns: 1fr; }
+            .spectator-grid-3 { grid-template-columns: 1fr 1fr; }
+            .login-box { padding: 20px; }
         }
         @media (min-width: 768px) {
             .app { padding: 20px; }
             .team-row { flex-direction: row; }
-            .accueil-grid { grid-template-columns: repeat(4, 1fr); }
         }
         @media print {
             .no-print { display: none !important; }
@@ -753,28 +861,40 @@
 <body>
 
 <!-- ════════════════════════════════════════════════════════════
-     ÉCRAN DE CONNEXION
+     ÉCRAN DE CONNEXION / ACCUEIL (STYLE AMERICANO)
      ════════════════════════════════════════════════════════════ -->
 <div id="loginScreen">
     <div class="login-box">
-        <div class="login-brand">🏓 Pickleball</div>
-        <div class="login-sub">Tournoi Unifié · Gestion en ligne</div>
+        <div class="login-brand">🏓 Americano</div>
+        <div class="login-sub">Pickleball · Gestion de Tournoi</div>
         <div class="auth-msg" id="authMsg"></div>
 
-        <!-- Accès Spectateur -->
-        <div style="background: #f0f7ff; border-radius: 12px; padding: 16px; margin-bottom: 18px; border: 2px solid var(--info);">
-            <div style="font-weight: 700; text-align: center; color: var(--secondary); margin-bottom: 10px; font-size: 1rem;">👁️ Accès Spectateur</div>
-            <button class="btn-live" onclick="enterLiveMode()">
-                <i class="fas fa-eye"></i> Entrer en mode Spectateur
-            </button>
-            <div style="font-size: 0.75rem; color: var(--muted); text-align: center; margin-top: 8px;">
-                Suivez le tournoi en temps réel — sans création de compte
+        <!-- ZONE SPECTATEUR -->
+        <div class="spectator-zone">
+            <div class="spectator-zone-title">👁 Accès Spectateur</div>
+            <div class="spectator-zone-sub">Suivez le tournoi en temps réel — sans inscription</div>
+            
+            <div class="spectator-grid">
+                <button class="btn-live" onclick="enterLiveModeAndGo(4)">
+                    <span class="dot"></span> LIVE
+                </button>
+                <button class="btn-classement" onclick="enterLiveModeAndGo(5)">
+                    🏆 CLASSEMENT
+                </button>
+            </div>
+            
+            <div class="spectator-grid-3">
+                <button class="btn-outline" onclick="enterLiveModeAndGo('P')">👤 JOUEURS</button>
+                <button class="btn-outline" onclick="enterLiveModeAndGo('R')">📋 RÈGLEMENT</button>
+                <button class="btn-outline" onclick="enterLiveModeAndGo('TV')">📺 ÉCRAN</button>
             </div>
         </div>
 
-        <!-- Connexion Staff -->
-        <div style="border-top: 2px solid #eee; padding-top: 18px;">
-            <div style="font-weight: 700; text-align: center; color: var(--primary); margin-bottom: 12px;">🔑 Accès Staff</div>
+        <!-- ZONE STAFF -->
+        <div class="staff-zone">
+            <div class="staff-zone-title">🔑 Connexion Staff</div>
+            <div class="staff-zone-sub">Accès privé</div>
+            
             <div class="login-form" id="loginForm">
                 <div>
                     <label>Email</label>
@@ -798,7 +918,7 @@
 </div>
 
 <!-- ════════════════════════════════════════════════════════════
-     APPLICATION PRINCIPALE
+     APPLICATION PRINCIPALE (après connexion)
      ════════════════════════════════════════════════════════════ -->
 <div id="appScreen" style="display:none;">
     <div class="app">
@@ -846,40 +966,25 @@
             <button class="tab-btn" id="adminTabBtn" onclick="showTab('adminTab')" style="display:none;"><i class="fas fa-crown"></i> Admin</button>
         </div>
 
-        <!-- ACCUEIL -->
+        <!-- ACCUEIL (après connexion) -->
         <div id="accueilTab" class="tab active">
             <div class="card">
                 <span class="card-title"><i class="fas fa-home"></i> Accueil</span>
-                <div class="accueil-grid">
-                    <div class="accueil-card" onclick="goToLive()">
-                        <div class="icon"><i class="fas fa-play-circle"></i></div>
-                        <div class="label">Live</div>
-                        <div class="sub">Matchs en cours</div>
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin:10px 0;">
+                    <div class="btn" style="background:linear-gradient(135deg,#7a1a1a,#c01515); border:2px solid #e04040; justify-content:center; padding:16px;" onclick="goToLive()">
+                        <span style="width:8px;height:8px;border-radius:50%;background:#fff;animation:blink 1.2s ease-in-out infinite;flex-shrink:0;"></span> LIVE
                     </div>
-                    <div class="accueil-card" onclick="showPlayerList()">
-                        <div class="icon"><i class="fas fa-users"></i></div>
-                        <div class="label">Joueurs</div>
-                        <div class="sub">Liste des participants</div>
+                    <div class="btn" style="background:linear-gradient(135deg,#4fa868,#3d8a54); border:2px solid #6fd485; justify-content:center; padding:16px;" onclick="showRanking()">
+                        🏆 CLASSEMENT
                     </div>
-                    <div class="accueil-card" onclick="showProgramModal()">
-                        <div class="icon"><i class="fas fa-calendar-alt"></i></div>
-                        <div class="label">Programme</div>
-                        <div class="sub">Matchs par joueur</div>
+                    <div class="btn secondary" style="justify-content:center; padding:16px;" onclick="showPlayerList()">
+                        👤 JOUEURS
                     </div>
-                    <div class="accueil-card tv-card" onclick="goToTV()">
-                        <div class="icon"><i class="fas fa-tv"></i></div>
-                        <div class="label">📺 Écran</div>
-                        <div class="sub">Affichage public</div>
+                    <div class="btn warning" style="justify-content:center; padding:16px;" onclick="toggleRules()">
+                        📋 RÈGLEMENT
                     </div>
-                    <div class="accueil-card" onclick="showRanking()">
-                        <div class="icon"><i class="fas fa-trophy"></i></div>
-                        <div class="label">Classement</div>
-                        <div class="sub">Classement général</div>
-                    </div>
-                    <div class="accueil-card" onclick="showStats()">
-                        <div class="icon"><i class="fas fa-chart-bar"></i></div>
-                        <div class="label">Statistiques</div>
-                        <div class="sub">Stats détaillées</div>
+                    <div class="btn" style="background:#1a1a2e; justify-content:center; padding:16px;" onclick="goToTV()">
+                        📺 ÉCRAN
                     </div>
                 </div>
             </div>
@@ -1100,7 +1205,7 @@
 <div id="notice"></div>
 
 <!-- ════════════════════════════════════════════════════════════
-     SCRIPTS
+     SCRIPTS (version simplifiée avec Firebase)
      ════════════════════════════════════════════════════════════ -->
 <script type="importmap">
 {
@@ -1159,6 +1264,7 @@
     let specialMatchScores = {};
     let playerReplacements = {};
     let replacementLog = [];
+    let rulesOpen = false;
 
     let ST = {
         players: {},
@@ -1458,10 +1564,10 @@
         }
     });
 
-    // ─── MODE SPECTATEUR ────────────────────────────────────────
-    window.enterLiveMode = function() {
+    // ─── MODE SPECTATEUR SANS COMPTE ────────────────────────────
+    window.enterLiveModeAndGo = function(target) {
         if (CURRENT_USER) return;
-        if (!LIVE_OPEN) {
+        if (!LIVE_OPEN && target !== 'R' && target !== 'TV') {
             const overlay = document.getElementById('liveOverlay');
             if (overlay) overlay.classList.add('open');
             return;
@@ -1475,7 +1581,13 @@
         subscribeToResults();
         subscribeLiveStatus();
         document.getElementById('adminTabBtn').style.display = 'none';
-        showTab('accueilTab');
+        
+        if (target === 4) goToLive();
+        else if (target === 5) showRanking();
+        else if (target === 'P') showPlayerList();
+        else if (target === 'R') toggleRules();
+        else if (target === 'TV') goToTV();
+        else showTab('accueilTab');
     };
 
     window.closeLiveOverlayAndShowAccueil = function() {
@@ -1547,42 +1659,13 @@
         document.getElementById('playerListModal').classList.remove('open');
     };
 
-    window.showProgramModal = function() {
-        if (!LIVE_OPEN && USER_ROLE === 'spectator') {
-            const overlay = document.getElementById('liveOverlay');
-            if (overlay) overlay.classList.add('open');
-            return;
-        }
-        const modal = document.getElementById('programModal');
-        const select = document.getElementById('programPlayerSelect');
-        if (!modal || !select) return;
-
-        select.innerHTML = '<option value="">Sélectionnez un joueur</option>';
-        for (let i = 1; i <= N; i++) {
-            const opt = document.createElement('option');
-            opt.value = i;
-            opt.textContent = getPlayerName(i);
-            select.appendChild(opt);
-        }
-
-        if (N > 0) {
-            select.value = 1;
-            updateProgramDisplay(1);
+    window.toggleRules = function() {
+        rulesOpen = !rulesOpen;
+        if (rulesOpen) {
+            showTab('rulesTab');
         } else {
-            document.getElementById('programDisplay').innerHTML = '<p style="color:var(--muted);">Aucun joueur.</p>';
+            showTab('accueilTab');
         }
-
-        select.onchange = function() {
-            const id = parseInt(this.value);
-            if (id) updateProgramDisplay(id);
-            else document.getElementById('programDisplay').innerHTML = '<p style="color:var(--muted);">Sélectionnez un joueur.</p>';
-        };
-
-        modal.classList.add('open');
-    };
-
-    window.closeProgramModal = function() {
-        document.getElementById('programModal').classList.remove('open');
     };
 
     window.showRanking = function() {
@@ -1673,26 +1756,21 @@
         const isScorer = isAdmin || USER_ROLE === 'scorer';
         const isSpectator = USER_ROLE === 'spectator';
 
-        // Contrôles staff (Admin seulement)
         const staffBtns = ['btnGenerate', 'btnShuffle', 'btnSave', 'btnReset'];
         staffBtns.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = isAdmin ? '' : 'none';
         });
 
-        // Admin tab
         const adminBtn = document.getElementById('adminTabBtn');
         if (adminBtn) adminBtn.style.display = isAdmin ? '' : 'none';
 
-        // Live toggle
         const liveBtn = document.getElementById('liveToggleBtn');
         if (liveBtn) liveBtn.style.display = isAdmin ? '' : 'none';
 
-        // Impression rapide (visible pour Scorer et Admin)
         const printCard = document.getElementById('quickPrintCard');
         if (printCard) printCard.style.display = isScorer ? '' : 'none';
 
-        // Champs de saisie (Scorer peut modifier les noms, Admin aussi)
         document.querySelectorAll('.player-input').forEach(el => {
             if (isSpectator) {
                 el.disabled = true;
@@ -1703,7 +1781,6 @@
             }
         });
 
-        // Scores (Scorer et Admin)
         document.querySelectorAll('.score-input').forEach(el => {
             if (isSpectator) {
                 el.disabled = true;
@@ -1714,13 +1791,11 @@
             }
         });
 
-        // Sélecteurs de remplacement (Admin uniquement)
         document.querySelectorAll('.replacement-select').forEach(el => {
             el.disabled = !isAdmin;
             el.style.opacity = isAdmin ? '1' : '0.5';
         });
 
-        // Configuration (Admin uniquement)
         document.querySelectorAll('#playersTab .player-row select').forEach(el => {
             el.disabled = !isAdmin;
             el.style.opacity = isAdmin ? '1' : '0.5';
@@ -2907,6 +2982,24 @@
         if (tabName === 'matchesTab' && (!ST.schedule || ST.schedule.length === 0)) {
             document.getElementById('matchesDisplay').innerHTML = '<p style="text-align:center;color:#666;padding:20px;">Cliquez sur "Générer" pour créer les matchs</p>';
         }
+        if (tabName === 'rulesTab') {
+            // Afficher le règlement
+            const display = document.getElementById('rulesDisplay');
+            if (display) {
+                display.innerHTML = `
+                    <div style="padding:10px 0;">
+                        <h3 style="color:var(--primary);">📋 Règlement du tournoi</h3>
+                        <div style="margin-top:10px; font-size:0.9rem; line-height:1.8;">
+                            <p><strong>Format :</strong> Tournoi Americano individuel</p>
+                            <p><strong>Points :</strong> Victoire = 3 pts, Nul = 2 pts, Défaite = 0 pt</p>
+                            <p><strong>Matchs :</strong> Chaque joueur joue plusieurs matchs contre des partenaires différents</p>
+                            <p><strong>Classement :</strong> Par points, puis goal-average</p>
+                            <p><strong>Remplacements :</strong> Un joueur blessé peut être remplacé par un autre</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
     };
 
     // ─── TV MODE ─────────────────────────────────────────────────
@@ -3593,6 +3686,7 @@
     window.printProgram = window.printProgram;
     window.goToTV = window.goToTV;
     window.exitTV = window.exitTV;
+    window.toggleRules = window.toggleRules;
 
     console.log('🏓 Pickleball Unifié chargé avec Firebase !');
     console.log('👤 Rôle:', USER_ROLE);
