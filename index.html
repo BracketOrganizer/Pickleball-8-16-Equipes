@@ -3250,8 +3250,13 @@ function applyTournamentData(data) {
   
   updateActiveCount();
   ensurePositions();
-  
-  if (Object.keys(matchScores).length > 0 || Object.keys(specialMatchScores).length > 0) {
+
+  // Reconstruit l'affichage Matchs/Classement/Statistiques dès qu'un tirage
+  // existe (positions reçues de Firestore), pas seulement une fois des
+  // scores saisis — sinon un autre appareil (mobile...) reste bloqué sur
+  // "Cliquez sur Générer avec Validation" tant qu'aucun score n'a été entré,
+  // même si le tournoi a bien été généré côté admin.
+  if (data.positions && data.positions.length > 0) {
     generateTournament();
     calculateRanking();
     updateStats();
