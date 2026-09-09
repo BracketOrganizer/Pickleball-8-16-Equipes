@@ -1147,7 +1147,8 @@ window.fbSaveTournament = async function (payload) {
       matchScores: payload.matchScores,
       specialMatchScores: payload.specialMatchScores,
       playerReplacements: payload.playerReplacements,
-      replacementLog: payload.replacementLog
+      replacementLog: payload.replacementLog,
+      generated: payload.generated
     }, meta));
   }
 };
@@ -1938,6 +1939,11 @@ const LEGEND_BY_TERRAIN = {
 let positions = [];
 let TERRAINS = 5;
 let N = 16;
+// Indique qu'un tournoi a réellement été "Généré avec Validation" (par
+// opposition à un simple choix de terrains/joueurs, qui remplit positions
+// par défaut en interne mais ne doit PAS déclencher l'affichage des matchs
+// chez les autres appareils synchronisés).
+let tournamentGenerated = false;
 let autoSaveTimer = null;
 let playerReplacements = {};
 let replacementLog = [];
@@ -2259,6 +2265,8 @@ function generateValidatedTournament() {
   generateTournament();
   calculateRanking();
   updateStats();
+  tournamentGenerated = true;
+  scheduleAutoSave();
 }
 
 function displayDetailedValidation(validation) {
@@ -3216,7 +3224,8 @@ function saveData() {
     matchScores: matchScores,
     specialMatchScores: specialMatchScores,
     playerReplacements: playerReplacements,
-    replacementLog: replacementLog
+    replacementLog: replacementLog,
+    generated: tournamentGenerated
   }).then(() => {
     showNotice('Données sauvegardées');
   }).catch((e) => {
@@ -3234,6 +3243,7 @@ function applyTournamentData(data) {
   specialMatchScores = data.specialMatchScores || {};
   playerReplacements = data.playerReplacements || {};
   replacementLog = data.replacementLog || [];
+  tournamentGenerated = !!data.generated;
   
   const terrainSelect = document.getElementById('terrainCount');
   if (terrainSelect) terrainSelect.value = TERRAINS.toString();
@@ -3251,12 +3261,14 @@ function applyTournamentData(data) {
   updateActiveCount();
   ensurePositions();
 
-  // Reconstruit l'affichage Matchs/Classement/Statistiques dès qu'un tirage
-  // existe (positions reçues de Firestore), pas seulement une fois des
-  // scores saisis — sinon un autre appareil (mobile...) reste bloqué sur
-  // "Cliquez sur Générer avec Validation" tant qu'aucun score n'a été entré,
-  // même si le tournoi a bien été généré côté admin.
-  if (data.positions && data.positions.length > 0) {
+  // Reconstruit l'affichage Matchs/Classement/Statistiques uniquement quand
+  // le tournoi a réellement été "Généré avec Validation" (drapeau explicite
+  // 'generated'), pas seulement parce que positions/terrains ont une valeur
+  // par défaut — sinon un simple changement du nombre de joueurs/terrains
+  // déclenche l'affichage automatique des matchs chez tout le monde.
+  // Le second test (scores déjà présents) reste en repli pour d'anciennes
+  // données sauvegardées avant l'ajout de ce drapeau.
+  if (data.generated || Object.keys(matchScores).length > 0 || Object.keys(specialMatchScores).length > 0) {
     generateTournament();
     calculateRanking();
     updateStats();
@@ -3290,6 +3302,7 @@ function doReset() {
   specialMatchScores = {};
   playerReplacements = {};
   replacementLog = [];
+  tournamentGenerated = false;
   
   const terrainSelect = document.getElementById('terrainCount');
   if (terrainSelect) terrainSelect.value = '5';
@@ -3344,7 +3357,8 @@ function doReset() {
       matchScores: {},
       specialMatchScores: {},
       playerReplacements: {},
-      replacementLog: []
+      replacementLog: [],
+      generated: false
     }).catch(e => console.error('Erreur reset Firestore:', e));
   }
   
