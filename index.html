@@ -234,6 +234,42 @@
   .spec-nav-btn:hover{background:var(--primary);color:white;border-color:var(--primary)}
   .spec-nav-btn i{font-size:1.2rem}
 
+  /* ===== Bloc "Accès spectateur" agrandi et différencié ===== */
+  .spectator-block{background:#e3f2fd;border:3px solid #1565c0;border-radius:14px;padding:18px 12px 14px;margin-top:20px;box-shadow:0 2px 10px rgba(21,101,192,0.15)}
+  .spectator-divider{font-size:1.25rem;font-weight:900;color:#1565c0;margin:0 0 14px 0;letter-spacing:0.3px}
+  .spectator-divider i{font-size:1.3rem;margin-right:2px}
+  .spectator-divider::before,.spectator-divider::after{background:#1565c0;opacity:0.4}
+
+  /* ===== Modales (inscription) ===== */
+  .modal-overlay{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;padding:16px}
+  .modal-box{background:white;border-radius:14px;padding:20px;max-width:380px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,0.3)}
+  .modal-box h3{color:var(--primary);margin-bottom:10px;text-align:center}
+
+  /* ===== Écran fiche joueur (spectateur) ===== */
+  #playerScreen.ecran-like{
+    position:fixed;inset:0;z-index:1900;display:none;flex-direction:column;
+    background:linear-gradient(160deg,#1a0f2e,#2c1250);color:white;padding:16px;
+  }
+  #playerScreen.ecran-like .ecran-body{flex:1;overflow-y:auto}
+  .player-pick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:10px}
+  .player-pick-btn{background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.15);color:white;border-radius:10px;padding:12px 6px;cursor:pointer;font-weight:600;font-size:0.85rem}
+  .player-pick-btn:hover{background:var(--primary);border-color:var(--primary)}
+  .player-match-row{background:rgba(255,255,255,0.08);border-radius:8px;padding:10px 12px;margin:6px 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
+  .player-match-row .pmr-round{font-weight:700;opacity:0.75;min-width:70px}
+  .player-match-row .pmr-score{font-weight:800;color:#4caf50}
+  .back-btn{background:rgba(255,255,255,0.15);border:none;color:white;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:0.8rem;margin-bottom:10px}
+
+  /* ===== Bilan de saison ===== */
+  .bilan-group{border-left:4px solid var(--primary)}
+
+  /* ===== Impression ===== */
+  @media print{
+    body *{visibility:hidden}
+    .print-target, .print-target *{visibility:visible}
+    .print-target{position:absolute;left:0;top:0;width:100%}
+    .no-print, .btn.no-print, header .controls, .tabs, .user-bar{display:none !important}
+  }
+
   .user-bar{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:#f3e5f5;border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:0.8rem}
   .role-badge{padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:700;color:white}
   .role-badge.admin{background:var(--primary)}
@@ -274,10 +310,9 @@
   .ecran-header h1{font-size:1.6rem;display:flex;align-items:center;gap:10px}
   .ecran-clock{font-size:1.3rem;font-weight:700;opacity:0.85}
   .ecran-quit{background:rgba(255,255,255,0.15);border:none;color:white;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:0.85rem}
-  .ecran-body{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:14px;position:relative}
-  .ecran-panel{display:none;flex:1;overflow:hidden;position:relative}
+  .ecran-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
+  .ecran-panel{display:none}
   .ecran-panel.active{display:block;animation:ecranFade .5s ease}
-  .ecran-scroll-inner{position:relative;will-change:transform}
   @keyframes ecranFade{from{opacity:0}to{opacity:1}}
   .ecran-round-title{font-size:1.2rem;font-weight:700;margin-bottom:10px;color:#ce93d8;text-align:center}
   .ecran-courts{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
@@ -313,7 +348,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import {
   getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot,
-  collection, serverTimestamp
+  collection, serverTimestamp, addDoc, getDocs
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -371,6 +406,283 @@ function startLiveWatch() {
   }, (e) => console.warn('startLiveWatch error:', e));
 }
 startLiveWatch();
+
+// ══════════════════════════════════════════════════════════
+// INSCRIPTIONS (ouverture/fermeture par l'admin, heure limite, quota)
+// ══════════════════════════════════════════════════════════
+let REG_CONFIG = { open: false, deadline: null, maxCount: null };
+let REG_COUNT = 0;
+let unsubRegConfig = null;
+let unsubRegList = null;
+
+function startRegistrationWatch() {
+  if (unsubRegConfig) return;
+  unsubRegConfig = onSnapshot(doc(db, 'tournamentStatus', 'registration'), (snap) => {
+    REG_CONFIG = snap.exists() ? snap.data() : { open: false, deadline: null, maxCount: null };
+    if (typeof updateRegistrationButton === 'function') updateRegistrationButton();
+    if (typeof refreshAdminRegistrationUI === 'function') refreshAdminRegistrationUI();
+  }, (e) => console.warn('startRegistrationWatch error:', e));
+  unsubRegList = onSnapshot(collection(db, 'registrations'), (snap) => {
+    REG_COUNT = snap.size;
+    window.REG_LIST = [];
+    snap.forEach(d => window.REG_LIST.push(Object.assign({ id: d.id }, d.data())));
+    window.REG_LIST.sort((a, b) => (a.createdAtLocal || 0) - (b.createdAtLocal || 0));
+    if (typeof updateRegistrationButton === 'function') updateRegistrationButton();
+    if (typeof refreshAdminRegistrationUI === 'function') refreshAdminRegistrationUI();
+  }, (e) => console.warn('startRegistrationWatch list error:', e));
+}
+startRegistrationWatch();
+
+function registrationIsOpenNow() {
+  if (!REG_CONFIG || !REG_CONFIG.open) return false;
+  if (REG_CONFIG.deadline) {
+    const d = new Date(REG_CONFIG.deadline);
+    if (!isNaN(d.getTime()) && new Date() > d) return false;
+  }
+  if (REG_CONFIG.maxCount && REG_CONFIG.maxCount > 0 && REG_COUNT >= REG_CONFIG.maxCount) return false;
+  return true;
+}
+window.registrationIsOpenNow = registrationIsOpenNow;
+
+window.adminSaveRegistrationConfig = async function () {
+  if (!isAdmin()) return;
+  const openEl = document.getElementById('reg_open');
+  const deadlineEl = document.getElementById('reg_deadline');
+  const maxEl = document.getElementById('reg_max');
+  const payload = {
+    open: !!(openEl && openEl.checked),
+    deadline: deadlineEl && deadlineEl.value ? new Date(deadlineEl.value).toISOString() : null,
+    maxCount: maxEl && maxEl.value ? parseInt(maxEl.value) : null
+  };
+  try {
+    await setDoc(doc(db, 'tournamentStatus', 'registration'), payload, { merge: true });
+    showNotice('Paramètres d\'inscription enregistrés');
+  } catch (e) { alert('Erreur : ' + e.message); }
+};
+
+window.adminClearRegistrations = async function () {
+  if (!isAdmin()) return;
+  if (!confirm('Effacer toutes les inscriptions de la liste ?')) return;
+  try {
+    const snap = await getDocs(collection(db, 'registrations'));
+    const proms = [];
+    snap.forEach(d => proms.push(deleteDoc(doc(db, 'registrations', d.id))));
+    await Promise.all(proms);
+    showNotice('Liste des inscriptions effacée');
+  } catch (e) { alert('Erreur : ' + e.message); }
+};
+
+window.deleteRegistration = async function (id) {
+  if (!isAdmin()) return;
+  try { await deleteDoc(doc(db, 'registrations', id)); }
+  catch (e) { alert('Erreur : ' + e.message); }
+};
+
+window.submitRegistration = async function () {
+  const nameEl = document.getElementById('reg_name');
+  const phoneEl = document.getElementById('reg_phone');
+  const msgEl = document.getElementById('regModalMsg');
+  const name = nameEl ? nameEl.value.trim() : '';
+  if (!name) { if (msgEl) { msgEl.textContent = 'Merci de saisir votre nom.'; msgEl.style.color = 'var(--danger)'; } return; }
+  if (!registrationIsOpenNow()) { if (msgEl) { msgEl.textContent = 'Les inscriptions sont fermées.'; msgEl.style.color = 'var(--danger)'; } return; }
+  try {
+    await addDoc(collection(db, 'registrations'), {
+      name: name,
+      phone: phoneEl ? phoneEl.value.trim() : '',
+      createdAt: serverTimestamp(),
+      createdAtLocal: Date.now()
+    });
+    if (msgEl) { msgEl.textContent = '✅ Inscription enregistrée, merci !'; msgEl.style.color = 'var(--success)'; }
+    if (nameEl) nameEl.value = '';
+    if (phoneEl) phoneEl.value = '';
+    setTimeout(() => { if (typeof closeRegistrationModal === 'function') closeRegistrationModal(); }, 1200);
+  } catch (e) {
+    if (msgEl) { msgEl.textContent = 'Erreur : ' + e.message; msgEl.style.color = 'var(--danger)'; }
+  }
+};
+
+window.openRegistrationModal = function () {
+  const modal = document.getElementById('registrationModal');
+  const info = document.getElementById('regInfoLine');
+  if (info) {
+    let txt = '';
+    if (REG_CONFIG && REG_CONFIG.deadline) {
+      const d = new Date(REG_CONFIG.deadline);
+      if (!isNaN(d.getTime())) txt += 'Inscriptions jusqu\'au ' + d.toLocaleString('fr-FR') + '. ';
+    }
+    if (REG_CONFIG && REG_CONFIG.maxCount) {
+      const remaining = Math.max(0, REG_CONFIG.maxCount - REG_COUNT);
+      txt += remaining + ' place(s) restante(s) sur ' + REG_CONFIG.maxCount + '.';
+    }
+    info.textContent = txt;
+  }
+  const msg = document.getElementById('regModalMsg');
+  if (msg) msg.textContent = '';
+  const nameEl = document.getElementById('reg_name');
+  const phoneEl = document.getElementById('reg_phone');
+  if (nameEl) nameEl.value = '';
+  if (phoneEl) phoneEl.value = '';
+  if (modal) modal.style.display = 'flex';
+};
+window.closeRegistrationModal = function () {
+  const modal = document.getElementById('registrationModal');
+  if (modal) modal.style.display = 'none';
+};
+
+// Affiche/masque le bouton "S'inscrire" sur la page de connexion selon
+// l'état courant des inscriptions (ouvertes/fermées, heure limite, quota).
+function updateRegistrationButton() {
+  const btn = document.getElementById('registerOpenBtn');
+  const note = document.getElementById('registerClosedNote');
+  if (!btn) return;
+  const open = registrationIsOpenNow();
+  btn.style.display = open ? '' : 'none';
+  if (note) {
+    if (!open && REG_CONFIG && REG_CONFIG.open) {
+      let reason = 'Les inscriptions sont fermées.';
+      if (REG_CONFIG.deadline && new Date() > new Date(REG_CONFIG.deadline)) {
+        reason = '⏰ La date limite d\'inscription est dépassée.';
+      } else if (REG_CONFIG.maxCount && REG_COUNT >= REG_CONFIG.maxCount) {
+        reason = '✋ Nombre maximal d\'inscrits atteint (' + REG_COUNT + '/' + REG_CONFIG.maxCount + ').';
+      }
+      note.textContent = reason;
+      note.style.display = '';
+    } else {
+      note.style.display = 'none';
+    }
+  }
+}
+window.updateRegistrationButton = updateRegistrationButton;
+
+// Rafraîchit le panneau admin "Inscriptions" : formulaire de config + liste des inscrits.
+function refreshAdminRegistrationUI() {
+  const openEl = document.getElementById('reg_open');
+  const deadlineEl = document.getElementById('reg_deadline');
+  const maxEl = document.getElementById('reg_max');
+  if (openEl) openEl.checked = !!(REG_CONFIG && REG_CONFIG.open);
+  if (deadlineEl) {
+    if (REG_CONFIG && REG_CONFIG.deadline) {
+      const d = new Date(REG_CONFIG.deadline);
+      if (!isNaN(d.getTime())) {
+        const pad = n => String(n).padStart(2, '0');
+        deadlineEl.value = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+      }
+    } else {
+      deadlineEl.value = '';
+    }
+  }
+  if (maxEl) maxEl.value = (REG_CONFIG && REG_CONFIG.maxCount) ? REG_CONFIG.maxCount : '';
+
+  const countLabel = document.getElementById('regCountLabel');
+  if (countLabel) countLabel.textContent = REG_COUNT;
+
+  const body = document.getElementById('regListBody');
+  if (body) {
+    const list = window.REG_LIST || [];
+    if (list.length === 0) {
+      body.innerHTML = '<tr><td colspan="4" style="color:#999;font-size:0.8rem;padding:10px">Aucune inscription pour le moment.</td></tr>';
+    } else {
+      body.innerHTML = list.map((r, i) => `<tr>
+        <td>${i + 1}</td>
+        <td style="text-align:left">${r.name || ''}</td>
+        <td>${r.phone || ''}</td>
+        <td class="no-print"><button class="btn" style="padding:4px 10px;margin:0;background:var(--danger)" onclick="deleteRegistration('${r.id}')"><i class="fas fa-trash"></i></button></td>
+      </tr>`).join('');
+    }
+  }
+}
+window.refreshAdminRegistrationUI = refreshAdminRegistrationUI;
+
+// ══════════════════════════════════════════════════════════
+// BILAN DE SAISON (archivage par nombre de terrains)
+// ══════════════════════════════════════════════════════════
+window.archiveCurrentSessionToSeason = async function () {
+  if (!isAdmin()) return;
+  if (!window.lastRankingStats || Object.keys(window.lastRankingStats).length === 0) {
+    alert('Calculez d\'abord le classement (onglet Matchs → "Calculer Classement") avant d\'archiver.');
+    return;
+  }
+  const entries = Object.values(window.lastRankingStats).map(s => ({
+    name: s.name,
+    points: (s.wins * 3) + s.draws,
+    matches: s.matches,
+    wins: s.wins, draws: s.draws, losses: s.losses,
+    scored: s.scored, conceded: s.conceded
+  })).filter(e => e.matches > 0);
+  if (entries.length === 0) { alert('Aucun match joué à archiver pour cette séance.'); return; }
+  const session = { date: new Date().toISOString(), entries: entries };
+  const key = 'terrain_' + TERRAINS;
+  try {
+    const ref = doc(db, 'seasonArchive', key);
+    const snap = await getDoc(ref);
+    const sessions = snap.exists() && Array.isArray(snap.data().sessions) ? snap.data().sessions : [];
+    sessions.push(session);
+    await setDoc(ref, { terrains: TERRAINS, sessions: sessions }, { merge: true });
+    showNotice('Séance archivée dans le bilan de saison (' + TERRAINS + ' terrains)');
+    if (typeof loadSeasonBilan === 'function') loadSeasonBilan();
+  } catch (e) { alert('Erreur d\'archivage : ' + e.message); }
+};
+
+window.loadSeasonBilan = async function () {
+  const container = document.getElementById('bilanSaisonContent');
+  if (!container) return;
+  container.innerHTML = '<p style="text-align:center;color:#666;padding:20px">Chargement du bilan…</p>';
+  try {
+    const groups = [3, 4, 5];
+    let html = '';
+    for (const t of groups) {
+      const ref = doc(db, 'seasonArchive', 'terrain_' + t);
+      const snap = await getDoc(ref);
+      const sessions = snap.exists() && Array.isArray(snap.data().sessions) ? snap.data().sessions : [];
+      html += renderBilanGroup(t, sessions);
+    }
+    container.innerHTML = html;
+  } catch (e) {
+    container.innerHTML = '<p style="color:var(--danger);text-align:center;padding:20px">Erreur de chargement : ' + e.message + '</p>';
+  }
+};
+
+function renderBilanGroup(terrains, sessions) {
+  const title = 'Terrains disponibles : ' + terrains;
+  if (!sessions || sessions.length === 0) {
+    return `<div class="card bilan-group" id="bilanGroup${terrains}">
+      <span class="card-title"><i class="fas fa-border-all"></i> ${title}</span>
+      <p style="text-align:center;color:#999;padding:14px;font-size:0.85rem">Aucune séance archivée pour cette configuration.</p>
+    </div>`;
+  }
+  const agg = {};
+  sessions.forEach(sess => {
+    (sess.entries || []).forEach(e => {
+      if (!agg[e.name]) agg[e.name] = { name: e.name, presences: 0, points: 0, matches: 0, wins: 0, draws: 0, losses: 0 };
+      agg[e.name].presences++;
+      agg[e.name].points += e.points || 0;
+      agg[e.name].matches += e.matches || 0;
+      agg[e.name].wins += e.wins || 0;
+      agg[e.name].draws += e.draws || 0;
+      agg[e.name].losses += e.losses || 0;
+    });
+  });
+  const rows = Object.values(agg).map(a => Object.assign({}, a, {
+    avgPoints: a.presences ? (a.points / a.presences) : 0,
+    avgMatches: a.presences ? (a.matches / a.presences) : 0
+  })).sort((a, b) => b.points - a.points);
+
+  let html = `<div class="card bilan-group" id="bilanGroup${terrains}">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+      <span class="card-title"><i class="fas fa-border-all"></i> ${title}</span>
+      <button class="btn secondary no-print" style="margin:0" onclick="printSection('bilanGroup${terrains}')"><i class="fas fa-print"></i> Imprimer</button>
+    </div>
+    <div style="font-size:0.75rem;color:#777;margin-bottom:6px">${sessions.length} séance(s) archivée(s)</div>
+    <div style="overflow-x:auto;">
+    <table class="ranking"><thead><tr>
+      <th>Pos</th><th>Joueur</th><th>Présences</th><th>Pts cumulés</th><th>Moy. pts/séance</th><th>Matchs cumulés</th><th>Moy. matchs/séance</th><th>V</th><th>N</th><th>D</th>
+    </tr></thead><tbody>`;
+  rows.forEach((r, i) => {
+    html += `<tr><td>${i + 1}</td><td style="text-align:left">${r.name}</td><td>${r.presences}</td><td>${r.points}</td><td>${r.avgPoints.toFixed(2)}</td><td>${r.matches}</td><td>${r.avgMatches.toFixed(2)}</td><td>${r.wins}</td><td>${r.draws}</td><td>${r.losses}</td></tr>`;
+  });
+  html += '</tbody></table></div></div>';
+  return html;
+}
 
 // ══════════════════════════════════════════════════════════
 // AUTH
@@ -724,15 +1036,48 @@ window.adminDeleteUser = async function (uid, name) {
     <button class="btn" style="background:var(--primary)" onclick="loginEmail()"><i class="fas fa-right-to-bracket"></i> Se connecter</button>
     <button class="btn secondary" onclick="loginGoogle()"><i class="fab fa-google"></i> Connexion Google</button>
     <div id="authMsg"></div>
-    <div class="login-divider">Accès spectateur (sans compte)</div>
-    <div class="spec-nav-grid">
-      <button class="spec-nav-btn" onclick="enterLiveModeAndGo('ecran')"><i class="fas fa-tv"></i><span>Écran</span></button>
-      <button class="spec-nav-btn" onclick="enterLiveModeAndGo('reglement')"><i class="fas fa-book"></i><span>Règlement</span></button>
-      <button class="spec-nav-btn" onclick="enterLiveModeAndGo('joueurs')"><i class="fas fa-users"></i><span>Joueurs</span></button>
-      <button class="spec-nav-btn" onclick="enterLiveModeAndGo('live')"><i class="fas fa-circle" style="color:#f44336"></i><span>Live</span></button>
-      <button class="spec-nav-btn" onclick="enterLiveModeAndGo('classement')"><i class="fas fa-chart-bar"></i><span>Classement</span></button>
+
+    <button id="registerOpenBtn" class="btn" style="display:none;background:var(--warning);width:100%;margin-top:14px;font-size:0.95rem" onclick="openRegistrationModal()">
+      <i class="fas fa-pen-to-square"></i> S'inscrire au prochain tournoi
+    </button>
+    <div id="registerClosedNote" style="display:none;text-align:center;font-size:0.75rem;color:#999;margin-top:8px"></div>
+
+    <div class="spectator-block">
+      <div class="login-divider spectator-divider"><i class="fas fa-eye"></i> Accès spectateur <span style="font-size:0.6em;font-weight:600;opacity:0.8">(sans compte)</span></div>
+      <div class="spec-nav-grid">
+        <button class="spec-nav-btn" onclick="enterLiveModeAndGo('ecran')"><i class="fas fa-tv"></i><span>Écran</span></button>
+        <button class="spec-nav-btn" onclick="enterLiveModeAndGo('reglement')"><i class="fas fa-book"></i><span>Règlement</span></button>
+        <button class="spec-nav-btn" onclick="openPlayerScreenFromLogin()"><i class="fas fa-users"></i><span>Joueur</span></button>
+        <button class="spec-nav-btn" onclick="enterLiveModeAndGo('live')"><i class="fas fa-circle" style="color:#f44336"></i><span>Live</span></button>
+        <button class="spec-nav-btn" onclick="enterLiveModeAndGo('classement')"><i class="fas fa-chart-bar"></i><span>Classement</span></button>
+      </div>
     </div>
   </div>
+</div>
+
+<!-- ═══════════════ MODALE INSCRIPTION ═══════════════ -->
+<div id="registrationModal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <h3><i class="fas fa-pen-to-square"></i> Inscription au tournoi</h3>
+    <div id="regInfoLine" style="font-size:0.78rem;color:#777;margin-bottom:8px"></div>
+    <input type="text" id="reg_name" class="player-input" placeholder="Nom et prénom" style="margin:6px 0">
+    <input type="tel" id="reg_phone" class="player-input" placeholder="Téléphone (optionnel)" style="margin:6px 0">
+    <div id="regModalMsg" style="min-height:18px;text-align:center;font-size:0.8rem;margin-top:4px;font-weight:600"></div>
+    <button class="btn success" style="width:100%" onclick="submitRegistration()"><i class="fas fa-check"></i> Valider mon inscription</button>
+    <button class="btn" style="width:100%;background:#999" onclick="closeRegistrationModal()">Fermer</button>
+  </div>
+</div>
+
+<!-- ═══════════════ ÉCRAN "FICHE JOUEUR" (accès spectateur) ═══════════════ -->
+<div id="playerScreen" class="ecran-like" style="display:none">
+  <div class="ecran-header">
+    <h1><i class="fas fa-user"></i> <span id="playerScreenTitle">Choisir un joueur</span></h1>
+    <div>
+      <button class="ecran-quit no-print" id="playerScreenPrintBtn" style="display:none;margin-right:6px" onclick="printSection('playerScreenBody')"><i class="fas fa-print"></i> Imprimer</button>
+      <button class="ecran-quit" onclick="closePlayerScreen()"><i class="fas fa-xmark"></i> Quitter</button>
+    </div>
+  </div>
+  <div class="ecran-body" id="playerScreenBody"></div>
 </div>
 
 <!-- ═══════════════ MODE ÉCRAN (affichage public) ═══════════════ -->
@@ -743,19 +1088,11 @@ window.adminDeleteUser = async function (uid, name) {
     <button class="ecran-quit" onclick="closeEcranMode()"><i class="fas fa-xmark"></i> Quitter</button>
   </div>
   <div class="ecran-body">
-    <div id="ecranPanelMatches" class="ecran-panel active">
-      <div class="ecran-scroll-inner" id="ecranScrollMatches"></div>
-    </div>
-    <div id="ecranPanelUpcoming" class="ecran-panel">
-      <div class="ecran-scroll-inner" id="ecranScrollUpcoming"></div>
-    </div>
-    <div id="ecranPanelRanking" class="ecran-panel">
-      <div class="ecran-scroll-inner" id="ecranScrollRanking"></div>
-    </div>
+    <div id="ecranPanelMatches" class="ecran-panel active"></div>
+    <div id="ecranPanelRanking" class="ecran-panel"></div>
     <div class="ecran-dots">
       <div class="ecran-dot active" id="ecranDot0"></div>
       <div class="ecran-dot" id="ecranDot1"></div>
-      <div class="ecran-dot" id="ecranDot2"></div>
     </div>
   </div>
 </div>
@@ -804,6 +1141,7 @@ window.adminDeleteUser = async function (uid, name) {
     <button class="tab-btn" data-tab="matchesTab" onclick="showTab('matchesTab', this)"><i class="fas fa-trophy"></i> Matchs</button>
     <button class="tab-btn" data-tab="rankingTab" onclick="showTab('rankingTab', this)"><i class="fas fa-chart-bar"></i> Classement</button>
     <button class="tab-btn" data-tab="statsTab" onclick="showTab('statsTab', this)"><i class="fas fa-chart-pie"></i> Statistiques</button>
+    <button class="tab-btn" data-tab="bilanTab" data-role="admin" onclick="showTab('bilanTab', this); if (typeof loadSeasonBilan === 'function') loadSeasonBilan();"><i class="fas fa-medal"></i> Bilan saison</button>
     <button class="tab-btn" data-tab="reglementTab" onclick="showTab('reglementTab', this)"><i class="fas fa-book"></i> Règlement</button>
     <button class="tab-btn" data-tab="adminTab" data-role="admin" onclick="showTab('adminTab', this)"><i class="fas fa-user-shield"></i> Utilisateurs</button>
   </div>
@@ -836,8 +1174,11 @@ window.adminDeleteUser = async function (uid, name) {
       <div id="playersInputs"></div>
     </div>
 
-    <div class="card">
-      <span class="card-title"><i class="fas fa-random"></i> Tirage des Positions</span>
+    <div class="card" id="positionsCard">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+        <span class="card-title"><i class="fas fa-random"></i> Tirage des Positions</span>
+        <button class="btn secondary no-print" style="margin:0" onclick="printSection('positionsCard')"><i class="fas fa-print"></i> Imprimer</button>
+      </div>
       <div style="padding:6px;background:#e3f2fd;border-radius:5px;margin:6px 0;font-size:0.85rem">
         <strong>Joueurs actifs : </strong><span id="activeCountText">16</span>
       </div>
@@ -846,22 +1187,28 @@ window.adminDeleteUser = async function (uid, name) {
   </div>
 
   <div id="matchesTab" class="tab">
-    <div class="card">
-      <span class="card-title"><i class="fas fa-calendar-alt"></i> Planning des Matchs</span>
+    <div class="card" id="matchesCard">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+        <span class="card-title"><i class="fas fa-calendar-alt"></i> Planning des Matchs</span>
+        <button class="btn secondary no-print" style="margin:0" onclick="printSection('matchesCard')"><i class="fas fa-print"></i> Imprimer</button>
+      </div>
       <div id="matchesDisplay">
         <p style="text-align:center;color:#666;padding:20px;font-size:0.9rem">Cliquez sur "Générer avec Validation" pour créer les matchs</p>
       </div>
-      <button class="btn success" onclick="calculateRanking()" style="width:100%;margin-top:10px"><i class="fas fa-calculator"></i> Calculer Classement</button>
+      <button class="btn success no-print" onclick="calculateRanking()" style="width:100%;margin-top:10px"><i class="fas fa-calculator"></i> Calculer Classement</button>
     </div>
   </div>
 
   <div id="rankingTab" class="tab">
-    <div class="card">
-      <span class="card-title"><i class="fas fa-list-ol"></i> Classement</span>
+    <div class="card" id="rankingCard">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+        <span class="card-title"><i class="fas fa-list-ol"></i> Classement</span>
+        <button class="btn secondary no-print" style="margin:0" onclick="printSection('rankingCard')"><i class="fas fa-print"></i> Imprimer</button>
+      </div>
       <div style="overflow-x:auto;">
         <table class="ranking">
           <thead>
-            <tr><th>Pos</th><th>Joueur</th><th>Pts +</th><th>Pts -</th><th>Diff</th><th>V</th><th>N</th><th>D</th></tr>
+            <tr><th>Pts</th><th>Pos</th><th>Joueur</th><th>Pts +</th><th>Pts -</th><th>Diff</th><th>V</th><th>N</th><th>D</th></tr>
           </thead>
           <tbody id="rankingBody"></tbody>
         </table>
@@ -871,7 +1218,11 @@ window.adminDeleteUser = async function (uid, name) {
 
   <div id="statsTab" class="tab">
     <div class="card">
-      <span class="card-title"><i class="fas fa-chart-line"></i> Statistiques Détaillées</span>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+        <span class="card-title"><i class="fas fa-chart-line"></i> Statistiques Détaillées</span>
+        <button class="btn secondary no-print" style="margin:0" onclick="printSection('statsCard')"><i class="fas fa-print"></i> Imprimer</button>
+      </div>
+      <div id="statsCard">
       <div id="statsArea">
         <p style="text-align:center;color:#666;padding:20px;font-size:0.9rem">Les statistiques apparaîtront après génération du tournoi</p>
       </div>
@@ -881,6 +1232,23 @@ window.adminDeleteUser = async function (uid, name) {
         </h3>
         <div id="constraintsList"></div>
       </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="bilanTab" class="tab" data-role="admin">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+        <span class="card-title"><i class="fas fa-medal"></i> Bilan de saison</span>
+        <button class="btn success no-print" style="margin:0" onclick="archiveCurrentSessionToSeason()"><i class="fas fa-box-archive"></i> Archiver cette séance</button>
+      </div>
+      <p style="font-size:0.8rem;color:#777;margin-top:6px">
+        Analyse cumulée de la saison (présences, points cumulés, moyennes), calculée séparément pour
+        chaque configuration de <strong>terrains disponibles</strong> afin de rester comparable d'une séance à l'autre.
+      </p>
+    </div>
+    <div id="bilanSaisonContent">
+      <p style="text-align:center;color:#666;padding:20px;font-size:0.9rem">Chargement…</p>
     </div>
   </div>
 
@@ -916,7 +1284,7 @@ window.adminDeleteUser = async function (uid, name) {
         <h3><i class="fas fa-chart-bar"></i> 4. Classement</h3>
         <p>Après chaque match saisi, le classement se met à jour automatiquement selon :</p>
         <ul>
-          <li><strong>Points de classement :</strong> victoire = 2 points, match nul = 1 point, défaite = 0 point ;</li>
+          <li><strong>Points de classement :</strong> victoire = 3 points, match nul = 1 point, défaite = 0 point ;</li>
           <li><strong>En cas d'égalité :</strong> le différentiel (points marqués − points concédés) départage ;</li>
           <li><strong>Si toujours à égalité :</strong> le total de points marqués sur l'ensemble du tournoi tranche.</li>
         </ul>
@@ -927,14 +1295,7 @@ window.adminDeleteUser = async function (uid, name) {
         nécessaire de le redéclarer à chaque tour. Il peut être annulé, ou un nouveau remplaçant désigné à son tour,
         à tout moment depuis l'écran des matchs.</p>
 
-        <h3><i class="fas fa-user-shield"></i> 6. Rôles d'accès à l'application</h3>
-        <ul>
-          <li><strong>Admin :</strong> configure les terrains et joueurs, gère les comptes, réinitialise le tournoi ;</li>
-          <li><strong>Scorer :</strong> saisit les scores, gère les remplacements et génère le tournoi ;</li>
-          <li><strong>Spectateur :</strong> consulte les matchs, le classement et ce règlement, en lecture seule.</li>
-        </ul>
-
-        <h3><i class="fas fa-handshake"></i> 7. Fair-play</h3>
+        <h3><i class="fas fa-handshake"></i> 6. Fair-play</h3>
         <p>L'auto-arbitrage est de mise : les joueurs annoncent eux-mêmes le score au fur et à mesure du match.
         En cas de désaccord persistant sur une action, le point est rejoué. La ponctualité entre les tours et le
         respect du temps de jeu de tous permettent au tournoi de se dérouler dans de bonnes conditions pour l'ensemble
@@ -945,6 +1306,38 @@ window.adminDeleteUser = async function (uid, name) {
   </div>
 
   <div id="adminTab" class="tab" data-role="admin">
+    <div class="card">
+      <span class="card-title"><i class="fas fa-pen-to-square"></i> Inscriptions au tournoi</span>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;margin:10px 0">
+        <input type="checkbox" id="reg_open" style="width:18px;height:18px"> Inscriptions ouvertes (le bouton apparaît sur la page de connexion)
+      </label>
+      <div class="player-row">
+        <div style="font-weight:600;min-width:140px;font-size:0.85rem;">Heure limite (optionnel) :</div>
+        <input type="datetime-local" id="reg_deadline" style="padding:8px;border-radius:5px;border:2px solid #ddd;font-size:0.85rem;">
+      </div>
+      <div class="player-row">
+        <div style="font-weight:600;min-width:140px;font-size:0.85rem;">Nombre max (optionnel) :</div>
+        <input type="number" id="reg_max" min="1" placeholder="illimité" style="padding:8px;border-radius:5px;border:2px solid #ddd;font-size:0.85rem;width:110px">
+      </div>
+      <button class="btn success" style="width:100%;margin-top:10px" onclick="adminSaveRegistrationConfig()"><i class="fas fa-check"></i> Enregistrer les paramètres</button>
+    </div>
+
+    <div class="card" id="registrationsListCard">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+        <span class="card-title"><i class="fas fa-list-check"></i> Inscrits (<span id="regCountLabel">0</span>)</span>
+        <div class="no-print" style="display:flex;gap:6px">
+          <button class="btn secondary" style="margin:0" onclick="printSection('registrationsListCard')"><i class="fas fa-print"></i> Imprimer</button>
+          <button class="btn" style="margin:0;background:#999" onclick="adminClearRegistrations()"><i class="fas fa-trash"></i> Vider</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="user-table">
+          <thead><tr><th>#</th><th>Nom</th><th>Téléphone</th><th class="no-print"></th></tr></thead>
+          <tbody id="regListBody"><tr><td colspan="4" style="color:#999;font-size:0.8rem;padding:10px">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="card">
       <span class="card-title"><i class="fas fa-user-plus"></i> Créer un compte</span>
       <input type="text" id="newU_name" class="player-input" placeholder="Nom" style="margin:4px 0">
@@ -2090,10 +2483,11 @@ function process2v1Stats(stats, players, score1, score2) {
 }
 
 function updateRankingDisplay(stats) {
+  window.lastRankingStats = stats;
   const ranking = Object.values(stats).map(s => ({
     ...s,
     diff: s.scored - s.conceded,
-    points: (s.wins * 2) + s.draws
+    points: (s.wins * 3) + s.draws
   })).sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
     if (b.diff !== a.diff) return b.diff - a.diff;
@@ -2121,7 +2515,8 @@ function updateRankingDisplay(stats) {
       }
       
       tr.innerHTML = `
-        <td><strong>${pos}${medalIcon}</strong></td>
+        <td><strong>${p.points}</strong></td>
+        <td>${pos}${medalIcon}</td>
         <td style="text-align:left" class="player-color-${getPlayerNumberFromName(p.name)}">${p.name}</td>
         <td>${p.scored}</td>
         <td>${p.conceded}</td>
@@ -2132,7 +2527,7 @@ function updateRankingDisplay(stats) {
       `;
       
       if (medalClass) {
-        tr.querySelector('td:first-child').classList.add(medalClass);
+        tr.querySelector('td:nth-child(2)').classList.add(medalClass);
       }
       
       tbody.appendChild(tr);
@@ -2809,6 +3204,7 @@ function renderEcranPanels() {
   const rankingPanel = document.getElementById('ecranPanelRanking');
   if (matchesPanel) matchesPanel.innerHTML = buildEcranMatchesHTML();
   if (rankingPanel) rankingPanel.innerHTML = buildEcranRankingHTML();
+  setTimeout(setupAllEcranAutoScroll, 100);
 }
 
 // Détermine le tour "en cours" à afficher : le premier tour comportant au
@@ -2826,16 +3222,11 @@ function findCurrentRoundForEcran() {
   return Math.max(0, grid.length - 1);
 }
 
-function buildEcranMatchesHTML() {
-  const grid = getGridForN();
-  if (!grid || grid.length === 0) {
-    return '<p style="text-align:center;opacity:0.6;padding:40px">Le tournoi n\'a pas encore été généré.</p>';
-  }
-  const r = findCurrentRoundForEcran();
+function buildOneEcranRoundHTML(grid, r, label) {
   const round = grid[r];
-  let html = `<div class="ecran-round-title">Tour ${r + 1} / ${grid.length}</div><div class="ecran-courts">`;
+  let html = `<div class="ecran-round-title">${label}</div><div class="ecran-courts">`;
   let restLine = '';
-  
+
   round.forEach((courtObj, c) => {
     if (courtObj.rest) {
       restLine += (restLine ? ', ' : '') + getPlayerName(courtObj.rest);
@@ -2843,8 +3234,10 @@ function buildEcranMatchesHTML() {
     }
     const originalMapped = courtObj.players.map(p => (p <= positions.length ? positions[p - 1] : null)).filter(p => p !== null);
     const mapped = originalMapped.map(p => getReplacementPlayer(r, p));
-    const sc = (matchScores[r] && matchScores[r][c]) ? matchScores[r][c] : { 1: '', 2: '' };
-    
+    const sc = (courtObj.type === '1x1' || courtObj.type === '2x1')
+      ? ((specialMatchScores[r] && specialMatchScores[r][c]) ? specialMatchScores[r][c] : { 1: '', 2: '' })
+      : ((matchScores[r] && matchScores[r][c]) ? matchScores[r][c] : { 1: '', 2: '' });
+
     let team1 = [], team2 = [];
     if (courtObj.type === '1x1' && mapped.length === 2) {
       team1 = [mapped[0]]; team2 = [mapped[1]];
@@ -2853,7 +3246,7 @@ function buildEcranMatchesHTML() {
     } else {
       team1 = [mapped[0], mapped[1]]; team2 = [mapped[2], mapped[3]];
     }
-    
+
     html += `<div class="ecran-court">
       <div class="ecran-court-title">Terrain ${c + 1}</div>
       <div class="ecran-team"><span>${team1.filter(Boolean).map(getPlayerName).join(' & ')}</span><span class="ecran-score">${sc[1] !== '' ? sc[1] : '–'}</span></div>
@@ -2861,9 +3254,27 @@ function buildEcranMatchesHTML() {
       <div class="ecran-team"><span>${team2.filter(Boolean).map(getPlayerName).join(' & ')}</span><span class="ecran-score">${sc[2] !== '' ? sc[2] : '–'}</span></div>
     </div>`;
   });
-  
+
   html += '</div>';
   if (restLine) html += `<div class="ecran-rest"><i class="fas fa-mug-hot"></i> Repos : ${restLine}</div>`;
+  return html;
+}
+
+// Affiche le tour en cours, puis tous les tours suivants ("à venir") à la
+// suite : la page défile automatiquement (setupAllEcranAutoScroll) si le
+// contenu dépasse la hauteur de l'écran, comme dans une appli Americano.
+function buildEcranMatchesHTML() {
+  const grid = getGridForN();
+  if (!grid || grid.length === 0) {
+    return '<p style="text-align:center;opacity:0.6;padding:40px">Le tournoi n\'a pas encore été généré.</p>';
+  }
+  const r = findCurrentRoundForEcran();
+  let html = buildOneEcranRoundHTML(grid, r, `▶ En cours — Tour ${r + 1} / ${grid.length}`);
+
+  for (let nr = r + 1; nr < grid.length; nr++) {
+    html += `<hr style="border:none;border-top:1px solid rgba(255,255,255,0.15);margin:18px 0">`;
+    html += buildOneEcranRoundHTML(grid, nr, `À venir — Tour ${nr + 1} / ${grid.length}`);
+  }
   return html;
 }
 
@@ -2902,20 +3313,169 @@ function buildEcranRankingHTML() {
   }
   
   const ranking = Object.values(stats).map(s => ({
-    ...s, diff: s.scored - s.conceded, points: (s.wins * 2) + s.draws
+    ...s, diff: s.scored - s.conceded, points: (s.wins * 3) + s.draws
   })).sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
     if (b.diff !== a.diff) return b.diff - a.diff;
     return b.scored - a.scored;
-  }).slice(0, 10);
+  });
   
-  let html = '<table class="ecran-ranking-table"><thead><tr><th>#</th><th>Joueur</th><th>Pts</th><th>Diff</th><th>V</th></tr></thead><tbody>';
+  let html = '<table class="ecran-ranking-table"><thead><tr><th>Pts</th><th>#</th><th>Joueur</th><th>Diff</th><th>V</th></tr></thead><tbody>';
   ranking.forEach((p, i) => {
-    html += `<tr><td>${i + 1}</td><td>${p.name}</td><td>${p.points}</td><td>${p.diff > 0 ? '+' : ''}${p.diff}</td><td>${p.wins}</td></tr>`;
+    html += `<tr><td>${p.points}</td><td>${i + 1}</td><td>${p.name}</td><td>${p.diff > 0 ? '+' : ''}${p.diff}</td><td>${p.wins}</td></tr>`;
   });
   html += '</tbody></table>';
   return html;
 }
+
+// ══════════════════════════════════════════════════════════
+// DÉFILEMENT AUTOMATIQUE DES PANNEAUX ÉCRAN (type appli Americano)
+// Si le contenu (classement complet, matchs en cours + à venir) dépasse
+// la hauteur visible, on fait défiler doucement de haut en bas puis on
+// revient en haut, en boucle.
+// ══════════════════════════════════════════════════════════
+let ecranAutoScrollTimers = {};
+function setupEcranAutoScroll(panelEl) {
+  if (!panelEl) return;
+  const key = panelEl.id;
+  if (ecranAutoScrollTimers[key]) { clearInterval(ecranAutoScrollTimers[key]); delete ecranAutoScrollTimers[key]; }
+  panelEl.scrollTop = 0;
+  const maxScroll = panelEl.scrollHeight - panelEl.clientHeight;
+  if (maxScroll <= 20) return; // tout tient à l'écran, pas besoin de défiler
+  let direction = 1;
+  let paused = 0;
+  ecranAutoScrollTimers[key] = setInterval(() => {
+    if (!panelEl.isConnected || panelEl.style.display === 'none') return;
+    if (paused > 0) { paused--; return; }
+    panelEl.scrollTop += direction * 2;
+    if (panelEl.scrollTop >= maxScroll - 1) { direction = -1; paused = 15; }
+    else if (panelEl.scrollTop <= 0) { direction = 1; paused = 15; }
+  }, 60);
+}
+function setupAllEcranAutoScroll() {
+  setupEcranAutoScroll(document.getElementById('ecranPanelMatches'));
+  setupEcranAutoScroll(document.getElementById('ecranPanelRanking'));
+}
+
+// ══════════════════════════════════════════════════════════
+// IMPRESSION
+// Ajoute temporairement la classe .print-target à l'élément visé (les
+// styles @media print masquent tout le reste de la page), lance
+// window.print(), puis nettoie.
+// ══════════════════════════════════════════════════════════
+function printSection(elementId) {
+  const el = document.getElementById(elementId);
+  if (!el) { alert('Rien à imprimer.'); return; }
+  document.querySelectorAll('.print-target').forEach(n => n.classList.remove('print-target'));
+  el.classList.add('print-target');
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => el.classList.remove('print-target'), 300);
+  }, 50);
+}
+window.printSection = printSection;
+
+// ══════════════════════════════════════════════════════════
+// FICHE JOUEUR (accessible depuis le bouton "Joueur" de la page de connexion)
+// Liste des joueurs actifs -> sélection -> matchs (passés & à venir) du joueur
+// ══════════════════════════════════════════════════════════
+window.openPlayerScreenFromLogin = async function () {
+  try {
+    if (typeof getDoc === 'function') { /* noop, ensures scope */ }
+  } catch (e) {}
+  if (typeof window.registrationIsOpenNow !== 'function') {
+    // rôles pas encore chargés ; on tente quand même via LIVE_OPEN check côté module
+  }
+  document.getElementById('loginScreen').style.display = 'none';
+  const scr = document.getElementById('playerScreen');
+  scr.style.display = 'flex';
+  renderPlayerPickList();
+};
+window.closePlayerScreen = function () {
+  document.getElementById('playerScreen').style.display = 'none';
+  document.getElementById('playerScreenPrintBtn').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+};
+
+function renderPlayerPickList() {
+  document.getElementById('playerScreenTitle').textContent = 'Choisir un joueur';
+  document.getElementById('playerScreenPrintBtn').style.display = 'none';
+  const body = document.getElementById('playerScreenBody');
+  const players = getActivePlayerNumbers();
+  if (!players.length) {
+    body.innerHTML = '<p style="text-align:center;opacity:0.7;padding:30px">Aucun joueur configuré pour le moment.</p>';
+    return;
+  }
+  let html = '<div class="player-pick-grid">';
+  players.forEach(p => {
+    html += `<button class="player-pick-btn" onclick="renderPlayerMatchHistory(${p})">${getPlayerName(p)}</button>`;
+  });
+  html += '</div>';
+  body.innerHTML = html;
+}
+
+// Construit et affiche la liste complète des matchs (déroulement) d'un joueur,
+// tour par tour : partenaire, adversaires, score, terrain.
+window.renderPlayerMatchHistory = function (playerId) {
+  const grid = getGridForN();
+  const body = document.getElementById('playerScreenBody');
+  document.getElementById('playerScreenTitle').textContent = getPlayerName(playerId);
+  document.getElementById('playerScreenPrintBtn').style.display = '';
+
+  let html = '<button class="back-btn no-print" onclick="renderPlayerPickList()"><i class="fas fa-arrow-left"></i> Retour à la liste</button>';
+  html += `<div id="playerScreenBody_print"><h2 style="margin-bottom:10px">${getPlayerName(playerId)} — déroulement des matchs</h2>`;
+
+  if (!grid || grid.length === 0) {
+    html += '<p style="opacity:0.7;padding:20px;text-align:center">Le tournoi n\'a pas encore été généré.</p></div>';
+    body.innerHTML = html;
+    return;
+  }
+
+  let found = 0;
+  for (let r = 0; r < grid.length; r++) {
+    const round = grid[r];
+    for (let c = 0; c < round.length; c++) {
+      const courtObj = round[c];
+      if (courtObj.rest) {
+        if (courtObj.rest === playerId) {
+          html += `<div class="player-match-row"><span class="pmr-round">Tour ${r + 1}</span><span>Repos</span><span></span></div>`;
+          found++;
+        }
+        continue;
+      }
+      const originalMapped = courtObj.players.map(p => (p <= positions.length ? positions[p - 1] : null)).filter(p => p !== null);
+      const mapped = originalMapped.map(p => getReplacementPlayer(r, p));
+      let team1 = [], team2 = [];
+      if (courtObj.type === '1x1' && mapped.length === 2) { team1 = [mapped[0]]; team2 = [mapped[1]]; }
+      else if (courtObj.type === '2x1' && mapped.length === 3) { team1 = [mapped[0], mapped[1]]; team2 = [mapped[2]]; }
+      else { team1 = [mapped[0], mapped[1]]; team2 = [mapped[2], mapped[3]]; }
+
+      const inTeam1 = team1.includes(playerId);
+      const inTeam2 = team2.includes(playerId);
+      if (!inTeam1 && !inTeam2) continue;
+      found++;
+
+      const partner = (inTeam1 ? team1 : team2).filter(p => p && p !== playerId).map(getPlayerName).join(', ') || '—';
+      const opponents = (inTeam1 ? team2 : team1).filter(Boolean).map(getPlayerName).join(' & ') || '—';
+      let scores;
+      if (courtObj.type === '1x1' || courtObj.type === '2x1') scores = (specialMatchScores[r] && specialMatchScores[r][c]) || { 1: '', 2: '' };
+      else scores = (matchScores[r] && matchScores[r][c]) || { 1: '', 2: '' };
+      const myScore = inTeam1 ? scores[1] : scores[2];
+      const oppScore = inTeam1 ? scores[2] : scores[1];
+      const played = myScore !== '' && myScore !== undefined && oppScore !== '' && oppScore !== undefined;
+      const scoreLabel = played ? (myScore + ' - ' + oppScore) : 'à venir';
+
+      html += `<div class="player-match-row">
+        <span class="pmr-round">Tour ${r + 1} · T${c + 1}</span>
+        <span>Partenaire : <strong>${partner}</strong> vs ${opponents}</span>
+        <span class="pmr-score">${scoreLabel}</span>
+      </div>`;
+    }
+  }
+  if (found === 0) html += '<p style="opacity:0.7;padding:20px;text-align:center">Ce joueur n\'apparaît dans aucun match du planning actuel.</p>';
+  html += '</div>';
+  body.innerHTML = html;
+};
 
 function showTab(tabName, btnEl) {
   document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
