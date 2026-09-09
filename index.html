@@ -235,9 +235,10 @@
   .spec-nav-btn i{font-size:1.2rem}
 
   /* ===== Bloc "Accès spectateur" agrandi et différencié ===== */
-  .spectator-block{background:#e3f2fd;border:2px solid #90caf9;border-radius:12px;padding:14px 10px 10px;margin-top:16px}
-  .spectator-divider{font-size:1rem;font-weight:800;color:#1565c0;margin:0 0 10px 0}
-  .spectator-divider::before,.spectator-divider::after{background:#90caf9}
+  .spectator-block{background:#e3f2fd;border:3px solid #1565c0;border-radius:14px;padding:18px 12px 14px;margin-top:20px;box-shadow:0 2px 10px rgba(21,101,192,0.15)}
+  .spectator-divider{font-size:1.25rem;font-weight:900;color:#1565c0;margin:0 0 14px 0;letter-spacing:0.3px}
+  .spectator-divider i{font-size:1.3rem;margin-right:2px}
+  .spectator-divider::before,.spectator-divider::after{background:#1565c0;opacity:0.4}
 
   /* ===== Modales (inscription) ===== */
   .modal-overlay{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;padding:16px}
@@ -721,8 +722,9 @@ window.enterLiveModeAndGo = async function (target) {
   }
 
   showApp();
-  const tabMap = { joueurs: 'playersTab', live: 'matchesTab', classement: 'rankingTab', reglement: 'reglementTab' };
+  const tabMap = { joueurs: 'playersTab', live: 'matchesTab', classement: 'rankingTab', reglement: 'reglementTab', bilan: 'bilanTab' };
   showTab(tabMap[target] || 'playersTab');
+  if (target === 'bilan' && typeof loadSeasonBilan === 'function') loadSeasonBilan();
 };
 
 function authErrMsg(code) {
@@ -957,6 +959,7 @@ window.adminDeleteUser = async function (uid, name) {
         <button class="spec-nav-btn" onclick="openPlayerScreenFromLogin()"><i class="fas fa-users"></i><span>Joueur</span></button>
         <button class="spec-nav-btn" onclick="enterLiveModeAndGo('live')"><i class="fas fa-circle" style="color:#f44336"></i><span>Live</span></button>
         <button class="spec-nav-btn" onclick="enterLiveModeAndGo('classement')"><i class="fas fa-chart-bar"></i><span>Classement</span></button>
+        <button class="spec-nav-btn" onclick="enterLiveModeAndGo('bilan')"><i class="fas fa-medal"></i><span>Bilan saison</span></button>
       </div>
     </div>
   </div>
@@ -1048,6 +1051,7 @@ window.adminDeleteUser = async function (uid, name) {
     <button class="tab-btn" data-tab="matchesTab" onclick="showTab('matchesTab', this)"><i class="fas fa-trophy"></i> Matchs</button>
     <button class="tab-btn" data-tab="rankingTab" onclick="showTab('rankingTab', this)"><i class="fas fa-chart-bar"></i> Classement</button>
     <button class="tab-btn" data-tab="statsTab" onclick="showTab('statsTab', this)"><i class="fas fa-chart-pie"></i> Statistiques</button>
+    <button class="tab-btn" data-tab="bilanTab" onclick="showTab('bilanTab', this); if (typeof loadSeasonBilan === 'function') loadSeasonBilan();"><i class="fas fa-medal"></i> Bilan saison</button>
     <button class="tab-btn" data-tab="reglementTab" onclick="showTab('reglementTab', this)"><i class="fas fa-book"></i> Règlement</button>
     <button class="tab-btn" data-tab="adminTab" data-role="admin" onclick="showTab('adminTab', this)"><i class="fas fa-user-shield"></i> Utilisateurs</button>
   </div>
