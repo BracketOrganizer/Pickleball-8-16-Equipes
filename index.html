@@ -234,6 +234,41 @@
   .spec-nav-btn:hover{background:var(--primary);color:white;border-color:var(--primary)}
   .spec-nav-btn i{font-size:1.2rem}
 
+  /* ===== Bloc "Accès spectateur" agrandi et différencié ===== */
+  .spectator-block{background:#e3f2fd;border:2px solid #90caf9;border-radius:12px;padding:14px 10px 10px;margin-top:16px}
+  .spectator-divider{font-size:1rem;font-weight:800;color:#1565c0;margin:0 0 10px 0}
+  .spectator-divider::before,.spectator-divider::after{background:#90caf9}
+
+  /* ===== Modales (inscription) ===== */
+  .modal-overlay{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;padding:16px}
+  .modal-box{background:white;border-radius:14px;padding:20px;max-width:380px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,0.3)}
+  .modal-box h3{color:var(--primary);margin-bottom:10px;text-align:center}
+
+  /* ===== Écran fiche joueur (spectateur) ===== */
+  #playerScreen.ecran-like{
+    position:fixed;inset:0;z-index:1900;display:none;flex-direction:column;
+    background:linear-gradient(160deg,#1a0f2e,#2c1250);color:white;padding:16px;
+  }
+  #playerScreen.ecran-like .ecran-body{flex:1;overflow-y:auto}
+  .player-pick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:10px}
+  .player-pick-btn{background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.15);color:white;border-radius:10px;padding:12px 6px;cursor:pointer;font-weight:600;font-size:0.85rem}
+  .player-pick-btn:hover{background:var(--primary);border-color:var(--primary)}
+  .player-match-row{background:rgba(255,255,255,0.08);border-radius:8px;padding:10px 12px;margin:6px 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
+  .player-match-row .pmr-round{font-weight:700;opacity:0.75;min-width:70px}
+  .player-match-row .pmr-score{font-weight:800;color:#4caf50}
+  .back-btn{background:rgba(255,255,255,0.15);border:none;color:white;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:0.8rem;margin-bottom:10px}
+
+  /* ===== Bilan de saison ===== */
+  .bilan-group{border-left:4px solid var(--primary)}
+
+  /* ===== Impression ===== */
+  @media print{
+    body *{visibility:hidden}
+    .print-target, .print-target *{visibility:visible}
+    .print-target{position:absolute;left:0;top:0;width:100%}
+    .no-print, .btn.no-print, header .controls, .tabs, .user-bar{display:none !important}
+  }
+
   .user-bar{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:#f3e5f5;border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:0.8rem}
   .role-badge{padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:700;color:white}
   .role-badge.admin{background:var(--primary)}
@@ -312,7 +347,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import {
   getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot,
-  collection, serverTimestamp
+  collection, serverTimestamp, addDoc, getDocs
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -370,6 +405,191 @@ function startLiveWatch() {
   }, (e) => console.warn('startLiveWatch error:', e));
 }
 startLiveWatch();
+
+// ══════════════════════════════════════════════════════════
+// INSCRIPTIONS (ouverture/fermeture par l'admin, heure limite, quota)
+// ══════════════════════════════════════════════════════════
+let REG_CONFIG = { open: false, deadline: null, maxCount: null };
+let REG_COUNT = 0;
+let unsubRegConfig = null;
+let unsubRegList = null;
+
+function startRegistrationWatch() {
+  if (unsubRegConfig) return;
+  unsubRegConfig = onSnapshot(doc(db, 'tournamentStatus', 'registration'), (snap) => {
+    REG_CONFIG = snap.exists() ? snap.data() : { open: false, deadline: null, maxCount: null };
+    if (typeof updateRegistrationButton === 'function') updateRegistrationButton();
+    if (typeof refreshAdminRegistrationUI === 'function') refreshAdminRegistrationUI();
+  }, (e) => console.warn('startRegistrationWatch error:', e));
+  unsubRegList = onSnapshot(collection(db, 'registrations'), (snap) => {
+    REG_COUNT = snap.size;
+    window.REG_LIST = [];
+    snap.forEach(d => window.REG_LIST.push(Object.assign({ id: d.id }, d.data())));
+    window.REG_LIST.sort((a, b) => (a.createdAtLocal || 0) - (b.createdAtLocal || 0));
+    if (typeof updateRegistrationButton === 'function') updateRegistrationButton();
+    if (typeof refreshAdminRegistrationUI === 'function') refreshAdminRegistrationUI();
+  }, (e) => console.warn('startRegistrationWatch list error:', e));
+}
+startRegistrationWatch();
+
+function registrationIsOpenNow() {
+  if (!REG_CONFIG || !REG_CONFIG.open) return false;
+  if (REG_CONFIG.deadline) {
+    const d = new Date(REG_CONFIG.deadline);
+    if (!isNaN(d.getTime()) && new Date() > d) return false;
+  }
+  if (REG_CONFIG.maxCount && REG_CONFIG.maxCount > 0 && REG_COUNT >= REG_CONFIG.maxCount) return false;
+  return true;
+}
+window.registrationIsOpenNow = registrationIsOpenNow;
+
+window.adminSaveRegistrationConfig = async function () {
+  if (!isAdmin()) return;
+  const openEl = document.getElementById('reg_open');
+  const deadlineEl = document.getElementById('reg_deadline');
+  const maxEl = document.getElementById('reg_max');
+  const payload = {
+    open: !!(openEl && openEl.checked),
+    deadline: deadlineEl && deadlineEl.value ? new Date(deadlineEl.value).toISOString() : null,
+    maxCount: maxEl && maxEl.value ? parseInt(maxEl.value) : null
+  };
+  try {
+    await setDoc(doc(db, 'tournamentStatus', 'registration'), payload, { merge: true });
+    showNotice('Paramètres d\'inscription enregistrés');
+  } catch (e) { alert('Erreur : ' + e.message); }
+};
+
+window.adminClearRegistrations = async function () {
+  if (!isAdmin()) return;
+  if (!confirm('Effacer toutes les inscriptions de la liste ?')) return;
+  try {
+    const snap = await getDocs(collection(db, 'registrations'));
+    const proms = [];
+    snap.forEach(d => proms.push(deleteDoc(doc(db, 'registrations', d.id))));
+    await Promise.all(proms);
+    showNotice('Liste des inscriptions effacée');
+  } catch (e) { alert('Erreur : ' + e.message); }
+};
+
+window.deleteRegistration = async function (id) {
+  if (!isAdmin()) return;
+  try { await deleteDoc(doc(db, 'registrations', id)); }
+  catch (e) { alert('Erreur : ' + e.message); }
+};
+
+window.submitRegistration = async function () {
+  const nameEl = document.getElementById('reg_name');
+  const phoneEl = document.getElementById('reg_phone');
+  const msgEl = document.getElementById('regModalMsg');
+  const name = nameEl ? nameEl.value.trim() : '';
+  if (!name) { if (msgEl) { msgEl.textContent = 'Merci de saisir votre nom.'; msgEl.style.color = 'var(--danger)'; } return; }
+  if (!registrationIsOpenNow()) { if (msgEl) { msgEl.textContent = 'Les inscriptions sont fermées.'; msgEl.style.color = 'var(--danger)'; } return; }
+  try {
+    await addDoc(collection(db, 'registrations'), {
+      name: name,
+      phone: phoneEl ? phoneEl.value.trim() : '',
+      createdAt: serverTimestamp(),
+      createdAtLocal: Date.now()
+    });
+    if (msgEl) { msgEl.textContent = '✅ Inscription enregistrée, merci !'; msgEl.style.color = 'var(--success)'; }
+    if (nameEl) nameEl.value = '';
+    if (phoneEl) phoneEl.value = '';
+    setTimeout(() => { if (typeof closeRegistrationModal === 'function') closeRegistrationModal(); }, 1200);
+  } catch (e) {
+    if (msgEl) { msgEl.textContent = 'Erreur : ' + e.message; msgEl.style.color = 'var(--danger)'; }
+  }
+};
+
+// ══════════════════════════════════════════════════════════
+// BILAN DE SAISON (archivage par nombre de terrains)
+// ══════════════════════════════════════════════════════════
+window.archiveCurrentSessionToSeason = async function () {
+  if (!isAdmin()) return;
+  if (!window.lastRankingStats || Object.keys(window.lastRankingStats).length === 0) {
+    alert('Calculez d\'abord le classement (onglet Matchs → "Calculer Classement") avant d\'archiver.');
+    return;
+  }
+  const entries = Object.values(window.lastRankingStats).map(s => ({
+    name: s.name,
+    points: (s.wins * 2) + s.draws,
+    matches: s.matches,
+    wins: s.wins, draws: s.draws, losses: s.losses,
+    scored: s.scored, conceded: s.conceded
+  })).filter(e => e.matches > 0);
+  if (entries.length === 0) { alert('Aucun match joué à archiver pour cette séance.'); return; }
+  const session = { date: new Date().toISOString(), entries: entries };
+  const key = 'terrain_' + TERRAINS;
+  try {
+    const ref = doc(db, 'seasonArchive', key);
+    const snap = await getDoc(ref);
+    const sessions = snap.exists() && Array.isArray(snap.data().sessions) ? snap.data().sessions : [];
+    sessions.push(session);
+    await setDoc(ref, { terrains: TERRAINS, sessions: sessions }, { merge: true });
+    showNotice('Séance archivée dans le bilan de saison (' + TERRAINS + ' terrains)');
+    if (typeof loadSeasonBilan === 'function') loadSeasonBilan();
+  } catch (e) { alert('Erreur d\'archivage : ' + e.message); }
+};
+
+window.loadSeasonBilan = async function () {
+  const container = document.getElementById('bilanSaisonContent');
+  if (!container) return;
+  container.innerHTML = '<p style="text-align:center;color:#666;padding:20px">Chargement du bilan…</p>';
+  try {
+    const groups = [3, 4, 5];
+    let html = '';
+    for (const t of groups) {
+      const ref = doc(db, 'seasonArchive', 'terrain_' + t);
+      const snap = await getDoc(ref);
+      const sessions = snap.exists() && Array.isArray(snap.data().sessions) ? snap.data().sessions : [];
+      html += renderBilanGroup(t, sessions);
+    }
+    container.innerHTML = html;
+  } catch (e) {
+    container.innerHTML = '<p style="color:var(--danger);text-align:center;padding:20px">Erreur de chargement : ' + e.message + '</p>';
+  }
+};
+
+function renderBilanGroup(terrains, sessions) {
+  const title = 'Terrains disponibles : ' + terrains;
+  if (!sessions || sessions.length === 0) {
+    return `<div class="card bilan-group" id="bilanGroup${terrains}">
+      <span class="card-title"><i class="fas fa-border-all"></i> ${title}</span>
+      <p style="text-align:center;color:#999;padding:14px;font-size:0.85rem">Aucune séance archivée pour cette configuration.</p>
+    </div>`;
+  }
+  const agg = {};
+  sessions.forEach(sess => {
+    (sess.entries || []).forEach(e => {
+      if (!agg[e.name]) agg[e.name] = { name: e.name, presences: 0, points: 0, matches: 0, wins: 0, draws: 0, losses: 0 };
+      agg[e.name].presences++;
+      agg[e.name].points += e.points || 0;
+      agg[e.name].matches += e.matches || 0;
+      agg[e.name].wins += e.wins || 0;
+      agg[e.name].draws += e.draws || 0;
+      agg[e.name].losses += e.losses || 0;
+    });
+  });
+  const rows = Object.values(agg).map(a => Object.assign({}, a, {
+    avgPoints: a.presences ? (a.points / a.presences) : 0,
+    avgMatches: a.presences ? (a.matches / a.presences) : 0
+  })).sort((a, b) => b.points - a.points);
+
+  let html = `<div class="card bilan-group" id="bilanGroup${terrains}">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+      <span class="card-title"><i class="fas fa-border-all"></i> ${title}</span>
+      <button class="btn secondary no-print" style="margin:0" onclick="printSection('bilanGroup${terrains}')"><i class="fas fa-print"></i> Imprimer</button>
+    </div>
+    <div style="font-size:0.75rem;color:#777;margin-bottom:6px">${sessions.length} séance(s) archivée(s)</div>
+    <div style="overflow-x:auto;">
+    <table class="ranking"><thead><tr>
+      <th>Pos</th><th>Joueur</th><th>Présences</th><th>Pts cumulés</th><th>Moy. pts/séance</th><th>Matchs cumulés</th><th>Moy. matchs/séance</th><th>V</th><th>N</th><th>D</th>
+    </tr></thead><tbody>`;
+  rows.forEach((r, i) => {
+    html += `<tr><td>${i + 1}</td><td style="text-align:left">${r.name}</td><td>${r.presences}</td><td>${r.points}</td><td>${r.avgPoints.toFixed(2)}</td><td>${r.matches}</td><td>${r.avgMatches.toFixed(2)}</td><td>${r.wins}</td><td>${r.draws}</td><td>${r.losses}</td></tr>`;
+  });
+  html += '</tbody></table></div></div>';
+  return html;
+}
 
 // ══════════════════════════════════════════════════════════
 // AUTH
@@ -723,15 +943,48 @@ window.adminDeleteUser = async function (uid, name) {
     <button class="btn" style="background:var(--primary)" onclick="loginEmail()"><i class="fas fa-right-to-bracket"></i> Se connecter</button>
     <button class="btn secondary" onclick="loginGoogle()"><i class="fab fa-google"></i> Connexion Google</button>
     <div id="authMsg"></div>
-    <div class="login-divider">Accès spectateur (sans compte)</div>
-    <div class="spec-nav-grid">
-      <button class="spec-nav-btn" onclick="enterLiveModeAndGo('ecran')"><i class="fas fa-tv"></i><span>Écran</span></button>
-      <button class="spec-nav-btn" onclick="enterLiveModeAndGo('reglement')"><i class="fas fa-book"></i><span>Règlement</span></button>
-      <button class="spec-nav-btn" onclick="enterLiveModeAndGo('joueurs')"><i class="fas fa-users"></i><span>Joueurs</span></button>
-      <button class="spec-nav-btn" onclick="enterLiveModeAndGo('live')"><i class="fas fa-circle" style="color:#f44336"></i><span>Live</span></button>
-      <button class="spec-nav-btn" onclick="enterLiveModeAndGo('classement')"><i class="fas fa-chart-bar"></i><span>Classement</span></button>
+
+    <button id="registerOpenBtn" class="btn" style="display:none;background:var(--warning);width:100%;margin-top:14px;font-size:0.95rem" onclick="openRegistrationModal()">
+      <i class="fas fa-pen-to-square"></i> S'inscrire au prochain tournoi
+    </button>
+    <div id="registerClosedNote" style="display:none;text-align:center;font-size:0.75rem;color:#999;margin-top:8px"></div>
+
+    <div class="spectator-block">
+      <div class="login-divider spectator-divider"><i class="fas fa-eye"></i> Accès spectateur (sans compte)</div>
+      <div class="spec-nav-grid">
+        <button class="spec-nav-btn" onclick="enterLiveModeAndGo('ecran')"><i class="fas fa-tv"></i><span>Écran</span></button>
+        <button class="spec-nav-btn" onclick="enterLiveModeAndGo('reglement')"><i class="fas fa-book"></i><span>Règlement</span></button>
+        <button class="spec-nav-btn" onclick="openPlayerScreenFromLogin()"><i class="fas fa-users"></i><span>Joueur</span></button>
+        <button class="spec-nav-btn" onclick="enterLiveModeAndGo('live')"><i class="fas fa-circle" style="color:#f44336"></i><span>Live</span></button>
+        <button class="spec-nav-btn" onclick="enterLiveModeAndGo('classement')"><i class="fas fa-chart-bar"></i><span>Classement</span></button>
+      </div>
     </div>
   </div>
+</div>
+
+<!-- ═══════════════ MODALE INSCRIPTION ═══════════════ -->
+<div id="registrationModal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <h3><i class="fas fa-pen-to-square"></i> Inscription au tournoi</h3>
+    <div id="regInfoLine" style="font-size:0.78rem;color:#777;margin-bottom:8px"></div>
+    <input type="text" id="reg_name" class="player-input" placeholder="Nom et prénom" style="margin:6px 0">
+    <input type="tel" id="reg_phone" class="player-input" placeholder="Téléphone (optionnel)" style="margin:6px 0">
+    <div id="regModalMsg" style="min-height:18px;text-align:center;font-size:0.8rem;margin-top:4px;font-weight:600"></div>
+    <button class="btn success" style="width:100%" onclick="submitRegistration()"><i class="fas fa-check"></i> Valider mon inscription</button>
+    <button class="btn" style="width:100%;background:#999" onclick="closeRegistrationModal()">Fermer</button>
+  </div>
+</div>
+
+<!-- ═══════════════ ÉCRAN "FICHE JOUEUR" (accès spectateur) ═══════════════ -->
+<div id="playerScreen" class="ecran-like" style="display:none">
+  <div class="ecran-header">
+    <h1><i class="fas fa-user"></i> <span id="playerScreenTitle">Choisir un joueur</span></h1>
+    <div>
+      <button class="ecran-quit no-print" id="playerScreenPrintBtn" style="display:none;margin-right:6px" onclick="printSection('playerScreenBody')"><i class="fas fa-print"></i> Imprimer</button>
+      <button class="ecran-quit" onclick="closePlayerScreen()"><i class="fas fa-xmark"></i> Quitter</button>
+    </div>
+  </div>
+  <div class="ecran-body" id="playerScreenBody"></div>
 </div>
 
 <!-- ═══════════════ MODE ÉCRAN (affichage public) ═══════════════ -->
@@ -2081,6 +2334,7 @@ function process2v1Stats(stats, players, score1, score2) {
 }
 
 function updateRankingDisplay(stats) {
+  window.lastRankingStats = stats;
   const ranking = Object.values(stats).map(s => ({
     ...s,
     diff: s.scored - s.conceded,
@@ -2800,6 +3054,7 @@ function renderEcranPanels() {
   const rankingPanel = document.getElementById('ecranPanelRanking');
   if (matchesPanel) matchesPanel.innerHTML = buildEcranMatchesHTML();
   if (rankingPanel) rankingPanel.innerHTML = buildEcranRankingHTML();
+  setTimeout(setupAllEcranAutoScroll, 100);
 }
 
 // Détermine le tour "en cours" à afficher : le premier tour comportant au
@@ -2817,16 +3072,11 @@ function findCurrentRoundForEcran() {
   return Math.max(0, grid.length - 1);
 }
 
-function buildEcranMatchesHTML() {
-  const grid = getGridForN();
-  if (!grid || grid.length === 0) {
-    return '<p style="text-align:center;opacity:0.6;padding:40px">Le tournoi n\'a pas encore été généré.</p>';
-  }
-  const r = findCurrentRoundForEcran();
+function buildOneEcranRoundHTML(grid, r, label) {
   const round = grid[r];
-  let html = `<div class="ecran-round-title">Tour ${r + 1} / ${grid.length}</div><div class="ecran-courts">`;
+  let html = `<div class="ecran-round-title">${label}</div><div class="ecran-courts">`;
   let restLine = '';
-  
+
   round.forEach((courtObj, c) => {
     if (courtObj.rest) {
       restLine += (restLine ? ', ' : '') + getPlayerName(courtObj.rest);
@@ -2834,8 +3084,10 @@ function buildEcranMatchesHTML() {
     }
     const originalMapped = courtObj.players.map(p => (p <= positions.length ? positions[p - 1] : null)).filter(p => p !== null);
     const mapped = originalMapped.map(p => getReplacementPlayer(r, p));
-    const sc = (matchScores[r] && matchScores[r][c]) ? matchScores[r][c] : { 1: '', 2: '' };
-    
+    const sc = (courtObj.type === '1x1' || courtObj.type === '2x1')
+      ? ((specialMatchScores[r] && specialMatchScores[r][c]) ? specialMatchScores[r][c] : { 1: '', 2: '' })
+      : ((matchScores[r] && matchScores[r][c]) ? matchScores[r][c] : { 1: '', 2: '' });
+
     let team1 = [], team2 = [];
     if (courtObj.type === '1x1' && mapped.length === 2) {
       team1 = [mapped[0]]; team2 = [mapped[1]];
@@ -2844,7 +3096,7 @@ function buildEcranMatchesHTML() {
     } else {
       team1 = [mapped[0], mapped[1]]; team2 = [mapped[2], mapped[3]];
     }
-    
+
     html += `<div class="ecran-court">
       <div class="ecran-court-title">Terrain ${c + 1}</div>
       <div class="ecran-team"><span>${team1.filter(Boolean).map(getPlayerName).join(' & ')}</span><span class="ecran-score">${sc[1] !== '' ? sc[1] : '–'}</span></div>
@@ -2852,9 +3104,27 @@ function buildEcranMatchesHTML() {
       <div class="ecran-team"><span>${team2.filter(Boolean).map(getPlayerName).join(' & ')}</span><span class="ecran-score">${sc[2] !== '' ? sc[2] : '–'}</span></div>
     </div>`;
   });
-  
+
   html += '</div>';
   if (restLine) html += `<div class="ecran-rest"><i class="fas fa-mug-hot"></i> Repos : ${restLine}</div>`;
+  return html;
+}
+
+// Affiche le tour en cours, puis tous les tours suivants ("à venir") à la
+// suite : la page défile automatiquement (setupAllEcranAutoScroll) si le
+// contenu dépasse la hauteur de l'écran, comme dans une appli Americano.
+function buildEcranMatchesHTML() {
+  const grid = getGridForN();
+  if (!grid || grid.length === 0) {
+    return '<p style="text-align:center;opacity:0.6;padding:40px">Le tournoi n\'a pas encore été généré.</p>';
+  }
+  const r = findCurrentRoundForEcran();
+  let html = buildOneEcranRoundHTML(grid, r, `▶ En cours — Tour ${r + 1} / ${grid.length}`);
+
+  for (let nr = r + 1; nr < grid.length; nr++) {
+    html += `<hr style="border:none;border-top:1px solid rgba(255,255,255,0.15);margin:18px 0">`;
+    html += buildOneEcranRoundHTML(grid, nr, `À venir — Tour ${nr + 1} / ${grid.length}`);
+  }
   return html;
 }
 
@@ -2898,7 +3168,7 @@ function buildEcranRankingHTML() {
     if (b.points !== a.points) return b.points - a.points;
     if (b.diff !== a.diff) return b.diff - a.diff;
     return b.scored - a.scored;
-  }).slice(0, 10);
+  });
   
   let html = '<table class="ecran-ranking-table"><thead><tr><th>#</th><th>Joueur</th><th>Pts</th><th>Diff</th><th>V</th></tr></thead><tbody>';
   ranking.forEach((p, i) => {
@@ -2907,6 +3177,155 @@ function buildEcranRankingHTML() {
   html += '</tbody></table>';
   return html;
 }
+
+// ══════════════════════════════════════════════════════════
+// DÉFILEMENT AUTOMATIQUE DES PANNEAUX ÉCRAN (type appli Americano)
+// Si le contenu (classement complet, matchs en cours + à venir) dépasse
+// la hauteur visible, on fait défiler doucement de haut en bas puis on
+// revient en haut, en boucle.
+// ══════════════════════════════════════════════════════════
+let ecranAutoScrollTimers = {};
+function setupEcranAutoScroll(panelEl) {
+  if (!panelEl) return;
+  const key = panelEl.id;
+  if (ecranAutoScrollTimers[key]) { clearInterval(ecranAutoScrollTimers[key]); delete ecranAutoScrollTimers[key]; }
+  panelEl.scrollTop = 0;
+  const maxScroll = panelEl.scrollHeight - panelEl.clientHeight;
+  if (maxScroll <= 20) return; // tout tient à l'écran, pas besoin de défiler
+  let direction = 1;
+  let paused = 0;
+  ecranAutoScrollTimers[key] = setInterval(() => {
+    if (!panelEl.isConnected || panelEl.style.display === 'none') return;
+    if (paused > 0) { paused--; return; }
+    panelEl.scrollTop += direction * 2;
+    if (panelEl.scrollTop >= maxScroll - 1) { direction = -1; paused = 15; }
+    else if (panelEl.scrollTop <= 0) { direction = 1; paused = 15; }
+  }, 60);
+}
+function setupAllEcranAutoScroll() {
+  setupEcranAutoScroll(document.getElementById('ecranPanelMatches'));
+  setupEcranAutoScroll(document.getElementById('ecranPanelRanking'));
+}
+
+// ══════════════════════════════════════════════════════════
+// IMPRESSION
+// Ajoute temporairement la classe .print-target à l'élément visé (les
+// styles @media print masquent tout le reste de la page), lance
+// window.print(), puis nettoie.
+// ══════════════════════════════════════════════════════════
+function printSection(elementId) {
+  const el = document.getElementById(elementId);
+  if (!el) { alert('Rien à imprimer.'); return; }
+  document.querySelectorAll('.print-target').forEach(n => n.classList.remove('print-target'));
+  el.classList.add('print-target');
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => el.classList.remove('print-target'), 300);
+  }, 50);
+}
+window.printSection = printSection;
+
+// ══════════════════════════════════════════════════════════
+// FICHE JOUEUR (accessible depuis le bouton "Joueur" de la page de connexion)
+// Liste des joueurs actifs -> sélection -> matchs (passés & à venir) du joueur
+// ══════════════════════════════════════════════════════════
+window.openPlayerScreenFromLogin = async function () {
+  try {
+    if (typeof getDoc === 'function') { /* noop, ensures scope */ }
+  } catch (e) {}
+  if (typeof window.registrationIsOpenNow !== 'function') {
+    // rôles pas encore chargés ; on tente quand même via LIVE_OPEN check côté module
+  }
+  document.getElementById('loginScreen').style.display = 'none';
+  const scr = document.getElementById('playerScreen');
+  scr.style.display = 'flex';
+  renderPlayerPickList();
+};
+window.closePlayerScreen = function () {
+  document.getElementById('playerScreen').style.display = 'none';
+  document.getElementById('playerScreenPrintBtn').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+};
+
+function renderPlayerPickList() {
+  document.getElementById('playerScreenTitle').textContent = 'Choisir un joueur';
+  document.getElementById('playerScreenPrintBtn').style.display = 'none';
+  const body = document.getElementById('playerScreenBody');
+  const players = getActivePlayerNumbers();
+  if (!players.length) {
+    body.innerHTML = '<p style="text-align:center;opacity:0.7;padding:30px">Aucun joueur configuré pour le moment.</p>';
+    return;
+  }
+  let html = '<div class="player-pick-grid">';
+  players.forEach(p => {
+    html += `<button class="player-pick-btn" onclick="renderPlayerMatchHistory(${p})">${getPlayerName(p)}</button>`;
+  });
+  html += '</div>';
+  body.innerHTML = html;
+}
+
+// Construit et affiche la liste complète des matchs (déroulement) d'un joueur,
+// tour par tour : partenaire, adversaires, score, terrain.
+window.renderPlayerMatchHistory = function (playerId) {
+  const grid = getGridForN();
+  const body = document.getElementById('playerScreenBody');
+  document.getElementById('playerScreenTitle').textContent = getPlayerName(playerId);
+  document.getElementById('playerScreenPrintBtn').style.display = '';
+
+  let html = '<button class="back-btn no-print" onclick="renderPlayerPickList()"><i class="fas fa-arrow-left"></i> Retour à la liste</button>';
+  html += `<div id="playerScreenBody_print"><h2 style="margin-bottom:10px">${getPlayerName(playerId)} — déroulement des matchs</h2>`;
+
+  if (!grid || grid.length === 0) {
+    html += '<p style="opacity:0.7;padding:20px;text-align:center">Le tournoi n\'a pas encore été généré.</p></div>';
+    body.innerHTML = html;
+    return;
+  }
+
+  let found = 0;
+  for (let r = 0; r < grid.length; r++) {
+    const round = grid[r];
+    for (let c = 0; c < round.length; c++) {
+      const courtObj = round[c];
+      if (courtObj.rest) {
+        if (courtObj.rest === playerId) {
+          html += `<div class="player-match-row"><span class="pmr-round">Tour ${r + 1}</span><span>Repos</span><span></span></div>`;
+          found++;
+        }
+        continue;
+      }
+      const originalMapped = courtObj.players.map(p => (p <= positions.length ? positions[p - 1] : null)).filter(p => p !== null);
+      const mapped = originalMapped.map(p => getReplacementPlayer(r, p));
+      let team1 = [], team2 = [];
+      if (courtObj.type === '1x1' && mapped.length === 2) { team1 = [mapped[0]]; team2 = [mapped[1]]; }
+      else if (courtObj.type === '2x1' && mapped.length === 3) { team1 = [mapped[0], mapped[1]]; team2 = [mapped[2]]; }
+      else { team1 = [mapped[0], mapped[1]]; team2 = [mapped[2], mapped[3]]; }
+
+      const inTeam1 = team1.includes(playerId);
+      const inTeam2 = team2.includes(playerId);
+      if (!inTeam1 && !inTeam2) continue;
+      found++;
+
+      const partner = (inTeam1 ? team1 : team2).filter(p => p && p !== playerId).map(getPlayerName).join(', ') || '—';
+      const opponents = (inTeam1 ? team2 : team1).filter(Boolean).map(getPlayerName).join(' & ') || '—';
+      let scores;
+      if (courtObj.type === '1x1' || courtObj.type === '2x1') scores = (specialMatchScores[r] && specialMatchScores[r][c]) || { 1: '', 2: '' };
+      else scores = (matchScores[r] && matchScores[r][c]) || { 1: '', 2: '' };
+      const myScore = inTeam1 ? scores[1] : scores[2];
+      const oppScore = inTeam1 ? scores[2] : scores[1];
+      const played = myScore !== '' && myScore !== undefined && oppScore !== '' && oppScore !== undefined;
+      const scoreLabel = played ? (myScore + ' - ' + oppScore) : 'à venir';
+
+      html += `<div class="player-match-row">
+        <span class="pmr-round">Tour ${r + 1} · T${c + 1}</span>
+        <span>Partenaire : <strong>${partner}</strong> vs ${opponents}</span>
+        <span class="pmr-score">${scoreLabel}</span>
+      </div>`;
+    }
+  }
+  if (found === 0) html += '<p style="opacity:0.7;padding:20px;text-align:center">Ce joueur n\'apparaît dans aucun match du planning actuel.</p>';
+  html += '</div>';
+  body.innerHTML = html;
+};
 
 function showTab(tabName, btnEl) {
   document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
