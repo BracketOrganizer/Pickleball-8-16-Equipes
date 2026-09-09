@@ -3295,6 +3295,32 @@ function resetAll() {
   }
 }
 
+// Vide l'affichage des matchs/classement/stats (placeholders inclus).
+// Utilisé aussi bien lors d'une réinitialisation locale que lorsqu'un
+// AUTRE appareil (ex. mobile) vient de réinitialiser le tournoi : sans
+// ça, un appareil qui affichait déjà un tournoi garde l'ancien affichage
+// à l'écran indéfiniment après une réinitialisation distante.
+function clearGeneratedDisplay() {
+  const containers = [
+    'matchesDisplay', 'rankingBody', 'positionsList',
+    'statsArea', 'constraintsList', 'replacementLogSection'
+  ];
+  containers.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  });
+  const constraintsAnalysis = document.getElementById('constraintsAnalysis');
+  if (constraintsAnalysis) constraintsAnalysis.style.display = 'none';
+  const matchesDisplay = document.getElementById('matchesDisplay');
+  if (matchesDisplay) {
+    matchesDisplay.innerHTML = '<p style="text-align:center;color:#666;padding:20px;font-size:0.9rem">Cliquez sur "Générer avec Validation" pour créer les matchs</p>';
+  }
+  const statsArea = document.getElementById('statsArea');
+  if (statsArea) {
+    statsArea.innerHTML = '<p style="text-align:center;color:#666;padding:20px;font-size:0.9rem">Les statistiques apparaîtront après génération du tournoi</p>';
+  }
+}
+
 function doReset() {
   positions = [];
   TERRAINS = 5;
@@ -3316,22 +3342,7 @@ function doReset() {
     }
   }
   
-  const containers = [
-    'matchesDisplay', 'rankingBody', 'positionsList', 
-    'statsArea', 'constraintsList', 'replacementLogSection'
-  ];
-  
-  containers.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = '';
-  });
-  
-  document.getElementById('constraintsAnalysis').style.display = 'none';
-  
-  const matchesDisplay = document.getElementById('matchesDisplay');
-  if (matchesDisplay) {
-    matchesDisplay.innerHTML = '<p style="text-align:center;color:#666;padding:20px;font-size:0.9rem">Cliquez sur "Générer avec Validation" pour créer les matchs</p>';
-  }
+  clearGeneratedDisplay();
   
   const statsArea = document.getElementById('statsArea');
   if (statsArea) {
