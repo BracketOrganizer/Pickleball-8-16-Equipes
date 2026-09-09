@@ -1307,13 +1307,22 @@ function getGridForN() {
   return grids[firstKey];
 }
 
-function getReplacementPlayer(round, court, position, originalPlayer) {
-  if (playerReplacements[round] && 
-      playerReplacements[round][court] && 
-      playerReplacements[round][court][position]) {
-    return playerReplacements[round][court][position];
+// Remplacements de joueurs : modèle "report automatique" — une fois un
+// remplaçant déclaré à partir d'un tour donné, il reste en jeu à la place
+// du joueur d'origine pour TOUS les tours suivants, sans avoir à le
+// resélectionner à chaque tour. playerReplacements[joueurOrigine] est un
+// historique trié par tour de départ croissant ; plusieurs remplacements
+// successifs du même joueur d'origine sont possibles (ex. si le
+// remplaçant doit lui-même être remplacé plus tard).
+// playerReplacements = { [originalPlayerId]: [{substitute, fromRound}, ...] }
+function getReplacementPlayer(round, originalPlayer) {
+  const history = playerReplacements[originalPlayer];
+  if (!history || history.length === 0) return originalPlayer;
+  let effective = originalPlayer;
+  for (let i = 0; i < history.length; i++) {
+    if (round >= history[i].fromRound) effective = history[i].substitute;
   }
-  return originalPlayer;
+  return effective;
 }
 
 function logReplacement(round, court, position, oldPlayer, newPlayer, courtType = 'principal') {
@@ -1356,7 +1365,7 @@ function updateReplacementLogDisplay() {
     replacementLog.forEach(entry => {
       html += `<div class="replacement-item">`;
       html += `<div class="replacement-info">`;
-      html += `<span class="replacement-badge-log tour">Tour ${entry.round}</span>`;
+      html += `<span class="replacement-badge-log tour">À partir du Tour ${entry.round}</span>`;
       html += `<span class="replacement-badge-log court">${entry.court}</span>`;
       html += `<span class="replacement-badge-log old">${entry.oldPlayer}</span>`;
       html += `<i class="fas fa-arrow-right" style="color:#666"></i>`;
@@ -1512,7 +1521,7 @@ function getOpponentsInRound(playerId, round) {
     }).filter(p => p !== null);
     
     const mapped = originalMapped.map((player, position) => 
-      getReplacementPlayer(round, courtIdx, position, player)
+      getReplacementPlayer(round, player)
     );
     
     if (mapped.includes(playerId)) {
@@ -1595,10 +1604,11 @@ function generateTournament() {
       }
       
       const pos = courtObj.players;
-      const mapped = pos.map(p => {
+      const originalMapped = pos.map(p => {
         if (p <= positions.length) return positions[p - 1];
         return null;
       }).filter(p => p !== null);
+      const mapped = originalMapped.map(p => getReplacementPlayer(r, p));
       
       mapped.forEach(m => { if (m) plays.add(m); });
       
@@ -1769,17 +1779,26 @@ function generateTournament() {
 // [Les autres fonctions restent identiques...]
 
 function loadReplacements() {
-  Object.keys(playerReplacements).forEach(round => {
-    Object.keys(playerReplacements[round]).forEach(court => {
-      Object.keys(playerReplacements[round][court]).forEach(position => {
-        const replacementPlayer = playerReplacements[round][court][position];
-        const select = document.querySelector(`[data-round="${round}"][data-court="${court}"][data-position="${position}"]`);
+  const grid = getGridForN();
+  
+  for (let r = 0; r < grid.length; r++) {
+    const round = grid[r];
+    for (let c = 0; c < round.length; c++) {
+      const courtObj = round[c];
+      if (courtObj.rest) continue;
+      
+      courtObj.players.forEach((p, position) => {
+        if (p > positions.length) return;
+        const originalPlayer = positions[p - 1];
+        const effective = getReplacementPlayer(r, originalPlayer);
+        
+        const select = document.querySelector(`[data-round="${r}"][data-court="${c}"][data-position="${position}"]`);
         if (select) {
-          select.value = replacementPlayer;
+          select.value = (effective !== originalPlayer) ? effective : '';
         }
       });
-    });
-  });
+    }
+  }
 }
 
 function calculateRanking() {
@@ -1814,7 +1833,7 @@ function calculateRanking() {
       }).filter(p => p !== null && players.includes(p));
       
       const mapped = originalMapped.map((player, position) => 
-        getReplacementPlayer(r, court, position, player)
+        getReplacementPlayer(r, player)
       );
       
       let scores;
@@ -2003,10 +2022,8 @@ function updateStatusBar() {
     tournamentProgressElement.textContent = progress + '%';
     
     let totalReplacements = 0;
-    Object.keys(playerReplacements).forEach(round => {
-      Object.keys(playerReplacements[round]).forEach(court => {
-        totalReplacements += Object.keys(playerReplacements[round][court]).length;
-      });
+    Object.keys(playerReplacements).forEach(originalPlayer => {
+      totalReplacements += playerReplacements[originalPlayer].length;
     });
     totalReplacementsElement.textContent = totalReplacements;
   }
@@ -2053,7 +2070,7 @@ function calculateDetailedRelationships() {
       }).filter(p => p !== null && players.includes(p));
       
       const mapped = originalMapped.map((player, position) => 
-        getReplacementPlayer(r, courtIdx, position, player)
+        getReplacementPlayer(r, player)
       );
       
       mapped.forEach(m => { if (m) playersInRound.add(m); });
@@ -2080,7 +2097,7 @@ function calculateDetailedRelationships() {
       }).filter(p => p !== null && players.includes(p));
       
       const mapped = originalMapped.map((player, position) => 
-        getReplacementPlayer(r, courtIdx, position, player)
+        getReplacementPlayer(r, player)
       );
       
       if (mapped.length >= 2) {
@@ -2191,7 +2208,7 @@ function calculatePlayerStats(playerId) {
       }).filter(p => p !== null);
       
       const mapped = originalMapped.map((player, position) => 
-        getReplacementPlayer(r, court, position, player)
+        getReplacementPlayer(r, player)
       );
       
       if (mapped.includes(playerId)) {
@@ -2535,28 +2552,30 @@ function updatePlayerReplacement(round, court, position, newPlayerId) {
     const originalMapped = grid[round][court].players.map(p => positions[p - 1]);
     const oldPlayer = originalMapped[position];
     
-    if (!playerReplacements[round]) {
-      playerReplacements[round] = {};
-    }
-    if (!playerReplacements[round][court]) {
-      playerReplacements[round][court] = {};
+    if (!playerReplacements[oldPlayer]) {
+      playerReplacements[oldPlayer] = [];
     }
     
+    // On retire toute déclaration existante précisément à ce tour (on la remplace ou l'annule)
+    playerReplacements[oldPlayer] = playerReplacements[oldPlayer].filter(e => e.fromRound !== round);
+    
     if (newPlayerId === '') {
-      delete playerReplacements[round][court][position];
-      if (Object.keys(playerReplacements[round][court]).length === 0) {
-        delete playerReplacements[round][court];
-      }
-      if (Object.keys(playerReplacements[round]).length === 0) {
-        delete playerReplacements[round];
+      // Annulation à partir de ce tour : on retire aussi toute déclaration future,
+      // pour revenir au joueur d'origine (ou à un remplacement antérieur toujours actif) ici et ensuite.
+      playerReplacements[oldPlayer] = playerReplacements[oldPlayer].filter(e => e.fromRound < round);
+      if (playerReplacements[oldPlayer].length === 0) {
+        delete playerReplacements[oldPlayer];
       }
     } else {
-      playerReplacements[round][court][position] = parseInt(newPlayerId);
+      playerReplacements[oldPlayer].push({ substitute: parseInt(newPlayerId), fromRound: round });
+      playerReplacements[oldPlayer].sort((a, b) => a.fromRound - b.fromRound);
       
       logReplacement(round, court, position, oldPlayer, parseInt(newPlayerId), 'principal');
+      showNotice(`${getPlayerName(oldPlayer)} remplacé(e) par ${getPlayerName(parseInt(newPlayerId))} à partir du Tour ${round + 1} (et pour tous les tours suivants)`);
     }
     
     scheduleAutoSave();
+    generateTournament();
     calculateRanking();
     updateStats();
   }
