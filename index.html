@@ -225,6 +225,14 @@
   .login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:#e0e0e0}
   #authMsg{min-height:18px;text-align:center;font-size:0.8rem;margin-top:6px;font-weight:600}
   .live-btn{background:var(--info) !important}
+  .spec-nav-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .spec-nav-btn{
+    display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 6px;
+    background:#f3e5f5;border:2px solid transparent;border-radius:10px;cursor:pointer;
+    font-size:0.75rem;font-weight:600;color:var(--primary);transition:all .15s;
+  }
+  .spec-nav-btn:hover{background:var(--primary);color:white;border-color:var(--primary)}
+  .spec-nav-btn i{font-size:1.2rem}
 
   .user-bar{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:#f3e5f5;border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:0.8rem}
   .role-badge{padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:700;color:white}
@@ -249,6 +257,48 @@
   body.role-spectateur #terrainCount,
   body.role-spectateur #playerCount{
     pointer-events:none;background:#eee;opacity:0.75;
+  }
+
+  .reglement-content h3{color:var(--primary);font-size:0.95rem;margin:16px 0 6px 0;display:flex;align-items:center;gap:8px}
+  .reglement-content h3:first-child{margin-top:4px}
+  .reglement-content p{font-size:0.85rem;color:#444;line-height:1.5;margin:4px 0}
+  .reglement-content ul{font-size:0.85rem;color:#444;line-height:1.5;margin:4px 0 4px 20px}
+  .reglement-content li{margin:3px 0}
+
+  /* ===== MODE ÉCRAN (affichage public / kiosque) ===== */
+  #ecranScreen{
+    position:fixed;inset:0;z-index:3000;display:none;flex-direction:column;
+    background:linear-gradient(160deg,#1a0a24,#2d1b3d 60%,#1a0a24);color:white;padding:20px;overflow:hidden;
+  }
+  .ecran-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+  .ecran-header h1{font-size:1.6rem;display:flex;align-items:center;gap:10px}
+  .ecran-clock{font-size:1.3rem;font-weight:700;opacity:0.85}
+  .ecran-quit{background:rgba(255,255,255,0.15);border:none;color:white;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:0.85rem}
+  .ecran-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
+  .ecran-panel{display:none}
+  .ecran-panel.active{display:block;animation:ecranFade .5s ease}
+  @keyframes ecranFade{from{opacity:0}to{opacity:1}}
+  .ecran-round-title{font-size:1.2rem;font-weight:700;margin-bottom:10px;color:#ce93d8;text-align:center}
+  .ecran-courts{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+  .ecran-court{background:rgba(255,255,255,0.08);border-radius:12px;padding:14px}
+  .ecran-court-title{font-size:0.9rem;opacity:0.7;margin-bottom:8px}
+  .ecran-team{display:flex;justify-content:space-between;align-items:center;font-size:1.1rem;padding:4px 0}
+  .ecran-score{font-size:1.6rem;font-weight:800;color:#4caf50}
+  .ecran-vs{text-align:center;opacity:0.5;font-size:0.8rem;margin:2px 0}
+  .ecran-rest{text-align:center;font-size:0.9rem;opacity:0.6;margin-top:8px}
+  .ecran-ranking-table{width:100%;border-collapse:collapse;font-size:1.05rem}
+  .ecran-ranking-table th{background:rgba(255,255,255,0.15);padding:8px;text-align:left}
+  .ecran-ranking-table td{padding:8px;border-bottom:1px solid rgba(255,255,255,0.1)}
+  .ecran-ranking-table tr:nth-child(1) td{color:#ffd700;font-weight:700}
+  .ecran-ranking-table tr:nth-child(2) td{color:#c0c0c0;font-weight:700}
+  .ecran-ranking-table tr:nth-child(3) td{color:#cd7f32;font-weight:700}
+  .ecran-dots{display:flex;gap:6px;justify-content:center;margin-top:10px}
+  .ecran-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.25)}
+  .ecran-dot.active{background:#ce93d8}
+  @media (max-width:600px){
+    .ecran-header h1{font-size:1.1rem}
+    .ecran-clock{font-size:1rem}
+    .ecran-score{font-size:1.3rem}
   }
 </style>
 <!-- ══════════════════════════════════════════════════════════
@@ -428,7 +478,7 @@ window.logout = async function () {
 };
 
 // ── Mode Live sans compte (spectateur anonyme) ────────────
-window.enterLiveMode = async function () {
+window.enterLiveModeAndGo = async function (target) {
   try {
     const snap = await getDoc(doc(db, 'tournamentStatus', 'live'));
     LIVE_OPEN = snap.exists() && snap.data().liveOpen === true;
@@ -442,8 +492,17 @@ window.enterLiveMode = async function () {
   }
   CURRENT_USER = null;
   USER_ROLES = ['spectateur'];
-  showApp();
   subscribeToTournament();
+
+  if (target === 'ecran') {
+    document.getElementById('loginScreen').style.display = 'none';
+    openEcranMode(true);
+    return;
+  }
+
+  showApp();
+  const tabMap = { joueurs: 'playersTab', live: 'matchesTab', classement: 'rankingTab', reglement: 'reglementTab' };
+  showTab(tabMap[target] || 'playersTab');
 };
 
 function authErrMsg(code) {
@@ -664,8 +723,31 @@ window.adminDeleteUser = async function (uid, name) {
     <button class="btn" style="background:var(--primary)" onclick="loginEmail()"><i class="fas fa-right-to-bracket"></i> Se connecter</button>
     <button class="btn secondary" onclick="loginGoogle()"><i class="fab fa-google"></i> Connexion Google</button>
     <div id="authMsg"></div>
-    <div class="login-divider">ou</div>
-    <button class="btn live-btn" onclick="enterLiveMode()"><i class="fas fa-eye"></i> Mode Spectateur (sans compte)</button>
+    <div class="login-divider">Accès spectateur (sans compte)</div>
+    <div class="spec-nav-grid">
+      <button class="spec-nav-btn" onclick="enterLiveModeAndGo('ecran')"><i class="fas fa-tv"></i><span>Écran</span></button>
+      <button class="spec-nav-btn" onclick="enterLiveModeAndGo('reglement')"><i class="fas fa-book"></i><span>Règlement</span></button>
+      <button class="spec-nav-btn" onclick="enterLiveModeAndGo('joueurs')"><i class="fas fa-users"></i><span>Joueurs</span></button>
+      <button class="spec-nav-btn" onclick="enterLiveModeAndGo('live')"><i class="fas fa-circle" style="color:#f44336"></i><span>Live</span></button>
+      <button class="spec-nav-btn" onclick="enterLiveModeAndGo('classement')"><i class="fas fa-chart-bar"></i><span>Classement</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODE ÉCRAN (affichage public) ═══════════════ -->
+<div id="ecranScreen">
+  <div class="ecran-header">
+    <h1><i class="fas fa-table-tennis-paddle-ball"></i> Pickleball Unified</h1>
+    <div class="ecran-clock" id="ecranClock">--:--:--</div>
+    <button class="ecran-quit" onclick="closeEcranMode()"><i class="fas fa-xmark"></i> Quitter</button>
+  </div>
+  <div class="ecran-body">
+    <div id="ecranPanelMatches" class="ecran-panel active"></div>
+    <div id="ecranPanelRanking" class="ecran-panel"></div>
+    <div class="ecran-dots">
+      <div class="ecran-dot active" id="ecranDot0"></div>
+      <div class="ecran-dot" id="ecranDot1"></div>
+    </div>
   </div>
 </div>
 
@@ -682,8 +764,9 @@ window.adminDeleteUser = async function (uid, name) {
 
     <div class="controls">
       <button class="btn" data-role="admin" onclick="shufflePositions()"><i class="fas fa-shuffle"></i> Mélanger</button>
-      <button class="btn secondary" onclick="generateValidatedTournament()"><i class="fas fa-play"></i> Générer avec Validation</button>
+      <button class="btn secondary" data-role="scorer" onclick="generateValidatedTournament()"><i class="fas fa-play"></i> Générer avec Validation</button>
       <button class="btn success" data-role="scorer" onclick="saveData()"><i class="fas fa-save"></i> Sauvegarder</button>
+      <button class="btn" style="background:#455a64" onclick="openEcranMode()"><i class="fas fa-tv"></i> Écran</button>
       <button class="btn danger" data-role="admin" onclick="resetAll()"><i class="fas fa-trash"></i> Réinitialiser</button>
     </div>
     
@@ -708,11 +791,12 @@ window.adminDeleteUser = async function (uid, name) {
   </header>
 
   <div class="tabs">
-    <button class="tab-btn active" onclick="showTab('playersTab')"><i class="fas fa-users"></i> Joueurs</button>
-    <button class="tab-btn" onclick="showTab('matchesTab')"><i class="fas fa-trophy"></i> Matchs</button>
-    <button class="tab-btn" onclick="showTab('rankingTab')"><i class="fas fa-chart-bar"></i> Classement</button>
-    <button class="tab-btn" onclick="showTab('statsTab')"><i class="fas fa-chart-pie"></i> Statistiques</button>
-    <button class="tab-btn" data-role="admin" onclick="showTab('adminTab')"><i class="fas fa-user-shield"></i> Utilisateurs</button>
+    <button class="tab-btn active" data-tab="playersTab" onclick="showTab('playersTab', this)"><i class="fas fa-users"></i> Joueurs</button>
+    <button class="tab-btn" data-tab="matchesTab" onclick="showTab('matchesTab', this)"><i class="fas fa-trophy"></i> Matchs</button>
+    <button class="tab-btn" data-tab="rankingTab" onclick="showTab('rankingTab', this)"><i class="fas fa-chart-bar"></i> Classement</button>
+    <button class="tab-btn" data-tab="statsTab" onclick="showTab('statsTab', this)"><i class="fas fa-chart-pie"></i> Statistiques</button>
+    <button class="tab-btn" data-tab="reglementTab" onclick="showTab('reglementTab', this)"><i class="fas fa-book"></i> Règlement</button>
+    <button class="tab-btn" data-tab="adminTab" data-role="admin" onclick="showTab('adminTab', this)"><i class="fas fa-user-shield"></i> Utilisateurs</button>
   </div>
 
   <div id="playersTab" class="tab active">
@@ -787,6 +871,66 @@ window.adminDeleteUser = async function (uid, name) {
           <i class="fas fa-clipboard-check"></i> Analyse des Contraintes
         </h3>
         <div id="constraintsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="reglementTab" class="tab">
+    <div class="card">
+      <span class="card-title"><i class="fas fa-book"></i> Règlement du Tournoi</span>
+      <div class="reglement-content">
+
+        <h3><i class="fas fa-table-tennis-paddle-ball"></i> 1. Format</h3>
+        <p>Le tournoi se joue en formule <strong>Americano tournant</strong> : à chaque tour, les équipes sont
+        recomposées automatiquement, de sorte que chaque joueur rencontre au fil des tours le plus grand nombre
+        possible de partenaires et d'adversaires différents. Personne ne garde le même partenaire deux tours de suite.</p>
+
+        <h3><i class="fas fa-border-all"></i> 2. Terrains et effectifs</h3>
+        <p>Le nombre de terrains disponibles (3, 4 ou 5) détermine le nombre de joueurs pouvant participer
+        simultanément (de 8 à 20 joueurs). Selon l'effectif exact, un tour peut comporter :</p>
+        <ul>
+          <li>Des matchs classiques en <strong>double (2 contre 2)</strong> ;</li>
+          <li>Exceptionnellement, un format <strong>1 contre 1</strong> ou <strong>2 contre 1</strong> sur un terrain,
+          lorsque l'effectif ne se répartit pas exactement en équipes de 4 ;</li>
+          <li>Un ou plusieurs joueurs <strong>au repos</strong>, à tour de rôle, lorsque le nombre de joueurs actifs
+          dépasse la capacité simultanée des terrains — chacun ne reste au repos qu'un tour à la fois, de façon tournante et équitable.</li>
+        </ul>
+
+        <h3><i class="fas fa-scroll"></i> 3. Déroulement d'un match</h3>
+        <p>Chaque match se joue en <strong>un set à 11 points</strong>, avec au moins <strong>2 points d'écart</strong>
+        pour l'emporter (plafond à 15 points en cas d'égalité prolongée). Les règles standard du pickleball
+        s'appliquent : service en diagonale, règle du double rebond, zone non-volée ("kitchen") interdite de volée.</p>
+        <p style="color:#888;font-size:0.8rem"><i class="fas fa-info-circle"></i> Ce barème (11 points, écart de 2)
+        est la convention par défaut de l'application — à adapter dans cette page si votre club utilise un autre format
+        (ex. matchs chronométrés, ou en 15/21 points).</p>
+
+        <h3><i class="fas fa-chart-bar"></i> 4. Classement</h3>
+        <p>Après chaque match saisi, le classement se met à jour automatiquement selon :</p>
+        <ul>
+          <li><strong>Points de classement :</strong> victoire = 2 points, match nul = 1 point, défaite = 0 point ;</li>
+          <li><strong>En cas d'égalité :</strong> le différentiel (points marqués − points concédés) départage ;</li>
+          <li><strong>Si toujours à égalité :</strong> le total de points marqués sur l'ensemble du tournoi tranche.</li>
+        </ul>
+
+        <h3><i class="fas fa-user-injured"></i> 5. Remplacement d'un joueur</h3>
+        <p>En cas d'absence ou de blessure, un remplaçant peut être désigné pour un joueur à partir d'un tour donné.
+        <strong>Ce remplacement reste actif automatiquement pour tous les tours suivants</strong> : il n'est pas
+        nécessaire de le redéclarer à chaque tour. Il peut être annulé, ou un nouveau remplaçant désigné à son tour,
+        à tout moment depuis l'écran des matchs.</p>
+
+        <h3><i class="fas fa-user-shield"></i> 6. Rôles d'accès à l'application</h3>
+        <ul>
+          <li><strong>Admin :</strong> configure les terrains et joueurs, gère les comptes, réinitialise le tournoi ;</li>
+          <li><strong>Scorer :</strong> saisit les scores, gère les remplacements et génère le tournoi ;</li>
+          <li><strong>Spectateur :</strong> consulte les matchs, le classement et ce règlement, en lecture seule.</li>
+        </ul>
+
+        <h3><i class="fas fa-handshake"></i> 7. Fair-play</h3>
+        <p>L'auto-arbitrage est de mise : les joueurs annoncent eux-mêmes le score au fur et à mesure du match.
+        En cas de désaccord persistant sur une action, le point est rejoué. La ponctualité entre les tours et le
+        respect du temps de jeu de tous permettent au tournoi de se dérouler dans de bonnes conditions pour l'ensemble
+        des participants.</p>
+
       </div>
     </div>
   </div>
@@ -2455,6 +2599,10 @@ function applyTournamentData(data) {
     calculateRanking();
     updateStats();
   }
+  
+  if (typeof ecranOpen !== 'undefined' && ecranOpen) {
+    renderEcranPanels();
+  }
 }
 
 function resetAll() {
@@ -2581,14 +2729,199 @@ function updatePlayerReplacement(round, court, position, newPlayerId) {
   }
 }
 
-function showTab(tabName) {
+// ══════════════════════════════════════════════════════════
+// MODE ÉCRAN (affichage public / kiosque)
+// ══════════════════════════════════════════════════════════
+let ecranFromLogin = false;
+let ecranOpen = false;
+let ecranCycleTimer = null;
+let ecranClockTimer = null;
+let ecranPanelIndex = 0;
+
+function openEcranMode(fromLogin) {
+  ecranFromLogin = !!fromLogin;
+  ecranOpen = true;
+  document.getElementById('appScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('ecranScreen').style.display = 'flex';
+  renderEcranPanels();
+  startEcranClock();
+  startEcranCycle();
+}
+
+function closeEcranMode() {
+  ecranOpen = false;
+  stopEcranCycle();
+  stopEcranClock();
+  document.getElementById('ecranScreen').style.display = 'none';
+  if (ecranFromLogin && typeof logout === 'function') {
+    logout();
+  } else {
+    document.getElementById('appScreen').style.display = 'block';
+  }
+}
+
+function startEcranClock() {
+  stopEcranClock();
+  const tick = () => {
+    const el = document.getElementById('ecranClock');
+    if (el) el.textContent = new Date().toLocaleTimeString('fr-FR');
+  };
+  tick();
+  ecranClockTimer = setInterval(tick, 1000);
+}
+function stopEcranClock() {
+  if (ecranClockTimer) { clearInterval(ecranClockTimer); ecranClockTimer = null; }
+}
+
+function startEcranCycle() {
+  stopEcranCycle();
+  ecranPanelIndex = 0;
+  showEcranPanel(0);
+  ecranCycleTimer = setInterval(() => {
+    ecranPanelIndex = 1 - ecranPanelIndex;
+    showEcranPanel(ecranPanelIndex);
+  }, 12000);
+}
+function stopEcranCycle() {
+  if (ecranCycleTimer) { clearInterval(ecranCycleTimer); ecranCycleTimer = null; }
+}
+function showEcranPanel(idx) {
+  const panels = [document.getElementById('ecranPanelMatches'), document.getElementById('ecranPanelRanking')];
+  const dots = [document.getElementById('ecranDot0'), document.getElementById('ecranDot1')];
+  panels.forEach((p, i) => { if (p) p.classList.toggle('active', i === idx); });
+  dots.forEach((d, i) => { if (d) d.classList.toggle('active', i === idx); });
+}
+
+// Ré-affiche le contenu de l'écran (appelé au cycle et à chaque mise à jour Firestore live)
+function renderEcranPanels() {
+  if (!ecranOpen) return;
+  const matchesPanel = document.getElementById('ecranPanelMatches');
+  const rankingPanel = document.getElementById('ecranPanelRanking');
+  if (matchesPanel) matchesPanel.innerHTML = buildEcranMatchesHTML();
+  if (rankingPanel) rankingPanel.innerHTML = buildEcranRankingHTML();
+}
+
+// Détermine le tour "en cours" à afficher : le premier tour comportant au
+// moins un match sans score complet, sinon le dernier tour.
+function findCurrentRoundForEcran() {
+  const grid = getGridForN();
+  for (let r = 0; r < grid.length; r++) {
+    for (let c = 0; c < grid[r].length; c++) {
+      const courtObj = grid[r][c];
+      if (courtObj.rest) continue;
+      const sc = (matchScores[r] && matchScores[r][c]) ? matchScores[r][c] : {};
+      if (!sc[1] || !sc[2]) return r;
+    }
+  }
+  return Math.max(0, grid.length - 1);
+}
+
+function buildEcranMatchesHTML() {
+  const grid = getGridForN();
+  if (!grid || grid.length === 0) {
+    return '<p style="text-align:center;opacity:0.6;padding:40px">Le tournoi n\'a pas encore été généré.</p>';
+  }
+  const r = findCurrentRoundForEcran();
+  const round = grid[r];
+  let html = `<div class="ecran-round-title">Tour ${r + 1} / ${grid.length}</div><div class="ecran-courts">`;
+  let restLine = '';
+  
+  round.forEach((courtObj, c) => {
+    if (courtObj.rest) {
+      restLine += (restLine ? ', ' : '') + getPlayerName(courtObj.rest);
+      return;
+    }
+    const originalMapped = courtObj.players.map(p => (p <= positions.length ? positions[p - 1] : null)).filter(p => p !== null);
+    const mapped = originalMapped.map(p => getReplacementPlayer(r, p));
+    const sc = (matchScores[r] && matchScores[r][c]) ? matchScores[r][c] : { 1: '', 2: '' };
+    
+    let team1 = [], team2 = [];
+    if (courtObj.type === '1x1' && mapped.length === 2) {
+      team1 = [mapped[0]]; team2 = [mapped[1]];
+    } else if (courtObj.type === '2x1' && mapped.length === 3) {
+      team1 = [mapped[0], mapped[1]]; team2 = [mapped[2]];
+    } else {
+      team1 = [mapped[0], mapped[1]]; team2 = [mapped[2], mapped[3]];
+    }
+    
+    html += `<div class="ecran-court">
+      <div class="ecran-court-title">Terrain ${c + 1}</div>
+      <div class="ecran-team"><span>${team1.filter(Boolean).map(getPlayerName).join(' & ')}</span><span class="ecran-score">${sc[1] !== '' ? sc[1] : '–'}</span></div>
+      <div class="ecran-vs">vs</div>
+      <div class="ecran-team"><span>${team2.filter(Boolean).map(getPlayerName).join(' & ')}</span><span class="ecran-score">${sc[2] !== '' ? sc[2] : '–'}</span></div>
+    </div>`;
+  });
+  
+  html += '</div>';
+  if (restLine) html += `<div class="ecran-rest"><i class="fas fa-mug-hot"></i> Repos : ${restLine}</div>`;
+  return html;
+}
+
+function buildEcranRankingHTML() {
+  const grid = getGridForN();
+  if (!grid || grid.length === 0 || Object.keys(matchScores).length === 0) {
+    return '<p style="text-align:center;opacity:0.6;padding:40px">Le classement apparaîtra dès la saisie des premiers scores.</p>';
+  }
+  const stats = {};
+  getActivePlayerNumbers().forEach(p => {
+    stats[p] = { name: getPlayerName(p), wins: 0, draws: 0, losses: 0, scored: 0, conceded: 0 };
+  });
+  
+  for (let r = 0; r < grid.length; r++) {
+    for (let c = 0; c < grid[r].length; c++) {
+      const courtObj = grid[r][c];
+      if (courtObj.rest) continue;
+      const sc = (matchScores[r] && matchScores[r][c]) ? matchScores[r][c] : null;
+      if (!sc || sc[1] === '' || sc[2] === '' || sc[1] === undefined || sc[2] === undefined) continue;
+      
+      const originalMapped = courtObj.players.map(p => (p <= positions.length ? positions[p - 1] : null)).filter(p => p !== null);
+      const mapped = originalMapped.map(p => getReplacementPlayer(r, p));
+      let team1 = [], team2 = [];
+      if (courtObj.type === '1x1' && mapped.length === 2) { team1 = [mapped[0]]; team2 = [mapped[1]]; }
+      else if (courtObj.type === '2x1' && mapped.length === 3) { team1 = [mapped[0], mapped[1]]; team2 = [mapped[2]]; }
+      else { team1 = [mapped[0], mapped[1]]; team2 = [mapped[2], mapped[3]]; }
+      
+      const s1 = parseInt(sc[1]) || 0, s2 = parseInt(sc[2]) || 0;
+      team1.filter(Boolean).forEach(p => { if (!stats[p]) return; stats[p].scored += s1; stats[p].conceded += s2; });
+      team2.filter(Boolean).forEach(p => { if (!stats[p]) return; stats[p].scored += s2; stats[p].conceded += s1; });
+      
+      if (s1 > s2) { team1.filter(Boolean).forEach(p => stats[p] && stats[p].wins++); team2.filter(Boolean).forEach(p => stats[p] && stats[p].losses++); }
+      else if (s2 > s1) { team2.filter(Boolean).forEach(p => stats[p] && stats[p].wins++); team1.filter(Boolean).forEach(p => stats[p] && stats[p].losses++); }
+      else if (s1 === s2 && s1 > 0) { team1.concat(team2).filter(Boolean).forEach(p => stats[p] && stats[p].draws++); }
+    }
+  }
+  
+  const ranking = Object.values(stats).map(s => ({
+    ...s, diff: s.scored - s.conceded, points: (s.wins * 2) + s.draws
+  })).sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.diff !== a.diff) return b.diff - a.diff;
+    return b.scored - a.scored;
+  }).slice(0, 10);
+  
+  let html = '<table class="ecran-ranking-table"><thead><tr><th>#</th><th>Joueur</th><th>Pts</th><th>Diff</th><th>V</th></tr></thead><tbody>';
+  ranking.forEach((p, i) => {
+    html += `<tr><td>${i + 1}</td><td>${p.name}</td><td>${p.points}</td><td>${p.diff > 0 ? '+' : ''}${p.diff}</td><td>${p.wins}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  return html;
+}
+
+function showTab(tabName, btnEl) {
   document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
   
   const tab = document.getElementById(tabName);
   if (tab) tab.classList.add('active');
   
-  event.target.classList.add('active');
+  const clicked = btnEl || (typeof event !== 'undefined' && event ? event.target.closest('.tab-btn') : null);
+  if (clicked) {
+    clicked.classList.add('active');
+  } else {
+    const fallback = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+    if (fallback) fallback.classList.add('active');
+  }
   
   showNotice('Onglet ' + tabName.replace('Tab', '') + ' activé');
 }
