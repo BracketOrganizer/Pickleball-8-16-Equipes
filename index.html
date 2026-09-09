@@ -8,6 +8,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Pickleball">
 <meta name="theme-color" content="#9c27b0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Pickleball Unified</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
@@ -24,8 +27,8 @@
   header{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;text-align:center}
   h1{font-size:1.3rem;color:var(--primary);text-shadow:1px 1px 2px rgba(0,0,0,0.1);margin-bottom:5px}
   .controls{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
-  .tabs{display:flex;gap:2px;margin-bottom:10px;background:#f8f9fa;padding:4px;border-radius:8px;flex-wrap:wrap;overflow-x:auto}
-  .tab-btn{padding:8px 10px;border-radius:6px;border:none;background:#e9ecef;cursor:pointer;font-weight:600;font-size:0.75rem;color:#495057;min-height:36px;flex:1;min-width:0;text-align:center;white-space:nowrap}
+  .tabs{display:flex;gap:2px;margin-bottom:10px;background:#f8f9fa;padding:4px;border-radius:8px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+  .tab-btn{padding:8px 12px;border-radius:6px;border:none;background:#e9ecef;cursor:pointer;font-weight:600;font-size:0.75rem;color:#495057;min-height:36px;flex:0 0 auto;white-space:nowrap}
   .tab-btn.active{background:var(--primary);color:white}
   .tab{display:none}
   .tab.active{display:block}
@@ -275,11 +278,36 @@
   .bilan-group{border-left:4px solid var(--primary)}
 
   /* ===== Impression ===== */
+  @page{ margin:10mm 8mm; }
   @media print{
     body *{visibility:hidden}
     .print-target, .print-target *{visibility:visible}
     .print-target{position:absolute;left:0;top:0;width:100%}
     .no-print, .btn.no-print, header .controls, .tabs, .user-bar{display:none !important}
+
+    /* Impression condensée du planning des matchs : on resserre les
+       marges/polices et on répartit les tours sur 2 colonnes pour tenir
+       davantage de matchs par page. */
+    #matchesCard.print-target #matchesDisplay{column-count:2;column-gap:10px}
+    #matchesCard.print-target .round-border{
+      border:1px solid #999;padding:4px 6px;margin:0 0 5px 0;border-radius:3px;
+      break-inside:avoid;-webkit-column-break-inside:avoid;
+    }
+    #matchesCard.print-target .round-title{
+      padding:2px 5px;margin:-4px -6px 4px -6px;font-size:0.7rem;
+    }
+    #matchesCard.print-target .match{
+      border:1px solid #ccc;padding:4px 5px;margin:3px 0;border-radius:3px;background:white;
+      break-inside:avoid;-webkit-column-break-inside:avoid;
+    }
+    #matchesCard.print-target .court-header{font-size:0.68rem;margin-bottom:2px}
+    #matchesCard.print-target .team-row{margin:1px 0;gap:2px}
+    #matchesCard.print-target .vs{margin:1px 0;font-size:0.65rem}
+    #matchesCard.print-target .player-name,
+    #matchesCard.print-target .replacement-select,
+    #matchesCard.print-target .score-input{font-size:0.68rem !important}
+    #matchesCard.print-target .score-input{width:26px;padding:1px;min-height:auto}
+    #matchesCard.print-target .replacement-select{padding:1px;min-height:auto}
   }
 
   .user-bar{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:#f3e5f5;border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:0.8rem}
