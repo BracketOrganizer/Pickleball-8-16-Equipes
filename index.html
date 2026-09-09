@@ -657,6 +657,7 @@ let TIMER_STATE = { durationSeconds: 900, remainingSeconds: 900, running: false,
 let unsubTimer = null;
 let timerTickInterval = null;
 let timerAlerted = false;
+let beepedSeconds = new Set(); // secondes déjà "bipées" pour le décompte en cours (30s, 5,4,3,2,1)
 
 function startTimerWatch() {
   if (unsubTimer) return;
@@ -669,6 +670,7 @@ function startTimerWatch() {
       endsAt: d.endsAt || null
     };
     timerAlerted = false;
+    beepedSeconds = new Set();
     const minEl = document.getElementById('chronoMinutes');
     if (minEl && document.activeElement !== minEl) minEl.value = Math.round(TIMER_STATE.durationSeconds / 60);
     renderTimerDisplays();
@@ -715,6 +717,22 @@ function playChronoBeep() {
     osc.stop(now + totalDuration);
   } catch (e) { /* audio non disponible sur ce navigateur */ }
 }
+// Bip court utilisé pour l'alerte à 30 secondes et le décompte des 5
+// dernières secondes (distinct de la sirène finale, plus discret).
+function playTickBeep(freq, duration) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.28, ctx.currentTime);
+    osc.start();
+    osc.stop(ctx.currentTime + duration);
+  } catch (e) { /* audio non disponible sur ce navigateur */ }
+}
 function renderTimerDisplays() {
   const remaining = computeTimerRemaining();
   const label = formatChrono(remaining);
@@ -725,6 +743,15 @@ function renderTimerDisplays() {
     if (remaining === 0) el.classList.add('chrono-alert');
     else if (remaining <= 60) el.classList.add('chrono-warning');
   });
+  if (TIMER_STATE.running) {
+    if (remaining === 30 && !beepedSeconds.has(30)) {
+      beepedSeconds.add(30);
+      playTickBeep(700, 0.35);
+    } else if (remaining >= 1 && remaining <= 5 && !beepedSeconds.has(remaining)) {
+      beepedSeconds.add(remaining);
+      playTickBeep(950, 0.15);
+    }
+  }
   if (remaining === 0 && TIMER_STATE.running && !timerAlerted) {
     timerAlerted = true;
     playChronoBeep();
