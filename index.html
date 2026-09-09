@@ -309,10 +309,14 @@
   .ecran-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px}
   .ecran-header h1{font-size:1.6rem;display:flex;align-items:center;gap:10px}
   .ecran-clock{font-size:1.3rem;font-weight:700;opacity:0.85}
+  .ecran-chrono{font-size:1.8rem;font-weight:800;font-variant-numeric:tabular-nums;color:#4caf50;letter-spacing:1px}
+  .ecran-chrono.chrono-warning{color:#ff9800}
+  .ecran-chrono.chrono-alert{color:#f44336;animation:chronoBlink 1s infinite}
+  @keyframes chronoBlink{0%,100%{opacity:1}50%{opacity:0.25}}
   .ecran-quit{background:rgba(255,255,255,0.15);border:none;color:white;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:0.85rem}
-  .ecran-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
-  .ecran-panel{display:none}
-  .ecran-panel.active{display:block;animation:ecranFade .5s ease}
+  .ecran-body{flex:1;display:flex;flex-direction:column;gap:14px;min-height:0;overflow:hidden}
+  .ecran-panel{display:none;overflow-y:auto;min-height:0}
+  .ecran-panel.active{display:block;flex:1;animation:ecranFade .5s ease}
   @keyframes ecranFade{from{opacity:0}to{opacity:1}}
   .ecran-round-title{font-size:1.2rem;font-weight:700;margin-bottom:10px;color:#ce93d8;text-align:center}
   .ecran-courts{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
@@ -592,6 +596,122 @@ function refreshAdminRegistrationUI() {
   }
 }
 window.refreshAdminRegistrationUI = refreshAdminRegistrationUI;
+
+// ══════════════════════════════════════════════════════════
+// CHRONO DE MATCH (synchronisé via Firestore : mêmes minutes,
+// démarrage/pause/reset visibles instantanément sur tous les
+// écrans — app, TV, spectateurs)
+// ══════════════════════════════════════════════════════════
+let TIMER_STATE = { durationSeconds: 900, remainingSeconds: 900, running: false, endsAt: null };
+let unsubTimer = null;
+let timerTickInterval = null;
+let timerAlerted = false;
+
+function startTimerWatch() {
+  if (unsubTimer) return;
+  unsubTimer = onSnapshot(doc(db, 'tournamentStatus', 'timer'), (snap) => {
+    const d = snap.exists() ? snap.data() : {};
+    TIMER_STATE = {
+      durationSeconds: d.durationSeconds || 900,
+      remainingSeconds: (typeof d.remainingSeconds === 'number') ? d.remainingSeconds : (d.durationSeconds || 900),
+      running: !!d.running,
+      endsAt: d.endsAt || null
+    };
+    timerAlerted = false;
+    const minEl = document.getElementById('chronoMinutes');
+    if (minEl && document.activeElement !== minEl) minEl.value = Math.round(TIMER_STATE.durationSeconds / 60);
+    renderTimerDisplays();
+  }, (e) => console.warn('startTimerWatch error:', e));
+}
+startTimerWatch();
+
+function computeTimerRemaining() {
+  if (TIMER_STATE.running && TIMER_STATE.endsAt) {
+    const end = new Date(TIMER_STATE.endsAt).getTime();
+    return Math.max(0, Math.round((end - Date.now()) / 1000));
+  }
+  return Math.max(0, TIMER_STATE.remainingSeconds || 0);
+}
+function formatChrono(totalSeconds) {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+function playChronoBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 300, 600].forEach((delay, i) => {
+      setTimeout(() => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.frequency.value = 880;
+        osc.connect(gain); gain.connect(ctx.destination);
+        gain.gain.setValueAtTime(0.25, ctx.currentTime);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.25);
+      }, delay);
+    });
+  } catch (e) { /* audio non disponible sur ce navigateur */ }
+}
+function renderTimerDisplays() {
+  const remaining = computeTimerRemaining();
+  const label = formatChrono(remaining);
+  document.querySelectorAll('#chronoDisplay, #ecranChrono').forEach(el => {
+    if (!el) return;
+    el.innerHTML = el.id === 'ecranChrono' ? '<i class="fas fa-stopwatch"></i> ' + label : label;
+    el.classList.remove('chrono-warning', 'chrono-alert');
+    if (remaining === 0) el.classList.add('chrono-alert');
+    else if (remaining <= 60) el.classList.add('chrono-warning');
+  });
+  if (remaining === 0 && TIMER_STATE.running && !timerAlerted) {
+    timerAlerted = true;
+    playChronoBeep();
+  }
+}
+function timerTick() {
+  clearInterval(timerTickInterval);
+  timerTickInterval = setInterval(renderTimerDisplays, 1000);
+  renderTimerDisplays();
+}
+timerTick();
+
+window.adminSetTimerDuration = async function () {
+  if (!isScorer()) return;
+  const minEl = document.getElementById('chronoMinutes');
+  const minutes = minEl ? parseInt(minEl.value) || 15 : 15;
+  try {
+    await setDoc(doc(db, 'tournamentStatus', 'timer'), {
+      durationSeconds: minutes * 60, remainingSeconds: minutes * 60, running: false, endsAt: null
+    }, { merge: true });
+    showNotice('Durée du chrono réglée sur ' + minutes + ' min');
+  } catch (e) { alert('Erreur : ' + e.message); }
+};
+window.startTimer = async function () {
+  if (!isScorer()) return;
+  const remaining = computeTimerRemaining() || TIMER_STATE.durationSeconds;
+  try {
+    await setDoc(doc(db, 'tournamentStatus', 'timer'), {
+      running: true, remainingSeconds: remaining, endsAt: new Date(Date.now() + remaining * 1000).toISOString()
+    }, { merge: true });
+  } catch (e) { alert('Erreur : ' + e.message); }
+};
+window.pauseTimer = async function () {
+  if (!isScorer()) return;
+  const remaining = computeTimerRemaining();
+  try {
+    await setDoc(doc(db, 'tournamentStatus', 'timer'), {
+      running: false, remainingSeconds: remaining, endsAt: null
+    }, { merge: true });
+  } catch (e) { alert('Erreur : ' + e.message); }
+};
+window.resetTimer = async function () {
+  if (!isScorer()) return;
+  try {
+    await setDoc(doc(db, 'tournamentStatus', 'timer'), {
+      running: false, remainingSeconds: TIMER_STATE.durationSeconds, endsAt: null
+    }, { merge: true });
+  } catch (e) { alert('Erreur : ' + e.message); }
+};
 
 // ══════════════════════════════════════════════════════════
 // BILAN DE SAISON (archivage par nombre de terrains)
@@ -1085,6 +1205,7 @@ window.adminDeleteUser = async function (uid, name) {
   <div class="ecran-header">
     <h1><i class="fas fa-table-tennis-paddle-ball"></i> Pickleball Unified</h1>
     <div class="ecran-clock" id="ecranClock">--:--:--</div>
+    <div class="ecran-chrono" id="ecranChrono"><i class="fas fa-stopwatch"></i> --:--</div>
     <button class="ecran-quit" onclick="closeEcranMode()"><i class="fas fa-xmark"></i> Quitter</button>
   </div>
   <div class="ecran-body">
@@ -1187,6 +1308,19 @@ window.adminDeleteUser = async function (uid, name) {
   </div>
 
   <div id="matchesTab" class="tab">
+    <div class="card">
+      <span class="card-title"><i class="fas fa-stopwatch"></i> Chrono du match</span>
+      <div id="chronoDisplay" style="text-align:center;font-size:2.6rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--primary);margin:6px 0">15:00</div>
+      <div data-role="scorer" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;margin-bottom:10px">
+        <input type="number" id="chronoMinutes" min="1" value="15" style="width:70px;padding:8px;border-radius:5px;border:2px solid #ddd;font-size:0.85rem;text-align:center"> min
+        <button class="btn secondary" style="margin:0" onclick="adminSetTimerDuration()"><i class="fas fa-rotate"></i> Régler la durée</button>
+      </div>
+      <div data-role="scorer" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button class="btn success" style="margin:0" onclick="startTimer()"><i class="fas fa-play"></i> Démarrer</button>
+        <button class="btn" style="margin:0;background:var(--warning)" onclick="pauseTimer()"><i class="fas fa-pause"></i> Pause</button>
+        <button class="btn" style="margin:0;background:#999" onclick="resetTimer()"><i class="fas fa-rotate-left"></i> Réinitialiser</button>
+      </div>
+    </div>
     <div class="card" id="matchesCard">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
         <span class="card-title"><i class="fas fa-calendar-alt"></i> Planning des Matchs</span>
@@ -3182,13 +3316,19 @@ function startEcranCycle() {
   stopEcranCycle();
   ecranPanelIndex = 0;
   showEcranPanel(0);
-  ecranCycleTimer = setInterval(() => {
+  scheduleNextEcranPanel();
+}
+function scheduleNextEcranPanel() {
+  const key = ecranPanelIndex === 0 ? 'ecranPanelMatches' : 'ecranPanelRanking';
+  const duration = ecranPanelDurations[key] || 12000;
+  ecranCycleTimer = setTimeout(() => {
     ecranPanelIndex = 1 - ecranPanelIndex;
     showEcranPanel(ecranPanelIndex);
-  }, 12000);
+    scheduleNextEcranPanel();
+  }, duration);
 }
 function stopEcranCycle() {
-  if (ecranCycleTimer) { clearInterval(ecranCycleTimer); ecranCycleTimer = null; }
+  if (ecranCycleTimer) { clearTimeout(ecranCycleTimer); ecranCycleTimer = null; }
 }
 function showEcranPanel(idx) {
   const panels = [document.getElementById('ecranPanelMatches'), document.getElementById('ecranPanelRanking')];
@@ -3335,13 +3475,17 @@ function buildEcranRankingHTML() {
 // revient en haut, en boucle.
 // ══════════════════════════════════════════════════════════
 let ecranAutoScrollTimers = {};
+let ecranPanelDurations = { ecranPanelMatches: 12000, ecranPanelRanking: 12000 };
 function setupEcranAutoScroll(panelEl) {
   if (!panelEl) return;
   const key = panelEl.id;
   if (ecranAutoScrollTimers[key]) { clearInterval(ecranAutoScrollTimers[key]); delete ecranAutoScrollTimers[key]; }
   panelEl.scrollTop = 0;
   const maxScroll = panelEl.scrollHeight - panelEl.clientHeight;
-  if (maxScroll <= 20) return; // tout tient à l'écran, pas besoin de défiler
+  if (maxScroll <= 20) { ecranPanelDurations[key] = 12000; return; } // tout tient à l'écran, pas besoin de défiler
+  // Durée nécessaire pour un aller (bas) puis un retour (haut) complet, pauses incluses,
+  // afin que le panneau reste affiché assez longtemps pour tout lire avant l'alternance.
+  ecranPanelDurations[key] = Math.min(45000, Math.max(12000, Math.round(maxScroll * 60) + 4000));
   let direction = 1;
   let paused = 0;
   ecranAutoScrollTimers[key] = setInterval(() => {
