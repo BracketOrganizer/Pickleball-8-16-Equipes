@@ -3406,6 +3406,18 @@ function saveData() {
 // Applique les données reçues de Firestore (abonnement temps réel) à l'état local et au DOM.
 // Appelée par le module Firebase (subscribeToTournament) à chaque mise à jour, pour tous les rôles.
 function applyTournamentData(data) {
+  // Ne pas écraser une saisie de score (ou de remplaçant) en cours de
+  // frappe : le score tapé n'est reflété dans matchScores/Firestore qu'après
+  // le délai de sauvegarde automatique, donc une mise à jour reçue entre-
+  // temps (sondage 4s, ou un autre appareil) contenait encore l'ancienne
+  // valeur et effaçait ce qui venait d'être tapé en reconstruisant tout
+  // l'affichage des matchs. On ignore simplement cette mise à jour tant que
+  // le champ est actif ; la synchronisation reprend dès que l'utilisateur
+  // en sort (ou à la prochaine mise à jour, une fois la saisie enregistrée).
+  const activeEl = document.activeElement;
+  if (activeEl && (activeEl.classList.contains('score-input') || activeEl.classList.contains('replacement-select'))) {
+    return;
+  }
   positions = data.positions || [];
   TERRAINS = data.TERRAINS || 5;
   matchScores = data.matchScores || {};
