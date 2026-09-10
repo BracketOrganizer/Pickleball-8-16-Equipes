@@ -359,8 +359,6 @@
   .ecran-quit{background:rgba(255,255,255,0.15);border:none;color:white;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:0.85rem}
   .ecran-body{flex:1;display:flex;flex-direction:column;gap:14px;min-height:0;overflow:hidden}
   .ecran-panel{display:none;overflow:hidden;min-height:0;overscroll-behavior:contain}
-  .ecran-panel.ecran-manual{overflow-y:auto;-webkit-overflow-scrolling:touch}
-  .ecran-panel.ecran-manual .ecran-panel-inner{animation-play-state:paused !important;transform:none !important}
   .ecran-panel-inner{will-change:transform}
   .ecran-panel.ecran-scrolling .ecran-panel-inner{
     animation-name:ecranAutoScrollY;
@@ -696,105 +694,37 @@ window.importRegistrationsToPlayers = function () {
 // démarrage/pause/reset visibles instantanément sur tous les
 // écrans — app, TV, spectateurs)
 // ══════════════════════════════════════════════════════════
-let TIMER_STATES = { global: { durationSeconds: 900, remainingSeconds: 900, running: false, endsAt: null } };
-let TIMER_PER_TERRAIN = false; // false = un seul chrono partagé ; true = un chrono indépendant par terrain
-let timerUnsubs = {};
+let TIMER_STATE = { durationSeconds: 900, remainingSeconds: 900, running: false, endsAt: null };
+let unsubTimer = null;
 let timerTickInterval = null;
-let timerAlerted = {};
-let beepedSeconds = {}; // clé -> Set des secondes déjà "bipées" pour le décompte en cours (30s, 5,4,3,2,1)
+let timerAlerted = false;
+let beepedSeconds = new Set(); // secondes déjà "bipées" pour le décompte en cours (30s, 5,4,3,2,1)
 
-function timerDocId(key) { return key === 'global' ? 'timer' : ('timer_terrain_' + key); }
-
-function watchTimer(key) {
-  if (timerUnsubs[key]) return;
-  timerUnsubs[key] = onSnapshot(doc(db, 'tournamentStatus', timerDocId(key)), (snap) => {
+function startTimerWatch() {
+  if (unsubTimer) return;
+  unsubTimer = onSnapshot(doc(db, 'tournamentStatus', 'timer'), (snap) => {
     const d = snap.exists() ? snap.data() : {};
-    TIMER_STATES[key] = {
+    TIMER_STATE = {
       durationSeconds: d.durationSeconds || 900,
       remainingSeconds: (typeof d.remainingSeconds === 'number') ? d.remainingSeconds : (d.durationSeconds || 900),
       running: !!d.running,
       endsAt: d.endsAt || null
     };
-    timerAlerted[key] = false;
-    beepedSeconds[key] = new Set();
-    const minEl = document.getElementById(key === 'global' ? 'chronoMinutes' : ('chronoMinutes_' + key));
-    if (minEl && document.activeElement !== minEl) minEl.value = Math.round(TIMER_STATES[key].durationSeconds / 60);
-    renderTimerDisplay(key);
-  }, (e) => console.warn('watchTimer error (' + key + '):', e));
+    timerAlerted = false;
+    beepedSeconds = new Set();
+    const minEl = document.getElementById('chronoMinutes');
+    if (minEl && document.activeElement !== minEl) minEl.value = Math.round(TIMER_STATE.durationSeconds / 60);
+    renderTimerDisplays();
+  }, (e) => console.warn('startTimerWatch error:', e));
 }
-function unwatchTimer(key) {
-  if (timerUnsubs[key]) { timerUnsubs[key](); delete timerUnsubs[key]; }
-}
+startTimerWatch();
 
-// Mode chrono (partagé / par terrain), lui-même synchronisé via Firestore
-// pour que le réglage soit identique sur tous les appareils.
-function watchTimerMode() {
-  onSnapshot(doc(db, 'tournamentStatus', 'timerMode'), (snap) => {
-    const perTerrain = !!(snap.exists() && snap.data().perTerrain);
-    if (perTerrain === TIMER_PER_TERRAIN) return;
-    TIMER_PER_TERRAIN = perTerrain;
-    const toggle = document.getElementById('chronoPerTerrainToggle');
-    if (toggle) toggle.checked = perTerrain;
-    applyChronoModeUI();
-  }, (e) => console.warn('watchTimerMode error:', e));
-}
-window.toggleChronoPerTerrain = async function () {
-  if (!isScorer()) return;
-  const toggle = document.getElementById('chronoPerTerrainToggle');
-  const perTerrain = !!(toggle && toggle.checked);
-  try {
-    await setDoc(doc(db, 'tournamentStatus', 'timerMode'), { perTerrain }, { merge: true });
-  } catch (e) { alert('Erreur : ' + e.message); }
-};
-function applyChronoModeUI() {
-  const globalPanel = document.getElementById('chronoGlobalPanel');
-  const perTerrainPanel = document.getElementById('chronoPerTerrainPanel');
-  if (!globalPanel || !perTerrainPanel) return;
-  if (TIMER_PER_TERRAIN) {
-    globalPanel.style.display = 'none';
-    perTerrainPanel.style.display = 'block';
-    unwatchTimer('global');
-    buildChronoPerTerrainPanel();
-    for (let n = 1; n <= (TERRAINS || 1); n++) watchTimer(String(n));
-  } else {
-    globalPanel.style.display = '';
-    perTerrainPanel.style.display = 'none';
-    for (let n = 1; n <= 20; n++) unwatchTimer(String(n));
-    watchTimer('global');
-  }
-}
-function buildChronoPerTerrainPanel() {
-  const panel = document.getElementById('chronoPerTerrainPanel');
-  if (!panel) return;
-  let html = '';
-  for (let n = 1; n <= (TERRAINS || 1); n++) {
-    html += `
-      <div style="border:1px solid #eee;border-radius:6px;padding:8px;margin:6px 0">
-        <div style="font-weight:600;font-size:0.8rem;margin-bottom:4px">Terrain ${n}</div>
-        <div id="chronoDisplay_${n}" style="text-align:center;font-size:1.8rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--primary);margin:4px 0">15:00</div>
-        <div data-role="scorer" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:center;margin-bottom:6px">
-          <input type="number" id="chronoMinutes_${n}" min="1" value="15" style="width:60px;padding:6px;border-radius:5px;border:2px solid #ddd;font-size:0.8rem;text-align:center"> min
-          <button class="btn secondary" style="margin:0;padding:6px 8px;font-size:0.75rem" onclick="adminSetTimerDuration('${n}')"><i class="fas fa-rotate"></i></button>
-        </div>
-        <div data-role="scorer" style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
-          <button class="btn success" style="margin:0;padding:6px 8px;font-size:0.75rem" onclick="startTimer('${n}')"><i class="fas fa-play"></i></button>
-          <button class="btn" style="margin:0;padding:6px 8px;font-size:0.75rem;background:var(--warning)" onclick="pauseTimer('${n}')"><i class="fas fa-pause"></i></button>
-          <button class="btn" style="margin:0;padding:6px 8px;font-size:0.75rem;background:#999" onclick="resetTimer('${n}')"><i class="fas fa-rotate-left"></i></button>
-        </div>
-      </div>`;
-  }
-  panel.innerHTML = html;
-}
-watchTimerMode();
-watchTimer('global');
-
-function computeTimerRemaining(key) {
-  const st = TIMER_STATES[key] || TIMER_STATES.global;
-  if (st.running && st.endsAt) {
-    const end = new Date(st.endsAt).getTime();
+function computeTimerRemaining() {
+  if (TIMER_STATE.running && TIMER_STATE.endsAt) {
+    const end = new Date(TIMER_STATE.endsAt).getTime();
     return Math.max(0, Math.round((end - Date.now()) / 1000));
   }
-  return Math.max(0, st.remainingSeconds || 0);
+  return Math.max(0, TIMER_STATE.remainingSeconds || 0);
 }
 function formatChrono(totalSeconds) {
   const m = Math.floor(totalSeconds / 60);
@@ -3991,32 +3921,6 @@ function setupAllEcranAutoScroll() {
   setupEcranAutoScroll(document.getElementById('ecranPanelMatches'));
   setupEcranAutoScroll(document.getElementById('ecranPanelRanking'));
 }
-
-// ── Défilement manuel sur le mode Écran ──────────────────────
-// Le défilement automatique est piloté en CSS (transform), donc il ne
-// répond pas nativement au doigt/à la molette. On détecte l'interaction
-// de l'utilisateur pour figer l'animation et repasser en scroll natif
-// (overflow-y:auto) le temps qu'il consulte manuellement, puis on relance
-// le défilement auto après quelques secondes d'inactivité.
-let ecranManualTimers = new WeakMap();
-function ecranEnableManualScroll(panelEl) {
-  if (!panelEl) return;
-  panelEl.classList.add('ecran-manual');
-  clearTimeout(ecranManualTimers.get(panelEl));
-  const t = setTimeout(() => {
-    panelEl.classList.remove('ecran-manual');
-    panelEl.scrollTop = 0;
-    setupEcranAutoScroll(panelEl);
-  }, 6000);
-  ecranManualTimers.set(panelEl, t);
-}
-['ecranPanelMatches', 'ecranPanelRanking'].forEach(id => {
-  const el = document.getElementById(id);
-  if (!el) return;
-  ['touchstart', 'wheel', 'mousedown'].forEach(evt => {
-    el.addEventListener(evt, () => ecranEnableManualScroll(el), { passive: true });
-  });
-});
 
 // ══════════════════════════════════════════════════════════
 // IMPRESSION
