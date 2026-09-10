@@ -280,6 +280,11 @@
   /* ===== Impression ===== */
   @page{ margin:10mm 8mm; }
   @media print{
+    /* Beaucoup de navigateurs mobiles (Chrome/Safari Android/iOS) n'impriment
+       pas les couleurs de fond par défaut, contrairement à la plupart des
+       navigateurs desktop : un texte blanc sur fond coloré devient donc
+       invisible sur la feuille. On force l'impression des couleurs... */
+    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}
     body *{visibility:hidden}
     .print-target, .print-target *{visibility:visible}
     .print-target{position:absolute;left:0;top:0;width:100%}
@@ -293,21 +298,33 @@
       border:1px solid #999;padding:4px 6px;margin:0 0 5px 0;border-radius:3px;
       break-inside:avoid;-webkit-column-break-inside:avoid;
     }
+    /* ...mais on ne repose plus SEULEMENT sur la couleur de fond pour la
+       lisibilité du titre de tour : texte noir + bordure, visibles même si
+       le navigateur mobile ignore malgré tout les fonds colorés. */
     #matchesCard.print-target .round-title{
-      padding:2px 5px;margin:-4px -6px 4px -6px;font-size:0.7rem;
+      padding:2px 5px;margin:-4px -6px 4px -6px;font-size:0.72rem;
+      background:#eee !important;color:#000 !important;border:1px solid #999;
     }
     #matchesCard.print-target .match{
       border:1px solid #ccc;padding:4px 5px;margin:3px 0;border-radius:3px;background:white;
       break-inside:avoid;-webkit-column-break-inside:avoid;
     }
-    #matchesCard.print-target .court-header{font-size:0.68rem;margin-bottom:2px}
+    #matchesCard.print-target .court-header{font-size:0.7rem;margin-bottom:2px;color:#000 !important}
     #matchesCard.print-target .team-row{margin:1px 0;gap:2px}
     #matchesCard.print-target .vs{margin:1px 0;font-size:0.65rem}
     #matchesCard.print-target .player-name,
     #matchesCard.print-target .replacement-select,
-    #matchesCard.print-target .score-input{font-size:0.68rem !important}
+    #matchesCard.print-target .score-input{font-size:0.72rem !important;color:#000 !important}
     #matchesCard.print-target .score-input{width:26px;padding:1px;min-height:auto}
     #matchesCard.print-target .replacement-select{padding:1px;min-height:auto}
+
+    /* Filet de sécurité : si un navigateur mobile ignore totalement
+       column-count en impression (support inégal en print sur certains
+       WebView Android), on retombe sur une seule colonne lisible plutôt
+       que sur un rendu cassé. */
+    @supports not (column-count:2){
+      #matchesCard.print-target #matchesDisplay{column-count:1}
+    }
   }
 
   .user-bar{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:#f3e5f5;border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:0.8rem}
@@ -1641,7 +1658,7 @@ window.adminDeleteUser = async function (uid, name) {
       <div style="overflow-x:auto;">
         <table class="ranking">
           <thead>
-            <tr><th>Pts</th><th>Pos</th><th>Joueur</th><th>Pts +</th><th>Pts -</th><th>Diff</th><th>V</th><th>N</th><th>D</th></tr>
+            <tr><th>Pos</th><th>Joueur</th><th>Pts</th><th>Pts +</th><th>Pts -</th><th>Diff</th><th>V</th><th>N</th><th>D</th></tr>
           </thead>
           <tbody id="rankingBody"></tbody>
         </table>
@@ -2970,9 +2987,9 @@ function updateRankingDisplay(stats) {
       }
       
       tr.innerHTML = `
-        <td><strong>${p.points}</strong></td>
         <td>${pos}${medalIcon}</td>
         <td style="text-align:left" class="player-color-${getPlayerNumberFromName(p.name)}">${p.name}</td>
+        <td><strong>${p.points}</strong></td>
         <td>${p.scored}</td>
         <td>${p.conceded}</td>
         <td>${p.diff > 0 ? '+' + p.diff : p.diff}</td>
@@ -2982,7 +2999,7 @@ function updateRankingDisplay(stats) {
       `;
       
       if (medalClass) {
-        tr.querySelector('td:nth-child(2)').classList.add(medalClass);
+        tr.querySelector('td:nth-child(1)').classList.add(medalClass);
       }
       
       tbody.appendChild(tr);
