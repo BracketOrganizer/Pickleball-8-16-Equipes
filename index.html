@@ -357,7 +357,18 @@
   @keyframes chronoBlink{0%,100%{opacity:1}50%{opacity:0.25}}
   .ecran-quit{background:rgba(255,255,255,0.15);border:none;color:white;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:0.85rem}
   .ecran-body{flex:1;display:flex;flex-direction:column;gap:14px;min-height:0;overflow:hidden}
-  .ecran-panel{display:none;overflow-y:auto;min-height:0;overscroll-behavior:contain}
+  .ecran-panel{display:none;overflow:hidden;min-height:0;overscroll-behavior:contain}
+  .ecran-panel-inner{will-change:transform}
+  .ecran-panel.ecran-scrolling .ecran-panel-inner{
+    animation-name:ecranAutoScrollY;
+    animation-timing-function:ease-in-out;
+    animation-iteration-count:infinite;
+  }
+  @keyframes ecranAutoScrollY{
+    0%, 8%    { transform:translateY(0); }
+    46%, 54%  { transform:translateY(var(--ecran-scroll-dist, 0)); }
+    92%, 100% { transform:translateY(0); }
+  }
   .ecran-panel.active{display:block;flex:1;animation:ecranFade .5s ease}
   @keyframes ecranFade{from{opacity:0}to{opacity:1}}
   .ecran-round-title{font-size:1.2rem;font-weight:700;margin-bottom:10px;color:#ce93d8;text-align:center}
@@ -3748,8 +3759,8 @@ function renderEcranPanels() {
   if (!ecranOpen) return;
   const matchesPanel = document.getElementById('ecranPanelMatches');
   const rankingPanel = document.getElementById('ecranPanelRanking');
-  if (matchesPanel) matchesPanel.innerHTML = buildEcranMatchesHTML();
-  if (rankingPanel) rankingPanel.innerHTML = buildEcranRankingHTML();
+  if (matchesPanel) matchesPanel.innerHTML = '<div class="ecran-panel-inner">' + buildEcranMatchesHTML() + '</div>';
+  if (rankingPanel) rankingPanel.innerHTML = '<div class="ecran-panel-inner">' + buildEcranRankingHTML() + '</div>';
   setTimeout(setupAllEcranAutoScroll, 100);
 }
 
@@ -3880,30 +3891,30 @@ function buildEcranRankingHTML() {
 // Si le contenu (classement complet, matchs en cours + à venir) dépasse
 // la hauteur visible, on fait défiler doucement de haut en bas puis on
 // revient en haut, en boucle.
+//
+// Piloté en CSS (transform + @keyframes) plutôt qu'en JS (scrollTop par
+// intervalle) : sur mobile, notamment iOS Safari, les changements de
+// scrollTop faits par JavaScript ne se répercutent pas toujours à l'écran
+// de façon fiable, alors qu'une animation CSS est gérée par le moteur de
+// rendu lui-même et reste fluide sur tous les appareils.
 // ══════════════════════════════════════════════════════════
-let ecranAutoScrollTimers = {};
 let ecranPanelDurations = { ecranPanelMatches: 12000, ecranPanelRanking: 12000 };
 function setupEcranAutoScroll(panelEl) {
   if (!panelEl) return;
   const key = panelEl.id;
-  if (ecranAutoScrollTimers[key]) { clearInterval(ecranAutoScrollTimers[key]); delete ecranAutoScrollTimers[key]; }
-  panelEl.scrollTop = 0;
-  const maxScroll = panelEl.scrollHeight - panelEl.clientHeight;
+  const inner = panelEl.querySelector('.ecran-panel-inner');
+  panelEl.classList.remove('ecran-scrolling');
+  if (inner) { inner.style.animationDuration = ''; inner.style.removeProperty('--ecran-scroll-dist'); }
+  if (!inner) { ecranPanelDurations[key] = 12000; return; }
+  const maxScroll = inner.scrollHeight - panelEl.clientHeight;
   if (maxScroll <= 20) { ecranPanelDurations[key] = 12000; return; } // tout tient à l'écran, pas besoin de défiler
   // Durée nécessaire pour un aller (bas) puis un retour (haut) complet, pauses incluses,
   // afin que le panneau reste affiché assez longtemps pour tout lire avant l'alternance.
-  ecranPanelDurations[key] = Math.min(45000, Math.max(12000, Math.round(maxScroll * 60) + 4000));
-  let direction = 1;
-  let paused = 0;
-  let currentTop = 0;
-  ecranAutoScrollTimers[key] = setInterval(() => {
-    if (!panelEl.isConnected || panelEl.style.display === 'none') return;
-    if (paused > 0) { paused--; return; }
-    currentTop += direction * 2;
-    if (currentTop >= maxScroll) { currentTop = maxScroll; direction = -1; paused = 15; }
-    else if (currentTop <= 0) { currentTop = 0; direction = 1; paused = 15; }
-    panelEl.scrollTo({ top: currentTop, left: 0, behavior: 'auto' });
-  }, 60);
+  const cycleDuration = Math.min(45000, Math.max(12000, Math.round(maxScroll * 60) + 4000));
+  ecranPanelDurations[key] = cycleDuration;
+  inner.style.setProperty('--ecran-scroll-dist', '-' + maxScroll + 'px');
+  inner.style.animationDuration = cycleDuration + 'ms';
+  panelEl.classList.add('ecran-scrolling');
 }
 function setupAllEcranAutoScroll() {
   setupEcranAutoScroll(document.getElementById('ecranPanelMatches'));
