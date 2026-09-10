@@ -421,7 +421,8 @@ import {
   signInWithRedirect, signInWithPopup, getRedirectResult, GoogleAuthProvider, signOut
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import {
-  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot,
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+  doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot,
   collection, serverTimestamp, addDoc, getDocs
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
@@ -436,8 +437,32 @@ const firebaseConfig = {
 
 const app       = initializeApp(firebaseConfig);
 const auth      = getAuth(app);
-const db        = getFirestore(app);
+// Cache local persistant : permet de lire/écrire même hors connexion
+// (wifi/4G coupé au bord des terrains). Les écritures faites hors ligne
+// sont mises en file d'attente et synchronisées automatiquement dès que
+// la connexion revient. Fonctionne sur mobile comme sur ordinateur, et
+// avec plusieurs onglets/appareils ouverts en parallèle.
+const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});
 const gProvider = new GoogleAuthProvider();
+
+// ── Indicateur de connexion (bandeau discret) ──────────────────────────
+function updateOnlineBadge() {
+  let el = document.getElementById('offlineBanner');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'offlineBanner';
+    el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:5000;text-align:center;padding:6px;font-size:0.8rem;font-weight:700;color:white;background:#e65100;display:none';
+    el.textContent = '📴 Hors ligne — les modifications seront synchronisées au retour du réseau';
+    document.body.prepend(el);
+  }
+  el.style.display = navigator.onLine ? 'none' : 'block';
+}
+window.addEventListener('online', updateOnlineBadge);
+window.addEventListener('offline', updateOnlineBadge);
+document.addEventListener('DOMContentLoaded', updateOnlineBadge);
+updateOnlineBadge();
 
 // Récupère le résultat d'une éventuelle redirection Google (fallback popup bloqué)
 getRedirectResult(auth).catch((e) => {
