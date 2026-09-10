@@ -3965,10 +3965,35 @@ function printSection(elementId) {
   if (!el) { alert('Rien à imprimer.'); return; }
   document.querySelectorAll('.print-target').forEach(n => n.classList.remove('print-target'));
   el.classList.add('print-target');
-  setTimeout(() => {
-    window.print();
-    setTimeout(() => el.classList.remove('print-target'), 300);
-  }, 50);
+
+  let cleaned = false;
+  function cleanup() {
+    if (cleaned) return;
+    cleaned = true;
+    el.classList.remove('print-target');
+    window.removeEventListener('afterprint', cleanup);
+  }
+  // Sur ordinateur, window.print() est bloquant : le JS ne reprend qu'à la
+  // fermeture de la boîte de dialogue, donc un setTimeout fixe après
+  // print() fonctionnait. Sur mobile (iOS/Android), print() N'EST PAS
+  // bloquant : le JS continue immédiatement pendant que l'aperçu se
+  // génère en arrière-plan. Un setTimeout fixe retirait alors la classe
+  // .print-target AVANT que le mobile ait fini de capturer la page,
+  // d'où une impression blanche et non condensée. On utilise donc
+  // l'évènement 'afterprint' (déclenché de façon fiable sur desktop ET
+  // mobile) pour nettoyer au bon moment, avec un filet de sécurité au
+  // cas où il ne se déclencherait pas sur certains navigateurs.
+  window.addEventListener('afterprint', cleanup);
+
+  // Double requestAnimationFrame : laisse le navigateur appliquer les
+  // styles @media print (reflow) avant de lancer l'impression, plus
+  // fiable qu'un délai fixe sur les appareils mobiles plus lents.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      window.print();
+      setTimeout(cleanup, 5000); // filet de sécurité
+    });
+  });
 }
 window.printSection = printSection;
 
