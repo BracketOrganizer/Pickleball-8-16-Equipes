@@ -278,53 +278,69 @@
   .bilan-group{border-left:4px solid var(--primary)}
 
   /* ===== Impression ===== */
-  @page{ margin:10mm 8mm; }
+  @page{ margin:8mm 6mm; }
   @media print{
-    /* Beaucoup de navigateurs mobiles (Chrome/Safari Android/iOS) n'impriment
-       pas les couleurs de fond par défaut, contrairement à la plupart des
-       navigateurs desktop : un texte blanc sur fond coloré devient donc
-       invisible sur la feuille. On force l'impression des couleurs... */
-    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}
     body *{visibility:hidden}
     .print-target, .print-target *{visibility:visible}
     .print-target{position:absolute;left:0;top:0;width:100%}
     .no-print, .btn.no-print, header .controls, .tabs, .user-bar{display:none !important}
 
-    /* Impression condensée du planning des matchs : on resserre les
-       marges/polices et on répartit les tours sur 2 colonnes pour tenir
+    /* Sur mobile, beaucoup de navigateurs n'impriment pas les fonds colorés :
+       le texte blanc sur fond violet/vert devient alors invisible. On repasse
+       donc tout le contenu imprimé en noir sur blanc, sans ombre ni fond. */
+    html, body{background:#fff !important}
+    .print-target, .print-target *{
+      background:#fff !important;
+      background-image:none !important;
+      color:#000 !important;
+      box-shadow:none !important;
+      text-shadow:none !important;
+      border-color:#999 !important;
+    }
+
+    /* Condensation générale : marges/polices réduites sur tous les onglets
+       imprimables (planning, classement, statistiques, joueurs, bilan...),
+       pas seulement le planning des matchs. */
+    .print-target{font-size:0.72rem !important;line-height:1.25}
+    .print-target .card-title{font-size:0.8rem !important;margin-bottom:4px}
+    .print-target table{font-size:0.7rem !important}
+    .print-target th, .print-target td{padding:3px 4px !important}
+    .print-target .card,
+    .print-target .match,
+    .print-target .round-border,
+    .print-target .stat-card,
+    .print-target .constraint-item,
+    .print-target .replacement-item{
+      padding:4px 6px !important;margin:3px 0 !important;break-inside:avoid;-webkit-column-break-inside:avoid;
+    }
+    .print-target h1, .print-target h2, .print-target h3{font-size:0.95rem !important;margin:4px 0 !important}
+
+    /* Planning des matchs : on répartit les tours sur 2 colonnes pour tenir
        davantage de matchs par page. */
     #matchesCard.print-target #matchesDisplay{column-count:2;column-gap:10px}
     #matchesCard.print-target .round-border{
       border:1px solid #999;padding:4px 6px;margin:0 0 5px 0;border-radius:3px;
       break-inside:avoid;-webkit-column-break-inside:avoid;
     }
-    /* ...mais on ne repose plus SEULEMENT sur la couleur de fond pour la
-       lisibilité du titre de tour : texte noir + bordure, visibles même si
-       le navigateur mobile ignore malgré tout les fonds colorés. */
     #matchesCard.print-target .round-title{
-      padding:2px 5px;margin:-4px -6px 4px -6px;font-size:0.72rem;
-      background:#eee !important;color:#000 !important;border:1px solid #999;
+      padding:2px 5px;margin:-4px -6px 4px -6px;font-size:0.7rem;
     }
     #matchesCard.print-target .match{
-      border:1px solid #ccc;padding:4px 5px;margin:3px 0;border-radius:3px;background:white;
+      border:1px solid #ccc;padding:4px 5px;margin:3px 0;border-radius:3px;
       break-inside:avoid;-webkit-column-break-inside:avoid;
     }
-    #matchesCard.print-target .court-header{font-size:0.7rem;margin-bottom:2px;color:#000 !important}
+    #matchesCard.print-target .court-header{font-size:0.68rem;margin-bottom:2px}
     #matchesCard.print-target .team-row{margin:1px 0;gap:2px}
     #matchesCard.print-target .vs{margin:1px 0;font-size:0.65rem}
     #matchesCard.print-target .player-name,
     #matchesCard.print-target .replacement-select,
-    #matchesCard.print-target .score-input{font-size:0.72rem !important;color:#000 !important}
+    #matchesCard.print-target .score-input{font-size:0.68rem !important}
     #matchesCard.print-target .score-input{width:26px;padding:1px;min-height:auto}
     #matchesCard.print-target .replacement-select{padding:1px;min-height:auto}
 
-    /* Filet de sécurité : si un navigateur mobile ignore totalement
-       column-count en impression (support inégal en print sur certains
-       WebView Android), on retombe sur une seule colonne lisible plutôt
-       que sur un rendu cassé. */
-    @supports not (column-count:2){
-      #matchesCard.print-target #matchesDisplay{column-count:1}
-    }
+    /* Classement : lignes du tableau bien délimitées même sans couleur */
+    #rankingCard.print-target table.ranking th,
+    #rankingCard.print-target table.ranking td{border:1px solid #999}
   }
 
   .user-bar{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:#f3e5f5;border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:0.8rem}
@@ -421,8 +437,7 @@ import {
   signInWithRedirect, signInWithPopup, getRedirectResult, GoogleAuthProvider, signOut
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import {
-  initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
-  doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot,
+  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot,
   collection, serverTimestamp, addDoc, getDocs
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
@@ -437,32 +452,8 @@ const firebaseConfig = {
 
 const app       = initializeApp(firebaseConfig);
 const auth      = getAuth(app);
-// Cache local persistant : permet de lire/écrire même hors connexion
-// (wifi/4G coupé au bord des terrains). Les écritures faites hors ligne
-// sont mises en file d'attente et synchronisées automatiquement dès que
-// la connexion revient. Fonctionne sur mobile comme sur ordinateur, et
-// avec plusieurs onglets/appareils ouverts en parallèle.
-const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-});
+const db        = getFirestore(app);
 const gProvider = new GoogleAuthProvider();
-
-// ── Indicateur de connexion (bandeau discret) ──────────────────────────
-function updateOnlineBadge() {
-  let el = document.getElementById('offlineBanner');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'offlineBanner';
-    el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:5000;text-align:center;padding:6px;font-size:0.8rem;font-weight:700;color:white;background:#e65100;display:none';
-    el.textContent = '📴 Hors ligne — les modifications seront synchronisées au retour du réseau';
-    document.body.prepend(el);
-  }
-  el.style.display = navigator.onLine ? 'none' : 'block';
-}
-window.addEventListener('online', updateOnlineBadge);
-window.addEventListener('offline', updateOnlineBadge);
-document.addEventListener('DOMContentLoaded', updateOnlineBadge);
-updateOnlineBadge();
 
 // Récupère le résultat d'une éventuelle redirection Google (fallback popup bloqué)
 getRedirectResult(auth).catch((e) => {
@@ -3920,9 +3911,9 @@ function buildEcranRankingHTML() {
     return b.scored - a.scored;
   });
   
-  let html = '<table class="ecran-ranking-table"><thead><tr><th>Pts</th><th>#</th><th>Joueur</th><th>Diff</th><th>V</th></tr></thead><tbody>';
+  let html = '<table class="ecran-ranking-table"><thead><tr><th>#</th><th>Joueur</th><th>Pts</th><th>Diff</th><th>V</th></tr></thead><tbody>';
   ranking.forEach((p, i) => {
-    html += `<tr><td>${p.points}</td><td>${i + 1}</td><td>${p.name}</td><td>${p.diff > 0 ? '+' : ''}${p.diff}</td><td>${p.wins}</td></tr>`;
+    html += `<tr><td>${i + 1}</td><td>${p.name}</td><td>${p.points}</td><td>${p.diff > 0 ? '+' : ''}${p.diff}</td><td>${p.wins}</td></tr>`;
   });
   html += '</tbody></table>';
   return html;
