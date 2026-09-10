@@ -3487,8 +3487,13 @@ function resetAll() {
 // ça, un appareil qui affichait déjà un tournoi garde l'ancien affichage
 // à l'écran indéfiniment après une réinitialisation distante.
 function clearGeneratedDisplay() {
+  // 'positionsList' n'est PAS inclus ici : le tirage des positions
+  // (bouton "Mélanger") est valide dès qu'il existe, indépendamment du
+  // fait que le tournoi ait été "Généré avec Validation" ou non. Le
+  // vider ici l'effaçait juste après un mélange dès que la synchronisation
+  // repassait par cette fonction (ex. avant toute génération).
   const containers = [
-    'matchesDisplay', 'rankingBody', 'positionsList',
+    'matchesDisplay', 'rankingBody',
     'statsArea', 'constraintsList', 'replacementLogSection'
   ];
   containers.forEach(id => {
