@@ -3272,6 +3272,11 @@ function applyTournamentData(data) {
     generateTournament();
     calculateRanking();
     updateStats();
+  } else {
+    // Aucun tournoi actif dans les données reçues (ex. réinitialisation
+    // faite sur un autre appareil) : on efface aussi l'affichage local,
+    // sinon un ancien tournoi resterait visible à l'écran indéfiniment.
+    clearGeneratedDisplay();
   }
   
   if (typeof ecranOpen !== 'undefined' && ecranOpen) {
