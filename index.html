@@ -278,44 +278,15 @@
   .bilan-group{border-left:4px solid var(--primary)}
 
   /* ===== Impression ===== */
-  @page{ margin:8mm 6mm; }
+  @page{ margin:10mm 8mm; }
   @media print{
     body *{visibility:hidden}
     .print-target, .print-target *{visibility:visible}
     .print-target{position:absolute;left:0;top:0;width:100%}
     .no-print, .btn.no-print, header .controls, .tabs, .user-bar{display:none !important}
 
-    /* Sur mobile, beaucoup de navigateurs n'impriment pas les fonds colorés :
-       le texte blanc sur fond violet/vert devient alors invisible. On repasse
-       donc tout le contenu imprimé en noir sur blanc, sans ombre ni fond. */
-    html, body{background:#fff !important}
-    .print-target, .print-target *{
-      background:#fff !important;
-      background-image:none !important;
-      color:#000 !important;
-      box-shadow:none !important;
-      text-shadow:none !important;
-      border-color:#999 !important;
-    }
-
-    /* Condensation générale : marges/polices réduites sur tous les onglets
-       imprimables (planning, classement, statistiques, joueurs, bilan...),
-       pas seulement le planning des matchs. */
-    .print-target{font-size:0.72rem !important;line-height:1.25}
-    .print-target .card-title{font-size:0.8rem !important;margin-bottom:4px}
-    .print-target table{font-size:0.7rem !important}
-    .print-target th, .print-target td{padding:3px 4px !important}
-    .print-target .card,
-    .print-target .match,
-    .print-target .round-border,
-    .print-target .stat-card,
-    .print-target .constraint-item,
-    .print-target .replacement-item{
-      padding:4px 6px !important;margin:3px 0 !important;break-inside:avoid;-webkit-column-break-inside:avoid;
-    }
-    .print-target h1, .print-target h2, .print-target h3{font-size:0.95rem !important;margin:4px 0 !important}
-
-    /* Planning des matchs : on répartit les tours sur 2 colonnes pour tenir
+    /* Impression condensée du planning des matchs : on resserre les
+       marges/polices et on répartit les tours sur 2 colonnes pour tenir
        davantage de matchs par page. */
     #matchesCard.print-target #matchesDisplay{column-count:2;column-gap:10px}
     #matchesCard.print-target .round-border{
@@ -326,7 +297,7 @@
       padding:2px 5px;margin:-4px -6px 4px -6px;font-size:0.7rem;
     }
     #matchesCard.print-target .match{
-      border:1px solid #ccc;padding:4px 5px;margin:3px 0;border-radius:3px;
+      border:1px solid #ccc;padding:4px 5px;margin:3px 0;border-radius:3px;background:white;
       break-inside:avoid;-webkit-column-break-inside:avoid;
     }
     #matchesCard.print-target .court-header{font-size:0.68rem;margin-bottom:2px}
@@ -337,10 +308,6 @@
     #matchesCard.print-target .score-input{font-size:0.68rem !important}
     #matchesCard.print-target .score-input{width:26px;padding:1px;min-height:auto}
     #matchesCard.print-target .replacement-select{padding:1px;min-height:auto}
-
-    /* Classement : lignes du tableau bien délimitées même sans couleur */
-    #rankingCard.print-target table.ranking th,
-    #rankingCard.print-target table.ranking td{border:1px solid #999}
   }
 
   .user-bar{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:#f3e5f5;border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:0.8rem}
@@ -3960,40 +3927,51 @@ function setupAllEcranAutoScroll() {
 // styles @media print masquent tout le reste de la page), lance
 // window.print(), puis nettoie.
 // ══════════════════════════════════════════════════════════
+// Impression via un document isolé (iframe caché) contenant UNIQUEMENT
+// l'élément à imprimer, plutôt que la technique "cacher tout le reste de
+// la page avec visibility:hidden + positionner la cible en absolute"
+// utilisée avant. Cette dernière est connue pour produire des pages
+// blanches sur certains navigateurs mobiles (Safari iOS, Chrome Android) :
+// leur moteur d'impression ne respecte pas toujours visibility:visible sur
+// un descendant d'un ancêtre visibility:hidden, ni le repositionnement en
+// absolute. En imprimant un document séparé qui ne contient QUE la cible,
+// il n'y a plus rien à cacher et le problème ne peut pas se produire.
 function printSection(elementId) {
   const el = document.getElementById(elementId);
   if (!el) { alert('Rien à imprimer.'); return; }
-  document.querySelectorAll('.print-target').forEach(n => n.classList.remove('print-target'));
-  el.classList.add('print-target');
 
-  let cleaned = false;
-  function cleanup() {
-    if (cleaned) return;
-    cleaned = true;
-    el.classList.remove('print-target');
-    window.removeEventListener('afterprint', cleanup);
-  }
-  // Sur ordinateur, window.print() est bloquant : le JS ne reprend qu'à la
-  // fermeture de la boîte de dialogue, donc un setTimeout fixe après
-  // print() fonctionnait. Sur mobile (iOS/Android), print() N'EST PAS
-  // bloquant : le JS continue immédiatement pendant que l'aperçu se
-  // génère en arrière-plan. Un setTimeout fixe retirait alors la classe
-  // .print-target AVANT que le mobile ait fini de capturer la page,
-  // d'où une impression blanche et non condensée. On utilise donc
-  // l'évènement 'afterprint' (déclenché de façon fiable sur desktop ET
-  // mobile) pour nettoyer au bon moment, avec un filet de sécurité au
-  // cas où il ne se déclencherait pas sur certains navigateurs.
-  window.addEventListener('afterprint', cleanup);
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+  document.body.appendChild(iframe);
+  const doc = iframe.contentWindow.document;
 
-  // Double requestAnimationFrame : laisse le navigateur appliquer les
-  // styles @media print (reflow) avant de lancer l'impression, plus
-  // fiable qu'un délai fixe sur les appareils mobiles plus lents.
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      window.print();
-      setTimeout(cleanup, 5000); // filet de sécurité
-    });
+  // On ne copie que les feuilles de style (liens + <style>), jamais les
+  // <script> de l'en-tête : les réexécuter dans l'iframe relancerait
+  // l'initialisation Firebase/l'appli entière.
+  let stylesHtml = '';
+  document.querySelectorAll('head link[rel="stylesheet"], head style').forEach(node => {
+    stylesHtml += node.outerHTML;
   });
+
+  doc.open();
+  doc.write('<!DOCTYPE html><html><head><meta charset="utf-8">' + stylesHtml + '</head><body></body></html>');
+  doc.close();
+
+  const clone = el.cloneNode(true);
+  clone.classList.add('print-target');
+  doc.body.appendChild(clone);
+
+  // Laisse le temps aux feuilles de style externes (icônes Font Awesome
+  // notamment) de se charger avant de déclencher l'impression.
+  setTimeout(() => {
+    try {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    } catch (e) {
+      alert('Erreur impression : ' + e.message);
+    }
+    setTimeout(() => { if (iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 1000);
+  }, 400);
 }
 window.printSection = printSection;
 
