@@ -357,7 +357,7 @@
   @keyframes chronoBlink{0%,100%{opacity:1}50%{opacity:0.25}}
   .ecran-quit{background:rgba(255,255,255,0.15);border:none;color:white;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:0.85rem}
   .ecran-body{flex:1;display:flex;flex-direction:column;gap:14px;min-height:0;overflow:hidden}
-  .ecran-panel{display:none;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  .ecran-panel{display:none;overflow-y:auto;min-height:0;overscroll-behavior:contain}
   .ecran-panel.active{display:block;flex:1;animation:ecranFade .5s ease}
   @keyframes ecranFade{from{opacity:0}to{opacity:1}}
   .ecran-round-title{font-size:1.2rem;font-weight:700;margin-bottom:10px;color:#ce93d8;text-align:center}
@@ -3895,12 +3895,14 @@ function setupEcranAutoScroll(panelEl) {
   ecranPanelDurations[key] = Math.min(45000, Math.max(12000, Math.round(maxScroll * 60) + 4000));
   let direction = 1;
   let paused = 0;
+  let currentTop = 0;
   ecranAutoScrollTimers[key] = setInterval(() => {
     if (!panelEl.isConnected || panelEl.style.display === 'none') return;
     if (paused > 0) { paused--; return; }
-    panelEl.scrollTop += direction * 2;
-    if (panelEl.scrollTop >= maxScroll - 1) { direction = -1; paused = 15; }
-    else if (panelEl.scrollTop <= 0) { direction = 1; paused = 15; }
+    currentTop += direction * 2;
+    if (currentTop >= maxScroll) { currentTop = maxScroll; direction = -1; paused = 15; }
+    else if (currentTop <= 0) { currentTop = 0; direction = 1; paused = 15; }
+    panelEl.scrollTo({ top: currentTop, left: 0, behavior: 'auto' });
   }, 60);
 }
 function setupAllEcranAutoScroll() {
