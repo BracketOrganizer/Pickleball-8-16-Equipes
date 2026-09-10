@@ -3712,22 +3712,20 @@ function stopEcranClock() {
 function startEcranCycle() {
   stopEcranCycle();
   ecranPanelIndex = 0;
-  showEcranPanel(0);
-  scheduleNextEcranPanel();
+  showEcranPanel(0, true);
 }
 function scheduleNextEcranPanel() {
   const key = ecranPanelIndex === 0 ? 'ecranPanelMatches' : 'ecranPanelRanking';
   const duration = ecranPanelDurations[key] || 12000;
   ecranCycleTimer = setTimeout(() => {
     ecranPanelIndex = 1 - ecranPanelIndex;
-    showEcranPanel(ecranPanelIndex);
-    scheduleNextEcranPanel();
+    showEcranPanel(ecranPanelIndex, true);
   }, duration);
 }
 function stopEcranCycle() {
   if (ecranCycleTimer) { clearTimeout(ecranCycleTimer); ecranCycleTimer = null; }
 }
-function showEcranPanel(idx) {
+function showEcranPanel(idx, scheduleNext) {
   const panels = [document.getElementById('ecranPanelMatches'), document.getElementById('ecranPanelRanking')];
   const dots = [document.getElementById('ecranDot0'), document.getElementById('ecranDot1')];
   panels.forEach((p, i) => { if (p) p.classList.toggle('active', i === idx); });
@@ -3736,7 +3734,13 @@ function showEcranPanel(idx) {
   // pendant qu'il était masqué : on recalcule son besoin de défilement
   // maintenant qu'il est réellement visible (sinon le calcul précédent,
   // fait pendant qu'il était caché, concluait toujours "pas besoin de défiler").
-  setTimeout(() => setupEcranAutoScroll(panels[idx]), 60);
+  // Le passage au panneau suivant n'est programmé QU'APRÈS cette mesure
+  // fraîche (et avec elle), pour ne jamais changer de vue avant la fin
+  // réelle du défilement du contenu actuellement affiché.
+  setTimeout(() => {
+    setupEcranAutoScroll(panels[idx]);
+    if (scheduleNext) scheduleNextEcranPanel();
+  }, 60);
 }
 
 // Ré-affiche le contenu de l'écran (appelé au cycle et à chaque mise à jour Firestore live)
