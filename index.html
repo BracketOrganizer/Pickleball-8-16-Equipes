@@ -429,6 +429,7 @@ let CURRENT_USER = null;
 let USER_ROLES   = [];
 let LIVE_OPEN    = false;
 let unsubTournament = null;
+let tournamentPollInterval = null;
 let unsubUserList   = null;
 let unsubLiveStatus = null;
 
@@ -718,9 +719,29 @@ function formatChrono(totalSeconds) {
   const s = totalSeconds % 60;
   return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
 }
+// ── Audio partagé pour les bips/sirène du chrono ────────────
+// iOS Safari et Chrome Android coupent le son de tout AudioContext créé ou
+// activé EN DEHORS d'un geste utilisateur direct (clic/tap). Comme les bips
+// de fin de chrono se déclenchent automatiquement (via setInterval), un
+// nouveau contexte créé à ce moment-là reste muet sur mobile. On réutilise
+// donc un seul contexte partagé, débloqué dès la première interaction de
+// l'utilisateur avec la page.
+let sharedAudioCtx = null;
+function getSharedAudioCtx() {
+  try {
+    if (!sharedAudioCtx) sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (sharedAudioCtx.state === 'suspended') sharedAudioCtx.resume().catch(() => {});
+    return sharedAudioCtx;
+  } catch (e) { return null; }
+}
+['touchend', 'click'].forEach(evt => {
+  document.addEventListener(evt, () => { getSharedAudioCtx(); }, { passive: true });
+});
+
 function playChronoBeep() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = getSharedAudioCtx();
+    if (!ctx) return;
     // Sirène de fin de chrono : balayage de fréquence aller-retour,
     // répété plusieurs fois, plus longue et plus audible qu'un simple bip.
     const cycles = 4;
@@ -749,7 +770,8 @@ function playChronoBeep() {
 // dernières secondes (distinct de la sirène finale, plus discret).
 function playTickBeep(freq, duration) {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = getSharedAudioCtx();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sine';
@@ -867,10 +889,12 @@ window.loadSeasonBilan = async function () {
   try {
     const groups = [3, 4, 5];
     let html = '';
+    window.seasonSessionsCache = window.seasonSessionsCache || {};
     for (const t of groups) {
       const ref = doc(db, 'seasonArchive', 'terrain_' + t);
       const snap = await getDoc(ref);
       const sessions = snap.exists() && Array.isArray(snap.data().sessions) ? snap.data().sessions : [];
+      window.seasonSessionsCache[t] = sessions;
       html += renderBilanGroup(t, sessions);
     }
     container.innerHTML = html;
@@ -917,9 +941,139 @@ function renderBilanGroup(terrains, sessions) {
   rows.forEach((r, i) => {
     html += `<tr><td>${i + 1}</td><td style="text-align:left">${r.name}</td><td>${r.presences}</td><td>${r.points}</td><td>${r.avgPoints.toFixed(2)}</td><td>${r.matches}</td><td>${r.avgMatches.toFixed(2)}</td><td>${r.wins}</td><td>${r.draws}</td><td>${r.losses}</td></tr>`;
   });
-  html += '</tbody></table></div></div>';
+  html += '</tbody></table></div>';
+
+  // Liste des séances individuelles archivées : réservé à l'admin, pour
+  // pouvoir corriger ou supprimer un archivage fait par erreur.
+  if (isAdmin() && sessions.length > 0) {
+    html += `<div class="no-print" style="margin-top:10px">
+      <div style="font-size:0.75rem;font-weight:700;color:#777;margin-bottom:4px">Séances archivées (${sessions.length}) :</div>
+      <div style="display:flex;flex-direction:column;gap:4px">`;
+    sessions.forEach((sess, idx) => {
+      const d = new Date(sess.date);
+      const dateLabel = isNaN(d.getTime()) ? (sess.date || '?') : d.toLocaleString('fr-FR');
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;background:#f8f9fa;padding:5px 8px;border-radius:6px;font-size:0.75rem">
+        <span>${dateLabel} — ${(sess.entries || []).length} joueur(s)</span>
+        <span style="display:flex;gap:4px;flex-shrink:0">
+          <button class="btn secondary" style="margin:0;padding:3px 8px;font-size:0.7rem" onclick="openEditSeasonSession(${terrains}, ${idx})"><i class="fas fa-pen"></i></button>
+          <button class="btn" style="margin:0;padding:3px 8px;font-size:0.7rem;background:var(--danger);color:white" onclick="deleteSeasonSession(${terrains}, ${idx})"><i class="fas fa-trash"></i></button>
+        </span>
+      </div>`;
+    });
+    html += `</div></div>`;
+  }
+
+  html += '</div>';
   return html;
 }
+
+// Supprime une séance archivée par erreur (index dans le tableau 'sessions'
+// du document seasonArchive/terrain_N). Relit le document juste avant
+// d'écrire pour éviter d'écraser un archivage ajouté entre-temps.
+window.deleteSeasonSession = async function (terrains, index) {
+  if (!isAdmin()) return;
+  const cached = (window.seasonSessionsCache && window.seasonSessionsCache[terrains]) || [];
+  const sess = cached[index];
+  if (!sess) return;
+  const d = new Date(sess.date);
+  const label = isNaN(d.getTime()) ? (sess.date || '') : d.toLocaleString('fr-FR');
+  if (!confirm('Supprimer la séance archivée du ' + label + ' (' + terrains + ' terrains) ? Cette action est irréversible.')) return;
+  try {
+    const ref = doc(db, 'seasonArchive', 'terrain_' + terrains);
+    const snap = await getDoc(ref);
+    const current = snap.exists() && Array.isArray(snap.data().sessions) ? snap.data().sessions : [];
+    current.splice(index, 1);
+    await setDoc(ref, { terrains: terrains, sessions: current }, { merge: true });
+    showNotice('Séance supprimée du bilan de saison');
+    loadSeasonBilan();
+  } catch (e) { alert('Erreur : ' + e.message); }
+};
+
+// Ouvre un panneau permettant de corriger la date et les stats de chaque
+// joueur pour une séance archivée par erreur.
+window.openEditSeasonSession = function (terrains, index) {
+  if (!isAdmin()) return;
+  const cached = (window.seasonSessionsCache && window.seasonSessionsCache[terrains]) || [];
+  const sess = cached[index];
+  if (!sess) return;
+  const d = new Date(sess.date);
+  const dateInputValue = isNaN(d.getTime()) ? '' : new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  const rowsHtml = (sess.entries || []).map((e, i) => `
+    <tr>
+      <td style="text-align:left;padding:3px 4px">${e.name}</td>
+      <td><input type="number" id="editSess_pts_${i}" value="${e.points || 0}" style="width:48px;padding:2px;font-size:0.75rem"></td>
+      <td><input type="number" id="editSess_m_${i}" value="${e.matches || 0}" style="width:44px;padding:2px;font-size:0.75rem"></td>
+      <td><input type="number" id="editSess_w_${i}" value="${e.wins || 0}" style="width:40px;padding:2px;font-size:0.75rem"></td>
+      <td><input type="number" id="editSess_d_${i}" value="${e.draws || 0}" style="width:40px;padding:2px;font-size:0.75rem"></td>
+      <td><input type="number" id="editSess_l_${i}" value="${e.losses || 0}" style="width:40px;padding:2px;font-size:0.75rem"></td>
+    </tr>`).join('');
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'editSeasonSessionModal';
+  overlay.innerHTML = `
+    <div class="modal-box" style="max-width:540px">
+      <h3><i class="fas fa-pen"></i> Modifier la séance</h3>
+      <div style="margin:8px 0">
+        <label style="font-size:0.8rem;font-weight:600">Date de la séance</label><br>
+        <input type="datetime-local" id="editSessDate" value="${dateInputValue}" style="width:100%;padding:6px;margin-top:4px">
+      </div>
+      <div style="overflow-x:auto;max-height:280px;overflow-y:auto">
+        <table style="width:100%;font-size:0.75rem;border-collapse:collapse">
+          <thead><tr><th style="text-align:left">Joueur</th><th>Pts</th><th>Matchs</th><th>V</th><th>N</th><th>D</th></tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn secondary" style="flex:1;margin:0" onclick="closeEditSeasonSessionModal()">Annuler</button>
+        <button class="btn success" style="flex:1;margin:0" onclick="saveEditSeasonSession(${terrains}, ${index})">Enregistrer</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+};
+
+window.closeEditSeasonSessionModal = function () {
+  const el = document.getElementById('editSeasonSessionModal');
+  if (el) el.remove();
+};
+
+window.saveEditSeasonSession = async function (terrains, index) {
+  if (!isAdmin()) return;
+  const cached = (window.seasonSessionsCache && window.seasonSessionsCache[terrains]) || [];
+  const sess = cached[index];
+  if (!sess) return;
+  const dateEl = document.getElementById('editSessDate');
+  const newDate = dateEl && dateEl.value ? new Date(dateEl.value).toISOString() : sess.date;
+  const newEntries = (sess.entries || []).map((e, i) => {
+    const ptsEl = document.getElementById('editSess_pts_' + i);
+    const mEl = document.getElementById('editSess_m_' + i);
+    const wEl = document.getElementById('editSess_w_' + i);
+    const dEl = document.getElementById('editSess_d_' + i);
+    const lEl = document.getElementById('editSess_l_' + i);
+    return Object.assign({}, e, {
+      points: ptsEl ? (parseInt(ptsEl.value) || 0) : e.points,
+      matches: mEl ? (parseInt(mEl.value) || 0) : e.matches,
+      wins: wEl ? (parseInt(wEl.value) || 0) : e.wins,
+      draws: dEl ? (parseInt(dEl.value) || 0) : e.draws,
+      losses: lEl ? (parseInt(lEl.value) || 0) : e.losses
+    });
+  });
+  try {
+    const ref = doc(db, 'seasonArchive', 'terrain_' + terrains);
+    const snap = await getDoc(ref);
+    const current = snap.exists() && Array.isArray(snap.data().sessions) ? snap.data().sessions : [];
+    if (!current[index]) {
+      alert('Cette séance n\'existe plus (déjà modifiée ou supprimée ailleurs).');
+      closeEditSeasonSessionModal();
+      loadSeasonBilan();
+      return;
+    }
+    current[index] = Object.assign({}, current[index], { date: newDate, entries: newEntries });
+    await setDoc(ref, { terrains: terrains, sessions: current }, { merge: true });
+    closeEditSeasonSessionModal();
+    showNotice('Séance modifiée');
+    loadSeasonBilan();
+  } catch (e) { alert('Erreur : ' + e.message); }
+};
 
 // ══════════════════════════════════════════════════════════
 // AUTH
@@ -1131,6 +1285,21 @@ function subscribeToTournament() {
     if (!snap.exists()) return;
     applyTournamentData(snap.data());
   }, (e) => console.warn('subscribeToTournament error:', e));
+
+  // Filet de sécurité mobile : certains navigateurs (iOS Safari en
+  // particulier) suspendent la connexion temps réel (WebSocket) quand la
+  // page passe en arrière-plan ou que l'écran se verrouille, et ne la
+  // rétablissent pas toujours correctement. Ce sondage toutes les 4
+  // secondes va chercher l'état actuel pour rattraper les mises à jour
+  // manquées (ex. une réinitialisation faite sur un autre appareil).
+  if (!tournamentPollInterval) {
+    tournamentPollInterval = setInterval(async () => {
+      try {
+        const snap = await getDoc(doc(db, 'tournament', 'current'));
+        if (snap.exists()) applyTournamentData(snap.data());
+      } catch (e) { /* silencieux : le listener temps réel reste la source principale */ }
+    }, 4000);
+  }
 }
 
 // Pont utilisé par le script principal (saveData / doReset) pour écrire dans Firestore.
