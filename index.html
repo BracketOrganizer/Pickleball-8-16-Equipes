@@ -278,63 +278,10 @@
   /* ===== Bilan de saison ===== */
   .bilan-group{border-left:4px solid var(--primary)}
 
-  /* ===== Impression =====
-     Technique : un conteneur unique #printRoot est ajouté juste avant
-     d'imprimer, avec DEDANS une copie de la carte à imprimer. Le CSS
-     ci-dessous masque tout le reste (display:none, pas visibility:hidden)
-     et n'affiche que #printRoot. display:none sur les ancêtres est
-     respecté de façon fiable par tous les moteurs d'impression, y compris
-     sur mobile (Safari iOS / Chrome Android) — contrairement à
-     visibility:hidden + position:absolute, qui produisait des pages
-     blanches sur ces navigateurs. Voir printSection() en bas du fichier. */
-  #printRoot{display:none}
-  @page{ margin:4mm 5mm; }
-  @media print{
-    body.printing-mode > *:not(#printRoot){display:none !important}
-    body.printing-mode #printRoot{display:block !important}
-    .no-print, .btn.no-print, header .controls, .tabs, .user-bar{display:none !important}
-
-    /* Impression condensée générale (classement, stats, positions,
-       inscriptions...) : marges/police resserrées pour limiter le nombre
-       de pages. Les règles spécifiques au planning et aux positions
-       ci-dessous restent prioritaires pour ces cas précis (2 colonnes). */
-    #printRoot{font-size:0.68rem;line-height:1.25;color:#000;background:#fff}
-    /* La fiche joueur (écran spectateur) a un thème sombre avec du texte
-       blanc : sans cette règle, le texte serait blanc sur fond blanc à
-       l'impression (page qui semble "blanche" une fois imprimée). */
-    #printRoot .player-match-row{background:none !important;border:1px solid #ccc;color:#000}
-    #printRoot .pmr-round{color:#000;opacity:1}
-    #printRoot .card{padding:2px !important;margin:0 !important;box-shadow:none !important;border:none !important}
-    #printRoot .card-title{font-size:0.82rem;margin-bottom:3px}
-    #printRoot table{border-collapse:collapse;width:100%}
-    #printRoot th, #printRoot td{padding:1px 4px !important;font-size:0.66rem !important}
-    #printRoot .btn{display:none !important}
-
-    /* Impression condensée du planning des matchs : on répartit les tours
-       sur 2 colonnes pour tenir davantage de matchs par page. */
-    #printRoot #matchesCard #matchesDisplay{column-count:2;column-gap:8px}
-    #printRoot #matchesCard .round-border{
-      border:1px solid #999;padding:3px 5px;margin:0 0 4px 0;border-radius:3px;
-      break-inside:avoid;-webkit-column-break-inside:avoid;
-    }
-    #printRoot #matchesCard .round-title{
-      padding:2px 5px;margin:-3px -5px 3px -5px;font-size:0.68rem;
-    }
-    #printRoot #matchesCard .match{
-      border:1px solid #ccc;padding:3px 4px;margin:2px 0;border-radius:3px;background:white;
-      break-inside:avoid;-webkit-column-break-inside:avoid;
-    }
-    #printRoot #matchesCard .court-header{font-size:0.65rem;margin-bottom:1px}
-    #printRoot #matchesCard .team-row{margin:1px 0;gap:4px}
-    #printRoot #matchesCard .vs{margin:1px 0;font-size:0.62rem}
-    #printRoot #matchesCard .print-player-name{font-size:0.66rem !important;font-weight:600}
-    #printRoot #matchesCard .print-score{font-size:0.72rem !important;font-weight:700;display:inline-block;min-width:14px;text-align:center}
-
-    /* Impression condensée du tirage des positions : 2 colonnes également,
-       la liste étant une simple succession de lignes joueur. */
-    #printRoot #positionsCard #positionsList{column-count:2;column-gap:8px}
-    #printRoot #positionsCard .player-row{break-inside:avoid;-webkit-column-break-inside:avoid;padding:1px 0;margin:0}
-  }
+  /* L'impression (bouton "Imprimer") n'utilise plus ce document : voir
+     printSection() en bas du fichier, qui ouvre un document dédié séparé
+     ne contenant QUE la carte à imprimer (voir la constante PRINT_EXTRA_CSS
+     plus bas pour le détail de la mise en forme d'impression). */
 
   .user-bar{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:#f3e5f5;border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:0.8rem}
   .role-badge{padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:700;color:white}
@@ -1791,6 +1738,7 @@ window.adminDeleteUser = async function (uid, name) {
         <button class="btn secondary no-print" style="margin:0" onclick="printSection('statsCard')"><i class="fas fa-print"></i> Imprimer</button>
       </div>
       <div id="statsCard">
+      <span class="card-title" style="display:block;margin-bottom:8px"><i class="fas fa-chart-line"></i> Statistiques Détaillées</span>
       <div id="statsArea">
         <p style="text-align:center;color:#666;padding:20px;font-size:0.9rem">Les statistiques apparaîtront après génération du tournoi</p>
       </div>
@@ -4163,30 +4111,96 @@ function ecranEnableManualScroll(panelEl) {
 
 // ══════════════════════════════════════════════════════════
 // IMPRESSION
-// Une copie de l'élément à imprimer est placée dans #printRoot, ajouté
-// à la fin de <body>, puis la classe .printing-mode sur <body> fait
-// disparaître (display:none) tout le reste de la page via les règles
-// @media print, ne laissant que #printRoot visible.
+// La carte à imprimer est clonée, nettoyée (widgets interactifs -> texte,
+// icônes décoratives retirées, boutons retirés), puis écrite dans un
+// document TOTALEMENT SÉPARÉ ouvert via window.open(). Ce document ne
+// contient QUE la carte à imprimer : il n'y a donc rien d'autre sur la
+// page à masquer, et rien d'autre ne peut se retrouver imprimé — quel que
+// soit le navigateur.
 //
-// Pourquoi pas la technique précédente (iframe caché + window.print()
-// dans l'iframe) : sur mobile (Safari iOS, Chrome Android), l'impression
-// native est asynchrone — le JS reprend la main avant que l'aperçu ne
-// soit réellement construit. Le minuteur qui supprimait l'iframe peu
-// après l'appel à print() le faisait donc parfois PENDANT que le système
-// lisait encore son contenu, d'où l'effet observé : l'aperçu apparaît
-// puis se vide (page blanche).
-//
-// Pourquoi pas non plus visibility:hidden + position:absolute (technique
-// encore antérieure) : certains moteurs d'impression mobiles ne respectent
-// pas toujours visibility:visible sur un descendant d'un ancêtre en
-// visibility:hidden.
-//
-// display:none classique sur les ancêtres, dans le document principal
-// (pas de copie dans un document séparé), est la technique la plus
-// robuste multi-navigateurs. Le nettoyage se fait sur l'évènement
-// 'afterprint' (déclenché une fois l'aperçu/impression réellement
-// terminé, y compris sur mobile), avec un filet de sécurité si jamais
-// cet évènement ne se déclenchait pas sur un navigateur particulier.
+// Historique des essais précédents et pourquoi ils ne suffisaient pas :
+// 1) Masquer le reste de la page avec visibility:hidden + position
+//    absolute sur la cible : ne fonctionne pas de façon fiable sur
+//    certains navigateurs mobiles (pages blanches).
+// 2) Cloner la cible dans un <iframe> caché puis imprimer l'iframe :
+//    l'impression mobile étant asynchrone, le minuteur qui supprimait
+//    l'iframe pouvait le faire pendant que le système lisait encore son
+//    contenu (aperçu qui apparaît puis se vide).
+// 3) Cloner la cible dans un conteneur #printRoot ajouté à la fin de la
+//    page principale, et masquer tout le reste avec display:none : plus
+//    fiable, mais certains navigateurs/webviews mobiles semblent imprimer
+//    la page telle qu'affichée à l'écran sans toujours respecter ce
+//    masquage (toute la page imprimée malgré tout).
+// La présente version (fenêtre séparée, ne contenant que la carte) rend
+// ce 3e cas de figure impossible par construction : il n'y a plus de
+// "reste de la page" à masquer.
+function printSection(elementId) {
+  const el = document.getElementById(elementId);
+  if (!el) { alert('Rien à imprimer.'); return; }
+
+  const clone = el.cloneNode(true);
+  if (elementId === 'matchesCard') {
+    makeMatchesPrintFriendly(clone, el);
+  }
+  cleanCloneForPrint(clone);
+
+  const titleEl = clone.querySelector('.card-title');
+  const title = (titleEl ? titleEl.textContent.trim() : 'Impression') || 'Impression';
+
+  const printWin = window.open('', '_blank');
+  if (!printWin) {
+    alert("Impossible d'ouvrir la fenêtre d'impression : vérifie que les fenêtres popup ne sont pas bloquées pour ce site, puis réessaie.");
+    return;
+  }
+
+  const doc = printWin.document;
+  doc.open();
+  doc.write(
+    '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<title>' + title.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</title>' +
+    '<style>' + PRINT_EXTRA_CSS + '</style>' +
+    '</head><body id="printBody"></body></html>'
+  );
+  doc.close();
+  doc.getElementById('printBody').appendChild(clone);
+
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    try { printWin.removeEventListener('afterprint', cleanup); } catch (e) {}
+    try { printWin.close(); } catch (e) {}
+  };
+  try { printWin.addEventListener('afterprint', cleanup); } catch (e) {}
+  // Filet de sécurité si 'afterprint' ne se déclenche pas sur un
+  // navigateur particulier : on referme quand même après un délai généreux
+  // plutôt que de laisser l'onglet ouvert indéfiniment.
+  setTimeout(cleanup, 60000);
+
+  // Laisse le temps au nouveau document de terminer sa mise en page
+  // (et aux icônes/polices éventuelles de charger) avant d'imprimer.
+  setTimeout(() => {
+    try {
+      printWin.focus();
+      printWin.print();
+    } catch (e) {
+      alert('Erreur impression : ' + e.message);
+      cleanup();
+    }
+  }, 250);
+}
+window.printSection = printSection;
+
+// Retire du clone tout ce qui n'est pas une donnée utile à l'impression :
+// boutons/contrôles (.no-print, .btn), et icônes purement décoratives
+// (Font Awesome) qui n'apportent aucune information supplémentaire par
+// rapport au texte à côté d'elles.
+function cleanCloneForPrint(clone) {
+  clone.querySelectorAll('.no-print, .btn').forEach(node => node.remove());
+  clone.querySelectorAll('i.fas, i.far, i.fab, i.fa').forEach(node => node.remove());
+}
+
 // Pour l'impression du planning des matchs : les listes déroulantes de
 // remplaçant et les champs de score sont des widgets interactifs, inutiles
 // sur papier (cases vides ou grisées, peu lisibles). On les remplace par
@@ -4225,54 +4239,48 @@ function makeMatchesPrintFriendly(clone, original) {
   });
 }
 
-function printSection(elementId) {
-  const el = document.getElementById(elementId);
-  if (!el) { alert('Rien à imprimer.'); return; }
+// CSS autonome pour la fenêtre d'impression dédiée : cette fenêtre ne
+// contient RIEN d'autre que la carte imprimée, donc pas besoin de règles
+// pour masquer "le reste de la page" (il n'y en a pas). Uniquement de la
+// mise en forme condensée pour limiter le nombre de feuilles.
+const PRINT_EXTRA_CSS = `
+  @page{ margin:4mm 5mm; }
+  *{box-sizing:border-box}
+  body{font-family:Arial,Helvetica,sans-serif;color:#000;background:#fff;font-size:0.72rem;line-height:1.3;margin:0;padding:6px}
+  .card{padding:0 !important;margin:0 !important;box-shadow:none !important;border:none !important}
+  .card-title{font-size:0.95rem;font-weight:700;margin-bottom:6px;display:block;color:#000}
+  table{border-collapse:collapse;width:100%}
+  th, td{padding:2px 5px;font-size:0.7rem;text-align:left;border-bottom:1px solid #ddd}
+  th{border-bottom:2px solid #333}
 
-  // Nettoie un éventuel reste d'une impression précédente non terminée.
-  const oldRoot = document.getElementById('printRoot');
-  if (oldRoot) oldRoot.remove();
-  document.body.classList.remove('printing-mode');
+  /* Planning des matchs : 2 colonnes pour tenir davantage de tours par page. */
+  #matchesDisplay{column-count:2;column-gap:10px}
+  .round-border{border:1px solid #999;border-radius:3px;padding:4px 6px;margin:0 0 6px 0;break-inside:avoid;-webkit-column-break-inside:avoid}
+  .round-title{font-weight:700;font-size:0.78rem;margin:-4px -6px 4px -6px;padding:2px 6px;background:#eee;border-bottom:1px solid #999}
+  .match{border:1px solid #ccc;border-radius:3px;padding:4px 5px;margin:3px 0;break-inside:avoid;-webkit-column-break-inside:avoid}
+  .court-header{font-weight:700;font-size:0.72rem;margin-bottom:3px}
+  .team-row{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:2px 0}
+  .vs{text-align:center;font-size:0.65rem;font-weight:700;color:#666;margin:1px 0}
+  .print-player-name{font-weight:600;font-size:0.72rem}
+  .print-score{font-weight:800;font-size:0.8rem;display:inline-block;min-width:16px;text-align:center;border:1px solid #999;border-radius:3px;padding:0 4px}
 
-  const printRoot = document.createElement('div');
-  printRoot.id = 'printRoot';
-  const clone = el.cloneNode(true);
-  if (elementId === 'matchesCard') {
-    makeMatchesPrintFriendly(clone, el);
+  /* Tirage des positions : 2 colonnes également. */
+  #positionsList{column-count:2;column-gap:10px}
+  .player-row{display:flex;align-items:center;gap:6px;break-inside:avoid;-webkit-column-break-inside:avoid;padding:1px 0}
+  .player-number{font-weight:700;min-width:1.4em;text-align:right}
+
+  /* Stats : badges partenaires/adversaires/repos. */
+  .partner-badge, .opponent-badge, .rest-badge, .count-badge{
+    display:inline-block;padding:1px 4px;margin:1px;border-radius:3px;background:#f0f0f0;font-size:0.65rem
   }
-  printRoot.appendChild(clone);
-  document.body.appendChild(printRoot);
-  document.body.classList.add('printing-mode');
+  .stat-card, .stats-grid{margin-bottom:6px}
+  .criteria-grid, .criteria-item{display:none} /* légende explicative : pas une donnée de séance */
 
-  let cleaned = false;
-  const cleanup = () => {
-    if (cleaned) return;
-    cleaned = true;
-    document.body.classList.remove('printing-mode');
-    if (printRoot.parentNode) printRoot.parentNode.removeChild(printRoot);
-    window.removeEventListener('afterprint', cleanup);
-  };
-  window.addEventListener('afterprint', cleanup);
-  // Filet de sécurité : si 'afterprint' ne se déclenche pas (cas rare sur
-  // certains navigateurs), on nettoie quand même après un délai généreux
-  // plutôt que de laisser #printRoot bloqué indéfiniment en mode impression.
-  setTimeout(cleanup, 60000);
-
-  // Deux passages par requestAnimationFrame pour laisser le navigateur
-  // terminer la mise en page du clone avant de lancer l'impression
-  // (important sur mobile).
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      try {
-        window.print();
-      } catch (e) {
-        alert('Erreur impression : ' + e.message);
-        cleanup();
-      }
-    });
-  });
-}
-window.printSection = printSection;
+  /* Fiche joueur (écran spectateur) : thème sombre à l'écran -> texte noir sur blanc à l'impression. */
+  .player-match-row{border:1px solid #ccc;border-radius:3px;padding:4px 6px;margin:3px 0;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px}
+  .pmr-round{font-weight:700;min-width:70px}
+  .pmr-score{font-weight:800}
+`;
 
 // ══════════════════════════════════════════════════════════
 // FICHE JOUEUR (accessible depuis le bouton "Joueur" de la page de connexion)
