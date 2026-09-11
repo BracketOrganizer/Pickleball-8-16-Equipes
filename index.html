@@ -426,8 +426,8 @@ getRedirectResult(auth).catch((e) => {
 //   admin     → tout (config terrains/joueurs, tirage, scores, remplacements,
 //               génération, réinitialisation, gestion des comptes)
 //   scorer    → scores + remplacements de joueurs + génération du tournoi
-//               + saisie des noms de joueurs (pas la config terrains/nombre
-//               de joueurs, ni le tirage, réservés à l'admin)
+//               + saisie des noms de joueurs + config terrains/nombre de
+//               joueurs (le tirage des positions reste réservé à l'admin)
 //   spectateur→ lecture seule (avec ou sans compte, si le Live est ouvert)
 // ══════════════════════════════════════════════════════════
 let CURRENT_USER = null;
@@ -1850,7 +1850,7 @@ window.adminDeleteUser = async function (uid, name) {
   </div>
 
   <div id="playersTab" class="tab active">
-    <div class="card" data-role="admin">
+    <div class="card" data-role="scorer">
       <span class="card-title"><i class="fas fa-user-friends"></i> Configuration</span>
       <div class="player-row">
         <div style="font-weight:600;min-width:100px;font-size:0.85rem;">Terrains disponibles:</div>
