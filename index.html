@@ -279,12 +279,22 @@
   .bilan-group{border-left:4px solid var(--primary)}
 
   /* ===== Impression ===== */
-  @page{ margin:10mm 8mm; }
+  @page{ margin:6mm 6mm; }
   @media print{
     body *{visibility:hidden}
     .print-target, .print-target *{visibility:visible}
     .print-target{position:absolute;left:0;top:0;width:100%}
     .no-print, .btn.no-print, header .controls, .tabs, .user-bar{display:none !important}
+
+    /* Impression condensée générale (classement, stats, positions,
+       inscriptions...) : marges/police resserrées pour limiter le nombre
+       de pages. Les règles spécifiques au planning ci-dessous restent
+       prioritaires pour ce cas précis (2 colonnes). */
+    .print-target{font-size:0.72rem}
+    .print-target .card-title{font-size:0.85rem;margin-bottom:4px}
+    .print-target table{border-collapse:collapse;width:100%}
+    .print-target th, .print-target td{padding:2px 4px !important;font-size:0.7rem !important}
+    .print-target .btn{display:none !important}
 
     /* Impression condensée du planning des matchs : on resserre les
        marges/polices et on répartit les tours sur 2 colonnes pour tenir
