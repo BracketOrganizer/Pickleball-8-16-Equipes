@@ -951,7 +951,7 @@ window.archiveCurrentSessionToSeason = async function () {
   }
   const entries = Object.values(window.lastRankingStats).map(s => ({
     name: s.name,
-    points: (s.wins * 3) + s.draws,
+    points: (s.wins * 3) + (s.draws * 2),
     matches: s.matches,
     wins: s.wins, draws: s.draws, losses: s.losses,
     scored: s.scored, conceded: s.conceded
@@ -2005,7 +2005,7 @@ window.adminDeleteUser = async function (uid, name) {
         <h3><i class="fas fa-chart-bar"></i> 4. Classement</h3>
         <p>Après chaque match saisi, le classement se met à jour automatiquement selon :</p>
         <ul>
-          <li><strong>Points de classement :</strong> victoire = 3 points, match nul = 1 point, défaite = 0 point ;</li>
+          <li><strong>Points de classement :</strong> victoire = 3 points, match nul = 2 points, défaite = 0 point ;</li>
           <li><strong>En cas d'égalité :</strong> le différentiel (points marqués − points concédés) départage ;</li>
           <li><strong>Si toujours à égalité :</strong> le total de points marqués sur l'ensemble du tournoi tranche.</li>
         </ul>
@@ -3235,7 +3235,7 @@ function updateRankingDisplay(stats) {
   const ranking = Object.values(stats).map(s => ({
     ...s,
     diff: s.scored - s.conceded,
-    points: (s.wins * 3) + s.draws
+    points: (s.wins * 3) + (s.draws * 2)
   })).sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
     if (b.diff !== a.diff) return b.diff - a.diff;
@@ -4269,7 +4269,7 @@ function buildEcranRankingHTML() {
   }
   
   const ranking = Object.values(stats).map(s => ({
-    ...s, diff: s.scored - s.conceded, points: (s.wins * 3) + s.draws
+    ...s, diff: s.scored - s.conceded, points: (s.wins * 3) + (s.draws * 2)
   })).sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
     if (b.diff !== a.diff) return b.diff - a.diff;
