@@ -361,6 +361,11 @@
   }
   .ecran-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px}
   .ecran-header h1{font-size:1.6rem;display:flex;align-items:center;gap:10px}
+  .ecran-settings-bar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:rgba(255,255,255,0.08);border-radius:8px;padding:8px 14px;margin:-6px 0 14px}
+  .ecran-settings-bar label{display:flex;align-items:center;gap:6px;font-size:0.85rem;color:#fff}
+  .ecran-settings-bar input[type="number"]{width:56px;padding:3px 5px;border-radius:4px;border:1px solid #666;background:#1a0a24;color:#fff;text-align:center}
+  .ecran-settings-bar input[type="checkbox"]{width:16px;height:16px}
+  .ecran-settings-hint{font-size:0.75rem;color:rgba(255,255,255,0.5);margin-left:auto}
   .ecran-clock{font-size:1.3rem;font-weight:700;opacity:0.85}
   .ecran-chrono{font-size:1.8rem;font-weight:800;font-variant-numeric:tabular-nums;color:#4caf50;letter-spacing:1px}
   .ecran-chrono.chrono-warning{color:#ff9800}
@@ -668,37 +673,42 @@ window.refreshAdminRegistrationUI = refreshAdminRegistrationUI;
 // du tournoi : ajuste le nombre de joueurs à la config valide la plus proche
 // et remplit les champs joueur 1..N avec les noms des inscrits, dans l'ordre.
 window.importRegistrationsToPlayers = function () {
-  if (!isAdmin()) return;
-  const list = window.REG_LIST || [];
-  const names = list.map(r => (r.name || '').trim()).filter(Boolean);
-  if (names.length === 0) { alert('Aucun inscrit à importer pour le moment.'); return; }
+  if (!isAdmin()) { alert('Import réservé au rôle admin (vérifie que tu es bien connecté en admin).'); return; }
+  try {
+    const list = window.REG_LIST || [];
+    const names = list.map(r => (r.name || '').trim()).filter(Boolean);
+    if (names.length === 0) { alert('Aucun inscrit à importer pour le moment.'); return; }
 
-  const options = PLAYER_OPTIONS_BY_TERRAIN[TERRAINS] || PLAYER_OPTIONS_BY_TERRAIN[5];
-  const validValues = options.map(o => o.value);
-  let target = validValues.find(v => v >= names.length);
-  let extra = 0;
-  if (!target) {
-    target = validValues[validValues.length - 1];
-    extra = names.length - target;
+    const options = PLAYER_OPTIONS_BY_TERRAIN[TERRAINS] || PLAYER_OPTIONS_BY_TERRAIN[5];
+    const validValues = options.map(o => o.value);
+    let target = validValues.find(v => v >= names.length);
+    let extra = 0;
+    if (!target) {
+      target = validValues[validValues.length - 1];
+      extra = names.length - target;
+    }
+
+    const msg = extra > 0
+      ? ('Il y a ' + names.length + ' inscrits pour un maximum de ' + target + ' joueurs sur ' + TERRAINS + ' terrains. Les ' + extra + ' dernier(s) inscrit(s) ne seront pas importés. Continuer ?')
+      : ('Importer ' + names.length + ' inscrit(s) dans la liste des ' + target + ' joueurs ? Les noms actuellement saisis seront remplacés.');
+    if (!confirm(msg)) return;
+
+    const select = document.getElementById('playerCount');
+    if (select) select.value = target.toString();
+    N = target;
+    updateActiveCount();
+    ensurePositions();
+    buildPlayerInputs();
+    names.slice(0, target).forEach((name, i) => {
+      const input = document.getElementById('player' + (i + 1));
+      if (input) input.value = name;
+    });
+    scheduleAutoSave();
+    showNotice(Math.min(names.length, target) + ' inscrit(s) importé(s) dans la liste des joueurs');
+  } catch (e) {
+    alert('Erreur pendant l\'import : ' + e.message);
+    console.error('importRegistrationsToPlayers error:', e);
   }
-
-  const msg = extra > 0
-    ? ('Il y a ' + names.length + ' inscrits pour un maximum de ' + target + ' joueurs sur ' + TERRAINS + ' terrains. Les ' + extra + ' dernier(s) inscrit(s) ne seront pas importés. Continuer ?')
-    : ('Importer ' + names.length + ' inscrit(s) dans la liste des ' + target + ' joueurs ? Les noms actuellement saisis seront remplacés.');
-  if (!confirm(msg)) return;
-
-  const select = document.getElementById('playerCount');
-  if (select) select.value = target.toString();
-  N = target;
-  updateActiveCount();
-  ensurePositions();
-  buildPlayerInputs();
-  names.slice(0, target).forEach((name, i) => {
-    const input = document.getElementById('player' + (i + 1));
-    if (input) input.value = name;
-  });
-  scheduleAutoSave();
-  showNotice(Math.min(names.length, target) + ' inscrit(s) importé(s) dans la liste des joueurs');
 };
 
 // ══════════════════════════════════════════════════════════
@@ -1597,8 +1607,19 @@ window.adminDeleteUser = async function (uid, name) {
     <h1><i class="fas fa-table-tennis-paddle-ball"></i> Pickleball Unified</h1>
     <div class="ecran-clock" id="ecranClock">--:--:--</div>
     <div class="ecran-chrono" id="ecranChrono"><i class="fas fa-stopwatch"></i> --:--</div>
+    <button class="ecran-quit" id="ecranSettingsBtn" onclick="toggleEcranSettingsBar()"><i class="fas fa-gear"></i> Réglages</button>
     <button class="ecran-quit" id="ecranFullscreenBtn" onclick="toggleEcranFullscreen()" style="display:none"><i class="fas fa-expand"></i> Plein écran</button>
     <button class="ecran-quit" onclick="closeEcranMode()"><i class="fas fa-xmark"></i> Quitter</button>
+  </div>
+  <div class="ecran-settings-bar" id="ecranSettingsBar" style="display:none">
+    <label><i class="fas fa-table-tennis-paddle-ball"></i> Écran matchs
+      <input type="number" id="ecranIntervalMatches" min="5" max="120" value="12" onchange="onEcranSettingsChange()"> s
+    </label>
+    <label><i class="fas fa-ranking-star"></i> Écran classement
+      <input type="number" id="ecranIntervalRanking" min="5" max="120" value="20" onchange="onEcranSettingsChange()"> s
+    </label>
+    <label><input type="checkbox" id="ecranScrollToggle" checked onchange="onEcranSettingsChange()"> Défilement automatique</label>
+    <span class="ecran-settings-hint">Réglages mémorisés sur cet écran uniquement</span>
   </div>
   <div class="ecran-body">
     <div id="ecranPanelMatches" class="ecran-panel active"></div>
@@ -3743,6 +3764,58 @@ let ecranCycleTimer = null;
 let ecranClockTimer = null;
 let ecranPanelIndex = 0;
 
+// ── Réglages du mode Écran (mémorisés sur CET écran/ordinateur, comme
+// dans l'appli Americano — chaque TV peut avoir ses propres réglages) ──
+function getEcranSettings() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem('ecranSettings') || '{}'); } catch (e) {}
+  return {
+    intervalMatches: saved.intervalMatches || 12,   // secondes, écran "matchs"
+    intervalRanking: saved.intervalRanking || 20,   // secondes, écran "classement"
+    scroll: (saved.scroll === undefined) ? true : saved.scroll,
+    barHidden: saved.barHidden || false
+  };
+}
+function saveEcranSettings(patch) {
+  const next = Object.assign(getEcranSettings(), patch);
+  try { localStorage.setItem('ecranSettings', JSON.stringify(next)); } catch (e) {}
+  return next;
+}
+window.toggleEcranSettingsBar = function () {
+  const bar = document.getElementById('ecranSettingsBar');
+  if (!bar) return;
+  const show = bar.style.display === 'none';
+  bar.style.display = show ? 'flex' : 'none';
+  saveEcranSettings({ barHidden: !show });
+};
+window.onEcranSettingsChange = function () {
+  const im = document.getElementById('ecranIntervalMatches');
+  const ir = document.getElementById('ecranIntervalRanking');
+  const sc = document.getElementById('ecranScrollToggle');
+  saveEcranSettings({
+    intervalMatches: im ? Math.max(5, parseInt(im.value) || 12) : 12,
+    intervalRanking: ir ? Math.max(5, parseInt(ir.value) || 20) : 20,
+    scroll: sc ? !!sc.checked : true
+  });
+  // Reprogramme le prochain changement d'écran avec les nouveaux réglages,
+  // et recalcule le défilement du panneau actuellement affiché.
+  const panels = [document.getElementById('ecranPanelMatches'), document.getElementById('ecranPanelRanking')];
+  setupEcranAutoScroll(panels[ecranPanelIndex]);
+  stopEcranCycle();
+  scheduleNextEcranPanel();
+};
+function applyEcranSettingsToUI() {
+  const s = getEcranSettings();
+  const im = document.getElementById('ecranIntervalMatches');
+  const ir = document.getElementById('ecranIntervalRanking');
+  const sc = document.getElementById('ecranScrollToggle');
+  const bar = document.getElementById('ecranSettingsBar');
+  if (im) im.value = s.intervalMatches;
+  if (ir) ir.value = s.intervalRanking;
+  if (sc) sc.checked = s.scroll;
+  if (bar) bar.style.display = s.barHidden ? 'none' : 'flex';
+}
+
 function openEcranMode(fromLogin) {
   ecranFromLogin = !!fromLogin;
   ecranOpen = true;
@@ -3751,6 +3824,7 @@ function openEcranMode(fromLogin) {
   document.getElementById('ecranScreen').style.display = 'flex';
   const fsBtn = document.getElementById('ecranFullscreenBtn');
   if (fsBtn) fsBtn.style.display = fullscreenIsSupported() ? '' : 'none';
+  applyEcranSettingsToUI();
   renderEcranPanels();
   startEcranClock();
   startEcranCycle();
@@ -3997,19 +4071,26 @@ function buildEcranRankingHTML() {
 // de façon fiable, alors qu'une animation CSS est gérée par le moteur de
 // rendu lui-même et reste fluide sur tous les appareils.
 // ══════════════════════════════════════════════════════════
-let ecranPanelDurations = { ecranPanelMatches: 12000, ecranPanelRanking: 12000 };
+let ecranPanelDurations = { ecranPanelMatches: 12000, ecranPanelRanking: 20000 };
 function setupEcranAutoScroll(panelEl) {
   if (!panelEl) return;
   const key = panelEl.id;
+  const settings = getEcranSettings();
+  const baseMs = (key === 'ecranPanelRanking' ? settings.intervalRanking : settings.intervalMatches) * 1000;
   const inner = panelEl.querySelector('.ecran-panel-inner');
-  panelEl.classList.remove('ecran-scrolling');
+  panelEl.classList.remove('ecran-scrolling', 'ecran-manual');
   if (inner) { inner.style.animationDuration = ''; inner.style.removeProperty('--ecran-scroll-dist'); }
-  if (!inner) { ecranPanelDurations[key] = 12000; return; }
+  if (!inner) { ecranPanelDurations[key] = baseMs; return; }
+  // Défilement automatique désactivé dans les réglages : le panneau reste
+  // fixe (pas d'animation), affiché pendant la durée réglée, même si tout
+  // le contenu ne tient pas à l'écran.
+  if (settings.scroll === false) { ecranPanelDurations[key] = baseMs; return; }
   const maxScroll = inner.scrollHeight - panelEl.clientHeight;
-  if (maxScroll <= 20) { ecranPanelDurations[key] = 12000; return; } // tout tient à l'écran, pas besoin de défiler
+  if (maxScroll <= 20) { ecranPanelDurations[key] = baseMs; return; } // tout tient à l'écran, pas besoin de défiler
   // Durée nécessaire pour un aller (bas) puis un retour (haut) complet, pauses incluses,
   // afin que le panneau reste affiché assez longtemps pour tout lire avant l'alternance.
-  const cycleDuration = Math.min(45000, Math.max(12000, Math.round(maxScroll * 60) + 4000));
+  // La durée réglée par l'opérateur reste un plancher, jamais un plafond.
+  const cycleDuration = Math.max(baseMs, Math.round(maxScroll * 60) + 4000);
   ecranPanelDurations[key] = cycleDuration;
   inner.style.setProperty('--ecran-scroll-dist', '-' + maxScroll + 'px');
   inner.style.animationDuration = cycleDuration + 'ms';
