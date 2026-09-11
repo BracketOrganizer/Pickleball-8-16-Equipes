@@ -325,13 +325,10 @@
       break-inside:avoid;-webkit-column-break-inside:avoid;
     }
     #printRoot #matchesCard .court-header{font-size:0.65rem;margin-bottom:1px}
-    #printRoot #matchesCard .team-row{margin:1px 0;gap:2px}
+    #printRoot #matchesCard .team-row{margin:1px 0;gap:4px}
     #printRoot #matchesCard .vs{margin:1px 0;font-size:0.62rem}
-    #printRoot #matchesCard .player-name,
-    #printRoot #matchesCard .replacement-select,
-    #printRoot #matchesCard .score-input{font-size:0.65rem !important}
-    #printRoot #matchesCard .score-input{width:24px;padding:1px;min-height:auto}
-    #printRoot #matchesCard .replacement-select{padding:1px;min-height:auto}
+    #printRoot #matchesCard .print-player-name{font-size:0.66rem !important;font-weight:600}
+    #printRoot #matchesCard .print-score{font-size:0.72rem !important;font-weight:700;display:inline-block;min-width:14px;text-align:center}
 
     /* Impression condensée du tirage des positions : 2 colonnes également,
        la liste étant une simple succession de lignes joueur. */
@@ -3446,7 +3443,7 @@ function updateStats() {
   }).join('');
   
   let html = `
-    <div class="card">
+    <div class="card no-print">
       <span class="card-title"><i class="fas fa-clipboard-list"></i> Organisation par Nombre de Joueurs (${TERRAINS} terrains)</span>
       <div class="criteria-grid">${legendItems}
       </div>
@@ -4190,6 +4187,44 @@ function ecranEnableManualScroll(panelEl) {
 // 'afterprint' (déclenché une fois l'aperçu/impression réellement
 // terminé, y compris sur mobile), avec un filet de sécurité si jamais
 // cet évènement ne se déclenchait pas sur un navigateur particulier.
+// Pour l'impression du planning des matchs : les listes déroulantes de
+// remplaçant et les champs de score sont des widgets interactifs, inutiles
+// sur papier (cases vides ou grisées, peu lisibles). On les remplace par
+// du texte simple reprenant ce qui est RÉELLEMENT affiché à l'écran au
+// moment de l'impression : le nom du joueur actuellement en jeu (celui
+// sélectionné dans le menu, y compris après un remplacement), et le score
+// tel que saisi (on lit la valeur live de l'input d'origine, pas celle du
+// clone : un score tapé au clavier n'est répercuté sur l'attribut HTML
+// qu'après la sauvegarde automatique, la propriété JS .value, elle, est
+// toujours à jour). Objectif : n'imprimer que l'essentiel, équipes et
+// scores.
+function makeMatchesPrintFriendly(clone, original) {
+  const origSelects = original.querySelectorAll('select.replacement-select');
+  clone.querySelectorAll('select.replacement-select').forEach((sel, i) => {
+    const origSel = origSelects[i];
+    let text = '';
+    if (origSel && origSel.selectedIndex >= 0 && origSel.options[origSel.selectedIndex]) {
+      text = origSel.options[origSel.selectedIndex].text;
+    } else if (sel.options[0]) {
+      text = sel.options[0].text;
+    }
+    const span = document.createElement('span');
+    span.className = 'print-player-name';
+    span.textContent = text;
+    sel.replaceWith(span);
+  });
+
+  const origInputs = original.querySelectorAll('input.score-input');
+  clone.querySelectorAll('input.score-input').forEach((inp, i) => {
+    const origInp = origInputs[i];
+    const val = origInp ? origInp.value : '';
+    const span = document.createElement('span');
+    span.className = 'print-score';
+    span.textContent = (val !== null && val !== undefined && val !== '') ? val : '–';
+    inp.replaceWith(span);
+  });
+}
+
 function printSection(elementId) {
   const el = document.getElementById(elementId);
   if (!el) { alert('Rien à imprimer.'); return; }
@@ -4202,6 +4237,9 @@ function printSection(elementId) {
   const printRoot = document.createElement('div');
   printRoot.id = 'printRoot';
   const clone = el.cloneNode(true);
+  if (elementId === 'matchesCard') {
+    makeMatchesPrintFriendly(clone, el);
+  }
   printRoot.appendChild(clone);
   document.body.appendChild(printRoot);
   document.body.classList.add('printing-mode');
