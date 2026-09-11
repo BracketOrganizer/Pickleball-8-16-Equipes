@@ -332,13 +332,14 @@
     padding-top:max(20px, env(safe-area-inset-top));padding-bottom:max(20px, env(safe-area-inset-bottom));
     padding-left:max(20px, env(safe-area-inset-left));padding-right:max(20px, env(safe-area-inset-right));
   }
-  .ecran-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;position:relative;z-index:2600}
+  .ecran-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px}
   .ecran-header h1{font-size:1.6rem;display:flex;align-items:center;gap:10px}
-  .ecran-settings-bar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:rgba(255,255,255,0.08);border-radius:8px;padding:8px 14px;margin:-6px 0 14px}
-  .ecran-settings-bar label{display:flex;align-items:center;gap:6px;font-size:0.85rem;color:#fff}
-  .ecran-settings-bar input[type="number"]{width:56px;padding:3px 5px;border-radius:4px;border:1px solid #666;background:#1a0a24;color:#fff;text-align:center}
-  .ecran-settings-bar input[type="checkbox"]{width:16px;height:16px}
-  .ecran-settings-hint{font-size:0.75rem;color:rgba(255,255,255,0.5);margin-left:auto}
+  .ecran-bar{ position:fixed; left:0; right:0; bottom:0; z-index:2600; background:rgba(0,0,0,.78); backdrop-filter:blur(6px); display:flex; align-items:center; gap:14px; padding:10px 18px; flex-wrap:wrap; border-top:1px solid rgba(255,255,255,.15); }
+  .ecran-bar label{display:flex;align-items:center;gap:6px;font-size:0.85rem;color:#fff}
+  .ecran-bar select, .ecran-bar input[type="number"]{padding:3px 5px;border-radius:4px;border:1px solid #666;background:#1a0a24;color:#fff;text-align:center}
+  .ecran-bar input[type="checkbox"]{width:16px;height:16px}
+  .ecran-bar button{background:rgba(255,255,255,0.15);border:none;color:white;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:0.85rem}
+  .ecran-show-tab{ position:fixed; right:14px; bottom:14px; z-index:2600; width:42px; height:42px; border-radius:50%; background:rgba(0,0,0,.6); border:1px solid rgba(255,255,255,.3); color:#fff; align-items:center; justify-content:center; cursor:pointer; font-size:17px; display:none; }
   .ecran-clock{font-size:1.3rem;font-weight:700;opacity:0.85}
   .ecran-chrono{font-size:1.8rem;font-weight:800;font-variant-numeric:tabular-nums;color:#4caf50;letter-spacing:1px}
   .ecran-chrono.chrono-warning{color:#ff9800}
@@ -1763,23 +1764,9 @@ window.adminDeleteUser = async function (uid, name) {
     <h1><i class="fas fa-table-tennis-paddle-ball"></i> Pickleball Unified</h1>
     <div class="ecran-clock" id="ecranClock">--:--:--</div>
     <div class="ecran-chrono" id="ecranChrono"><i class="fas fa-stopwatch"></i> --:--</div>
-    <button class="ecran-quit" id="ecranSettingsBtn" onclick="toggleEcranSettingsBar()"><i class="fas fa-gear"></i> Réglages</button>
-    <button class="ecran-quit" id="ecranFullscreenBtn" onclick="toggleEcranFullscreen()" style="display:none"><i class="fas fa-expand"></i> Plein écran</button>
-    <button class="ecran-quit" data-role="scorer" style="display:none" onclick="openMessagesModal()"><i class="fas fa-bullhorn"></i> Messages</button>
-    <button class="ecran-quit" onclick="closeEcranMode()"><i class="fas fa-xmark"></i> Quitter</button>
   </div>
   <div class="tv-msg-banner" id="tvMsgBanner"></div>
   <div class="tv-msg-full" id="tvMsgFull"></div>
-  <div class="ecran-settings-bar" id="ecranSettingsBar" style="display:none">
-    <label><i class="fas fa-table-tennis-paddle-ball"></i> Écran matchs
-      <input type="number" id="ecranIntervalMatches" min="5" max="120" value="12" onchange="onEcranSettingsChange()"> s
-    </label>
-    <label><i class="fas fa-ranking-star"></i> Écran classement
-      <input type="number" id="ecranIntervalRanking" min="5" max="120" value="20" onchange="onEcranSettingsChange()"> s
-    </label>
-    <label><input type="checkbox" id="ecranScrollToggle" checked onchange="onEcranSettingsChange()"> Défilement automatique</label>
-    <span class="ecran-settings-hint">Réglages mémorisés sur cet écran uniquement</span>
-  </div>
   <div class="ecran-body">
     <div id="ecranPanelMatches" class="ecran-panel active"></div>
     <div id="ecranPanelRanking" class="ecran-panel"></div>
@@ -1788,6 +1775,27 @@ window.adminDeleteUser = async function (uid, name) {
       <div class="ecran-dot" id="ecranDot1"></div>
     </div>
   </div>
+  <div class="ecran-bar" id="ecranBar">
+    <button onclick="closeEcranMode()"><i class="fas fa-xmark"></i> Quitter</button>
+    <label>Affichage
+      <select id="ecranModeSelect" onchange="ecranSetMode(this.value)">
+        <option value="cycle">Alterné (les deux)</option>
+        <option value="results">Résultats</option>
+        <option value="standings">Classement</option>
+      </select>
+    </label>
+    <label id="ecranIntervalMatchesWrap"><i class="fas fa-table-tennis-paddle-ball"></i> Résultats :
+      <input type="number" id="ecranIntervalMatches" min="5" max="120" value="12" onchange="onEcranSettingsChange()"> s
+    </label>
+    <label id="ecranIntervalRankingWrap"><i class="fas fa-ranking-star"></i> Classement :
+      <input type="number" id="ecranIntervalRanking" min="5" max="120" value="20" onchange="onEcranSettingsChange()"> s
+    </label>
+    <label><input type="checkbox" id="ecranScrollToggle" checked onchange="onEcranSettingsChange()"> 🔃 Défilement auto</label>
+    <button id="ecranFullscreenBtn" onclick="toggleEcranFullscreen()" style="display:none"><i class="fas fa-expand"></i> Plein écran</button>
+    <button onclick="toggleEcranBarHidden()"><i class="fas fa-eye-slash"></i> Masquer la barre</button>
+    <button data-role="scorer" style="display:none" onclick="openMessagesModal()"><i class="fas fa-bullhorn"></i> Messages</button>
+  </div>
+  <div class="ecran-show-tab" id="ecranShowTab" onclick="toggleEcranBarHidden()" title="Afficher la barre"><i class="fas fa-gear"></i></div>
 </div>
 
 <!-- ═══════════════ APPLICATION (protégée) ═══════════════ -->
@@ -3944,15 +3952,16 @@ let ecranClockTimer = null;
 let ecranPanelIndex = 0;
 
 // ── Réglages du mode Écran (mémorisés sur CET écran/ordinateur, comme
-// dans l'appli Americano — chaque TV peut avoir ses propres réglages) ──
+// dans les autres apps — chaque TV peut avoir ses propres réglages) ──
 function getEcranSettings() {
   let saved = {};
   try { saved = JSON.parse(localStorage.getItem('ecranSettings') || '{}'); } catch (e) {}
   return {
+    mode: saved.mode || 'cycle',                    // 'results' | 'standings' | 'cycle' (les 2 en alterné)
     intervalMatches: saved.intervalMatches || 12,   // secondes, écran "matchs"
     intervalRanking: saved.intervalRanking || 20,   // secondes, écran "classement"
     scroll: (saved.scroll === undefined) ? true : saved.scroll,
-    barHidden: saved.barHidden || false
+    hidden: (saved.hidden !== undefined) ? saved.hidden : (saved.barHidden || false)
   };
 }
 function saveEcranSettings(patch) {
@@ -3960,12 +3969,14 @@ function saveEcranSettings(patch) {
   try { localStorage.setItem('ecranSettings', JSON.stringify(next)); } catch (e) {}
   return next;
 }
-window.toggleEcranSettingsBar = function () {
-  const bar = document.getElementById('ecranSettingsBar');
-  if (!bar) return;
-  const show = bar.style.display === 'none';
-  bar.style.display = show ? 'flex' : 'none';
-  saveEcranSettings({ barHidden: !show });
+window.toggleEcranBarHidden = function () {
+  saveEcranSettings({ hidden: !getEcranSettings().hidden });
+  applyEcranSettingsToUI();
+};
+window.ecranSetMode = function (v) {
+  saveEcranSettings({ mode: v });
+  applyEcranSettingsToUI();
+  startEcranCycle();
 };
 window.onEcranSettingsChange = function () {
   const im = document.getElementById('ecranIntervalMatches');
@@ -3988,11 +3999,19 @@ function applyEcranSettingsToUI() {
   const im = document.getElementById('ecranIntervalMatches');
   const ir = document.getElementById('ecranIntervalRanking');
   const sc = document.getElementById('ecranScrollToggle');
-  const bar = document.getElementById('ecranSettingsBar');
+  const modeSel = document.getElementById('ecranModeSelect');
+  const bar = document.getElementById('ecranBar');
+  const tab = document.getElementById('ecranShowTab');
+  const ivmWrap = document.getElementById('ecranIntervalMatchesWrap');
+  const ivrWrap = document.getElementById('ecranIntervalRankingWrap');
   if (im) im.value = s.intervalMatches;
   if (ir) ir.value = s.intervalRanking;
   if (sc) sc.checked = s.scroll;
-  if (bar) bar.style.display = s.barHidden ? 'none' : 'flex';
+  if (modeSel) modeSel.value = s.mode;
+  if (ivmWrap) ivmWrap.style.display = (s.mode === 'standings') ? 'none' : '';
+  if (ivrWrap) ivrWrap.style.display = (s.mode === 'results') ? 'none' : '';
+  if (bar) bar.style.display = s.hidden ? 'none' : 'flex';
+  if (tab) tab.style.display = s.hidden ? 'flex' : 'none';
 }
 
 function openEcranMode(fromLogin) {
@@ -4075,10 +4094,12 @@ function stopEcranClock() {
 
 function startEcranCycle() {
   stopEcranCycle();
-  ecranPanelIndex = 0;
-  showEcranPanel(0, true);
+  const mode = getEcranSettings().mode;
+  ecranPanelIndex = (mode === 'standings') ? 1 : 0;
+  showEcranPanel(ecranPanelIndex, mode === 'cycle');
 }
 function scheduleNextEcranPanel() {
+  if (getEcranSettings().mode !== 'cycle') return; // mode verrouillé sur un seul écran : pas d'alternance
   const key = ecranPanelIndex === 0 ? 'ecranPanelMatches' : 'ecranPanelRanking';
   const duration = ecranPanelDurations[key] || 12000;
   ecranCycleTimer = setTimeout(() => {
