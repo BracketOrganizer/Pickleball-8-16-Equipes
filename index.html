@@ -2585,22 +2585,22 @@ function getGridForN() {
   return grids[firstKey];
 }
 
-// Remplacements de joueurs : modèle "match unique" — un remplaçant déclaré
-// pour un tour donné ne s'applique QU'à ce tour-là ; les autres tours (avant
-// et après) ne sont pas affectés et gardent leur composition d'origine (ou
-// leur propre remplacement, s'il en a été déclaré un séparément pour ce
-// tour-là). playerReplacements[joueurOrigine] est la liste des tours pour
-// lesquels un remplacement a été déclaré ; plusieurs tours différents
-// peuvent avoir chacun leur propre remplaçant pour le même joueur d'origine.
+// Remplacements de joueurs : modèle "report automatique" — une fois un
+// remplaçant déclaré à partir d'un tour donné, il reste en jeu à la place
+// du joueur d'origine pour TOUS les tours suivants, sans avoir à le
+// resélectionner à chaque tour. playerReplacements[joueurOrigine] est un
+// historique trié par tour de départ croissant ; plusieurs remplacements
+// successifs du même joueur d'origine sont possibles (ex. si le
+// remplaçant doit lui-même être remplacé plus tard).
 // playerReplacements = { [originalPlayerId]: [{substitute, fromRound}, ...] }
-// (le champ s'appelle "fromRound" pour compatibilité avec les données déjà
-// enregistrées, mais il désigne maintenant le tour unique concerné, pas un
-// point de départ.)
 function getReplacementPlayer(round, originalPlayer) {
   const history = playerReplacements[originalPlayer];
   if (!history || history.length === 0) return originalPlayer;
-  const entry = history.find(e => e.fromRound === round);
-  return entry ? entry.substitute : originalPlayer;
+  let effective = originalPlayer;
+  for (let i = 0; i < history.length; i++) {
+    if (round >= history[i].fromRound) effective = history[i].substitute;
+  }
+  return effective;
 }
 
 function logReplacement(round, court, position, oldPlayer, newPlayer, courtType = 'principal') {
@@ -3960,16 +3960,16 @@ function updatePlayerReplacement(round, court, position, newPlayerId) {
     });
     
     if (newPlayerId === '') {
-      // Annulation pour ce tour uniquement (déjà retirée par le filtre
-      // ci-dessus) : les autres tours ne sont pas concernés.
+      // Annulation à partir de ce tour : on retire aussi toute déclaration future,
+      // pour revenir au joueur d'origine (ou à un remplacement antérieur toujours actif) ici et ensuite.
+      playerReplacements[oldPlayer] = playerReplacements[oldPlayer].filter(e => e.fromRound < round);
       if (playerReplacements[oldPlayer].length === 0) {
         delete playerReplacements[oldPlayer];
       }
     } else {
       const newId = parseInt(newPlayerId);
       // Place actuellement occupée par newId à ce tour (un autre terrain, ou
-      // le repos) : c'est là qu'oldPlayer va être installé en échange, pour
-      // ce tour uniquement.
+      // le repos) : c'est là qu'oldPlayer va être installé en échange.
       const freedSlotOwner = findOriginalSlotOccupiedBy(round, newId);
 
       playerReplacements[oldPlayer].push({ substitute: newId, fromRound: round });
@@ -3983,7 +3983,7 @@ function updatePlayerReplacement(round, court, position, newPlayerId) {
       }
       
       logReplacement(round, court, position, oldPlayer, newId, 'principal');
-      showNotice(`${getPlayerName(oldPlayer)} et ${getPlayerName(newId)} échangent leur place pour le Tour ${round + 1} uniquement (les autres tours ne changent pas)`);
+      showNotice(`${getPlayerName(oldPlayer)} et ${getPlayerName(newId)} échangent leur place à partir du Tour ${round + 1} (et pour tous les tours suivants)`);
     }
     
     scheduleAutoSave();
