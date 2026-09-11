@@ -278,47 +278,65 @@
   /* ===== Bilan de saison ===== */
   .bilan-group{border-left:4px solid var(--primary)}
 
-  /* ===== Impression ===== */
-  @page{ margin:6mm 6mm; }
+  /* ===== Impression =====
+     Technique : un conteneur unique #printRoot est ajouté juste avant
+     d'imprimer, avec DEDANS une copie de la carte à imprimer. Le CSS
+     ci-dessous masque tout le reste (display:none, pas visibility:hidden)
+     et n'affiche que #printRoot. display:none sur les ancêtres est
+     respecté de façon fiable par tous les moteurs d'impression, y compris
+     sur mobile (Safari iOS / Chrome Android) — contrairement à
+     visibility:hidden + position:absolute, qui produisait des pages
+     blanches sur ces navigateurs. Voir printSection() en bas du fichier. */
+  #printRoot{display:none}
+  @page{ margin:4mm 5mm; }
   @media print{
-    body *{visibility:hidden}
-    .print-target, .print-target *{visibility:visible}
-    .print-target{position:absolute;left:0;top:0;width:100%}
+    body.printing-mode > *:not(#printRoot){display:none !important}
+    body.printing-mode #printRoot{display:block !important}
     .no-print, .btn.no-print, header .controls, .tabs, .user-bar{display:none !important}
 
     /* Impression condensée générale (classement, stats, positions,
        inscriptions...) : marges/police resserrées pour limiter le nombre
-       de pages. Les règles spécifiques au planning ci-dessous restent
-       prioritaires pour ce cas précis (2 colonnes). */
-    .print-target{font-size:0.72rem}
-    .print-target .card-title{font-size:0.85rem;margin-bottom:4px}
-    .print-target table{border-collapse:collapse;width:100%}
-    .print-target th, .print-target td{padding:2px 4px !important;font-size:0.7rem !important}
-    .print-target .btn{display:none !important}
+       de pages. Les règles spécifiques au planning et aux positions
+       ci-dessous restent prioritaires pour ces cas précis (2 colonnes). */
+    #printRoot{font-size:0.68rem;line-height:1.25;color:#000;background:#fff}
+    /* La fiche joueur (écran spectateur) a un thème sombre avec du texte
+       blanc : sans cette règle, le texte serait blanc sur fond blanc à
+       l'impression (page qui semble "blanche" une fois imprimée). */
+    #printRoot .player-match-row{background:none !important;border:1px solid #ccc;color:#000}
+    #printRoot .pmr-round{color:#000;opacity:1}
+    #printRoot .card{padding:2px !important;margin:0 !important;box-shadow:none !important;border:none !important}
+    #printRoot .card-title{font-size:0.82rem;margin-bottom:3px}
+    #printRoot table{border-collapse:collapse;width:100%}
+    #printRoot th, #printRoot td{padding:1px 4px !important;font-size:0.66rem !important}
+    #printRoot .btn{display:none !important}
 
-    /* Impression condensée du planning des matchs : on resserre les
-       marges/polices et on répartit les tours sur 2 colonnes pour tenir
-       davantage de matchs par page. */
-    #matchesCard.print-target #matchesDisplay{column-count:2;column-gap:10px}
-    #matchesCard.print-target .round-border{
-      border:1px solid #999;padding:4px 6px;margin:0 0 5px 0;border-radius:3px;
+    /* Impression condensée du planning des matchs : on répartit les tours
+       sur 2 colonnes pour tenir davantage de matchs par page. */
+    #printRoot #matchesCard #matchesDisplay{column-count:2;column-gap:8px}
+    #printRoot #matchesCard .round-border{
+      border:1px solid #999;padding:3px 5px;margin:0 0 4px 0;border-radius:3px;
       break-inside:avoid;-webkit-column-break-inside:avoid;
     }
-    #matchesCard.print-target .round-title{
-      padding:2px 5px;margin:-4px -6px 4px -6px;font-size:0.7rem;
+    #printRoot #matchesCard .round-title{
+      padding:2px 5px;margin:-3px -5px 3px -5px;font-size:0.68rem;
     }
-    #matchesCard.print-target .match{
-      border:1px solid #ccc;padding:4px 5px;margin:3px 0;border-radius:3px;background:white;
+    #printRoot #matchesCard .match{
+      border:1px solid #ccc;padding:3px 4px;margin:2px 0;border-radius:3px;background:white;
       break-inside:avoid;-webkit-column-break-inside:avoid;
     }
-    #matchesCard.print-target .court-header{font-size:0.68rem;margin-bottom:2px}
-    #matchesCard.print-target .team-row{margin:1px 0;gap:2px}
-    #matchesCard.print-target .vs{margin:1px 0;font-size:0.65rem}
-    #matchesCard.print-target .player-name,
-    #matchesCard.print-target .replacement-select,
-    #matchesCard.print-target .score-input{font-size:0.68rem !important}
-    #matchesCard.print-target .score-input{width:26px;padding:1px;min-height:auto}
-    #matchesCard.print-target .replacement-select{padding:1px;min-height:auto}
+    #printRoot #matchesCard .court-header{font-size:0.65rem;margin-bottom:1px}
+    #printRoot #matchesCard .team-row{margin:1px 0;gap:2px}
+    #printRoot #matchesCard .vs{margin:1px 0;font-size:0.62rem}
+    #printRoot #matchesCard .player-name,
+    #printRoot #matchesCard .replacement-select,
+    #printRoot #matchesCard .score-input{font-size:0.65rem !important}
+    #printRoot #matchesCard .score-input{width:24px;padding:1px;min-height:auto}
+    #printRoot #matchesCard .replacement-select{padding:1px;min-height:auto}
+
+    /* Impression condensée du tirage des positions : 2 colonnes également,
+       la liste étant une simple succession de lignes joueur. */
+    #printRoot #positionsCard #positionsList{column-count:2;column-gap:8px}
+    #printRoot #positionsCard .player-row{break-inside:avoid;-webkit-column-break-inside:avoid;padding:1px 0;margin:0}
   }
 
   .user-bar{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:#f3e5f5;border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:0.8rem}
@@ -2249,6 +2267,11 @@ let playerReplacements = {};
 let replacementLog = [];
 let matchScores = {};
 let specialMatchScores = {};
+// Vrai tant qu'une sauvegarde locale (autosave) est programmée ou en cours
+// d'envoi vers Firestore. Sert à empêcher une mise à jour distante reçue
+// entre-temps (sondage 4s, ou écho d'un autre appareil) d'écraser une
+// modification locale pas encore confirmée en base — voir applyTournamentData().
+let saveInFlight = false;
 
 function showNotice(message) {
   const notice = document.getElementById('notice');
@@ -3518,12 +3541,16 @@ function scheduleAutoSave() {
   if (autoSaveTimer) {
     clearTimeout(autoSaveTimer);
   }
+  // Marqué vrai dès qu'une modification locale est en attente d'envoi,
+  // et jusqu'à ce que l'envoi soit terminé (voir saveData ci-dessous).
+  saveInFlight = true;
   autoSaveTimer = setTimeout(saveData, 1000);
 }
 
 function saveData() {
   if (typeof fbSaveTournament !== 'function') {
     showNotice('Firebase non initialisé');
+    saveInFlight = false;
     return;
   }
   
@@ -3548,6 +3575,8 @@ function saveData() {
   }).catch((e) => {
     console.error('Erreur de sauvegarde:', e);
     showNotice('Erreur lors de la sauvegarde : ' + (e.message || e));
+  }).finally(() => {
+    saveInFlight = false;
   });
 }
 
@@ -3566,6 +3595,14 @@ function applyTournamentData(data) {
   if (activeEl && (activeEl.classList.contains('score-input') || activeEl.classList.contains('replacement-select'))) {
     return;
   }
+  // Idem pour toute modification locale pas encore sauvegardée (ex. import
+  // des inscrits vers les joueurs, changement de nombre de joueurs/terrains,
+  // saisie d'un nom...) : sans cette garde, une mise à jour distante reçue
+  // dans la seconde qui suit (sondage 4s, ou un autre appareil connecté)
+  // pouvait réafficher l'ancienne valeur ET l'enregistrer par-dessus la
+  // modification qu'on venait juste de faire, qui semblait alors n'avoir
+  // servi à rien (cas typique : "Importer vers joueurs" qui ne prend pas).
+  if (saveInFlight) return;
   positions = data.positions || [];
   TERRAINS = data.TERRAINS || 3;
   matchScores = data.matchScores || {};
@@ -4129,59 +4166,73 @@ function ecranEnableManualScroll(panelEl) {
 
 // ══════════════════════════════════════════════════════════
 // IMPRESSION
-// Ajoute temporairement la classe .print-target à l'élément visé (les
-// styles @media print masquent tout le reste de la page), lance
-// window.print(), puis nettoie.
-// ══════════════════════════════════════════════════════════
-// Impression via un document isolé (iframe caché) contenant UNIQUEMENT
-// l'élément à imprimer, plutôt que la technique "cacher tout le reste de
-// la page avec visibility:hidden + positionner la cible en absolute"
-// utilisée avant. Cette dernière est connue pour produire des pages
-// blanches sur certains navigateurs mobiles (Safari iOS, Chrome Android) :
-// leur moteur d'impression ne respecte pas toujours visibility:visible sur
-// un descendant d'un ancêtre visibility:hidden, ni le repositionnement en
-// absolute. En imprimant un document séparé qui ne contient QUE la cible,
-// il n'y a plus rien à cacher et le problème ne peut pas se produire.
+// Une copie de l'élément à imprimer est placée dans #printRoot, ajouté
+// à la fin de <body>, puis la classe .printing-mode sur <body> fait
+// disparaître (display:none) tout le reste de la page via les règles
+// @media print, ne laissant que #printRoot visible.
+//
+// Pourquoi pas la technique précédente (iframe caché + window.print()
+// dans l'iframe) : sur mobile (Safari iOS, Chrome Android), l'impression
+// native est asynchrone — le JS reprend la main avant que l'aperçu ne
+// soit réellement construit. Le minuteur qui supprimait l'iframe peu
+// après l'appel à print() le faisait donc parfois PENDANT que le système
+// lisait encore son contenu, d'où l'effet observé : l'aperçu apparaît
+// puis se vide (page blanche).
+//
+// Pourquoi pas non plus visibility:hidden + position:absolute (technique
+// encore antérieure) : certains moteurs d'impression mobiles ne respectent
+// pas toujours visibility:visible sur un descendant d'un ancêtre en
+// visibility:hidden.
+//
+// display:none classique sur les ancêtres, dans le document principal
+// (pas de copie dans un document séparé), est la technique la plus
+// robuste multi-navigateurs. Le nettoyage se fait sur l'évènement
+// 'afterprint' (déclenché une fois l'aperçu/impression réellement
+// terminé, y compris sur mobile), avec un filet de sécurité si jamais
+// cet évènement ne se déclenchait pas sur un navigateur particulier.
 function printSection(elementId) {
   const el = document.getElementById(elementId);
   if (!el) { alert('Rien à imprimer.'); return; }
 
-  // L'iframe doit avoir une taille réelle : à 0x0 certains navigateurs
-  // mobiles (Safari iOS, Chrome Android) n'exécutent pas la mise en page
-  // interne et impriment une page blanche. On la place hors écran plutôt
-  // que de la réduire à rien.
-  const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'position:fixed;left:-10000px;top:0;width:800px;height:1200px;border:0';
-  document.body.appendChild(iframe);
-  const doc = iframe.contentWindow.document;
+  // Nettoie un éventuel reste d'une impression précédente non terminée.
+  const oldRoot = document.getElementById('printRoot');
+  if (oldRoot) oldRoot.remove();
+  document.body.classList.remove('printing-mode');
 
-  // On ne copie que les feuilles de style (liens + <style>), jamais les
-  // <script> de l'en-tête : les réexécuter dans l'iframe relancerait
-  // l'initialisation Firebase/l'appli entière.
-  let stylesHtml = '';
-  document.querySelectorAll('head link[rel="stylesheet"], head style').forEach(node => {
-    stylesHtml += node.outerHTML;
-  });
-
-  doc.open();
-  doc.write('<!DOCTYPE html><html><head><meta charset="utf-8">' + stylesHtml + '</head><body></body></html>');
-  doc.close();
-
+  const printRoot = document.createElement('div');
+  printRoot.id = 'printRoot';
   const clone = el.cloneNode(true);
-  clone.classList.add('print-target');
-  doc.body.appendChild(clone);
+  printRoot.appendChild(clone);
+  document.body.appendChild(printRoot);
+  document.body.classList.add('printing-mode');
 
-  // Laisse le temps aux feuilles de style externes (icônes Font Awesome
-  // notamment) de se charger avant de déclencher l'impression.
-  setTimeout(() => {
-    try {
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-    } catch (e) {
-      alert('Erreur impression : ' + e.message);
-    }
-    setTimeout(() => { if (iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 1000);
-  }, 400);
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    document.body.classList.remove('printing-mode');
+    if (printRoot.parentNode) printRoot.parentNode.removeChild(printRoot);
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  // Filet de sécurité : si 'afterprint' ne se déclenche pas (cas rare sur
+  // certains navigateurs), on nettoie quand même après un délai généreux
+  // plutôt que de laisser #printRoot bloqué indéfiniment en mode impression.
+  setTimeout(cleanup, 60000);
+
+  // Deux passages par requestAnimationFrame pour laisser le navigateur
+  // terminer la mise en page du clone avant de lancer l'impression
+  // (important sur mobile).
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      try {
+        window.print();
+      } catch (e) {
+        alert('Erreur impression : ' + e.message);
+        cleanup();
+      }
+    });
+  });
 }
 window.printSection = printSection;
 
