@@ -204,6 +204,9 @@
     .replacement-select {font-size: 0.75rem;padding: 4px;max-width: 130px;}
     .btn {padding: 6px 10px; font-size: 0.75rem; min-height: 32px;}
     .replacement-info {flex-direction: column;gap: 5px;}
+    /* iOS zoome automatiquement la page quand un champ de saisie a une
+       taille de police < 16px au moment du focus : on repasse tous les
+       champs à 16px sur mobile pour éviter ce zoom intempestif. */
     input, select, textarea { font-size:16px !important; }
   }
 
@@ -222,6 +225,7 @@
     .criteria-grid {grid-template-columns: repeat(3, 1fr);}
   }
 
+  /* ===== AUTH / RÔLES ===== */
   [data-role]{ }
   #loginScreen{
     position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;
@@ -246,15 +250,18 @@
   .spec-nav-btn:hover{background:var(--primary);color:white;border-color:var(--primary)}
   .spec-nav-btn i{font-size:1.2rem}
 
+  /* ===== Bloc "Accès spectateur" agrandi et différencié ===== */
   .spectator-block{background:#e3f2fd;border:3px solid #1565c0;border-radius:14px;padding:18px 12px 14px;margin-top:20px;box-shadow:0 2px 10px rgba(21,101,192,0.15)}
   .spectator-divider{font-size:1.25rem;font-weight:900;color:#1565c0;margin:0 0 14px 0;letter-spacing:0.3px}
   .spectator-divider i{font-size:1.3rem;margin-right:2px}
   .spectator-divider::before,.spectator-divider::after{background:#1565c0;opacity:0.4}
 
+  /* ===== Modales (inscription) ===== */
   .modal-overlay{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;padding:16px}
   .modal-box{background:white;border-radius:14px;padding:20px;max-width:380px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,0.3)}
   .modal-box h3{color:var(--primary);margin-bottom:10px;text-align:center}
 
+  /* ===== Écran fiche joueur (spectateur) ===== */
   #playerScreen.ecran-like{
     position:fixed;inset:0;z-index:1900;display:none;flex-direction:column;
     background:linear-gradient(160deg,#1a0f2e,#2c1250);color:white;padding:16px;
@@ -268,8 +275,10 @@
   .player-match-row .pmr-score{font-weight:800;color:#4caf50}
   .back-btn{background:rgba(255,255,255,0.15);border:none;color:white;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:0.8rem;margin-bottom:10px}
 
+  /* ===== Bilan de saison ===== */
   .bilan-group{border-left:4px solid var(--primary)}
 
+  /* ===== Impression ===== */
   @page{ margin:10mm 8mm; }
   @media print{
     body *{visibility:hidden}
@@ -277,6 +286,9 @@
     .print-target{position:absolute;left:0;top:0;width:100%}
     .no-print, .btn.no-print, header .controls, .tabs, .user-bar{display:none !important}
 
+    /* Impression condensée du planning des matchs : on resserre les
+       marges/polices et on répartit les tours sur 2 colonnes pour tenir
+       davantage de matchs par page. */
     #matchesCard.print-target #matchesDisplay{column-count:2;column-gap:10px}
     #matchesCard.print-target .round-border{
       border:1px solid #999;padding:4px 6px;margin:0 0 5px 0;border-radius:3px;
@@ -346,12 +358,20 @@
   @keyframes chronoBlink{0%,100%{opacity:1}50%{opacity:0.25}}
   .ecran-quit{background:rgba(255,255,255,0.15);border:none;color:white;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:0.85rem}
   .ecran-body{flex:1;display:flex;flex-direction:column;gap:14px;min-height:0;overflow:hidden}
-  /* Panneaux écran : overflow-y:auto nécessaire au défilement JS (scrollTop)
-     sur les appareils (TV, vieux Android) où l'animation CSS transform ne
-     rafraîchit pas correctement. */
-  .ecran-panel{display:none;overflow-y:auto;min-height:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
-  .ecran-panel.ecran-manual{overflow-y:auto}
-  .ecran-panel-inner{will-change:auto}
+  .ecran-panel{display:none;overflow:hidden;min-height:0;overscroll-behavior:contain}
+  .ecran-panel.ecran-manual{overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .ecran-panel.ecran-manual .ecran-panel-inner{animation-play-state:paused !important;transform:none !important}
+  .ecran-panel-inner{will-change:transform}
+  .ecran-panel.ecran-scrolling .ecran-panel-inner{
+    animation-name:ecranAutoScrollY;
+    animation-timing-function:ease-in-out;
+    animation-iteration-count:infinite;
+  }
+  @keyframes ecranAutoScrollY{
+    0%, 8%    { transform:translateY(0); }
+    46%, 54%  { transform:translateY(var(--ecran-scroll-dist, 0)); }
+    92%, 100% { transform:translateY(0); }
+  }
   .ecran-panel.active{display:block;flex:1;animation:ecranFade .5s ease}
   @keyframes ecranFade{from{opacity:0}to{opacity:1}}
   .ecran-round-title{font-size:1.2rem;font-weight:700;margin-bottom:10px;color:#ce93d8;text-align:center}
@@ -405,11 +425,20 @@ const auth      = getAuth(app);
 const db        = getFirestore(app);
 const gProvider = new GoogleAuthProvider();
 
+// Récupère le résultat d'une éventuelle redirection Google (fallback popup bloqué)
 getRedirectResult(auth).catch((e) => {
   console.warn('getRedirectResult error:', e);
-  if (typeof window.showAuthMsg === 'function') window.showAuthMsg(authErrMsg(e.code), 'red');
+  showAuthMsg(authErrMsg(e.code), 'red');
 });
 
+// ══════════════════════════════════════════════════════════
+// ÉTAT / RÔLES
+// Rôles : 'admin' | 'scorer' | 'spectateur'
+//   admin     → tout (config terrains/joueurs, tirage, scores, remplacements,
+//               génération, réinitialisation, gestion des comptes)
+//   scorer    → scores + remplacements de joueurs + génération du tournoi
+//   spectateur→ lecture seule (avec ou sans compte, si le Live est ouvert)
+// ══════════════════════════════════════════════════════════
 let CURRENT_USER = null;
 let USER_ROLES   = [];
 let LIVE_OPEN    = false;
@@ -422,19 +451,26 @@ function isAdmin()  { return USER_ROLES.includes('admin'); }
 function isScorer() { return USER_ROLES.includes('admin') || USER_ROLES.includes('scorer'); }
 function isSpectateurOnly() { return USER_ROLES.includes('spectateur') && !isScorer(); }
 
+// ── Surveillance permanente du statut Live (nécessaire avant même la connexion,
+//    pour savoir si le bouton "Mode Spectateur" doit s'activer) ─────────────
 function startLiveWatch() {
   if (unsubLiveStatus) return;
   unsubLiveStatus = onSnapshot(doc(db, 'tournamentStatus', 'live'), (snap) => {
     LIVE_OPEN = snap.exists() && snap.data().liveOpen === true;
-    if (typeof window.updateLiveToggleBadge === 'function') window.updateLiveToggleBadge();
+    updateLiveToggleBadge();
+    // Si un(e) spectateur/spectatrice est connecté(e) et que l'admin ferme le Live,
+    // on le renvoie à l'écran de connexion.
     if (!LIVE_OPEN && isSpectateurOnly() && document.getElementById('appScreen').style.display !== 'none') {
       logout();
-      if (typeof window.showAuthMsg === 'function') window.showAuthMsg('⏰ Le mode Live a été fermé par l\'administrateur.', 'red');
+      showAuthMsg('⏰ Le mode Live a été fermé par l\'administrateur.', 'red');
     }
   }, (e) => console.warn('startLiveWatch error:', e));
 }
 startLiveWatch();
 
+// ══════════════════════════════════════════════════════════
+// INSCRIPTIONS (ouverture/fermeture par l'admin, heure limite, quota)
+// ══════════════════════════════════════════════════════════
 let REG_CONFIG = { open: false, deadline: null, maxCount: null };
 let REG_COUNT = 0;
 let unsubRegConfig = null;
@@ -444,16 +480,16 @@ function startRegistrationWatch() {
   if (unsubRegConfig) return;
   unsubRegConfig = onSnapshot(doc(db, 'tournamentStatus', 'registration'), (snap) => {
     REG_CONFIG = snap.exists() ? snap.data() : { open: false, deadline: null, maxCount: null };
-    if (typeof window.updateRegistrationButton === 'function') window.updateRegistrationButton();
-    if (typeof window.refreshAdminRegistrationUI === 'function') window.refreshAdminRegistrationUI();
+    if (typeof updateRegistrationButton === 'function') updateRegistrationButton();
+    if (typeof refreshAdminRegistrationUI === 'function') refreshAdminRegistrationUI();
   }, (e) => console.warn('startRegistrationWatch error:', e));
   unsubRegList = onSnapshot(collection(db, 'registrations'), (snap) => {
     REG_COUNT = snap.size;
     window.REG_LIST = [];
     snap.forEach(d => window.REG_LIST.push(Object.assign({ id: d.id }, d.data())));
     window.REG_LIST.sort((a, b) => (a.createdAtLocal || 0) - (b.createdAtLocal || 0));
-    if (typeof window.updateRegistrationButton === 'function') window.updateRegistrationButton();
-    if (typeof window.refreshAdminRegistrationUI === 'function') window.refreshAdminRegistrationUI();
+    if (typeof updateRegistrationButton === 'function') updateRegistrationButton();
+    if (typeof refreshAdminRegistrationUI === 'function') refreshAdminRegistrationUI();
   }, (e) => console.warn('startRegistrationWatch list error:', e));
 }
 startRegistrationWatch();
@@ -481,7 +517,7 @@ window.adminSaveRegistrationConfig = async function () {
   };
   try {
     await setDoc(doc(db, 'tournamentStatus', 'registration'), payload, { merge: true });
-    if (typeof window.showNotice === 'function') window.showNotice('Paramètres d\'inscription enregistrés');
+    showNotice('Paramètres d\'inscription enregistrés');
   } catch (e) { alert('Erreur : ' + e.message); }
 };
 
@@ -493,7 +529,7 @@ window.adminClearRegistrations = async function () {
     const proms = [];
     snap.forEach(d => proms.push(deleteDoc(doc(db, 'registrations', d.id))));
     await Promise.all(proms);
-    if (typeof window.showNotice === 'function') window.showNotice('Liste des inscriptions effacée');
+    showNotice('Liste des inscriptions effacée');
   } catch (e) { alert('Erreur : ' + e.message); }
 };
 
@@ -554,6 +590,8 @@ window.closeRegistrationModal = function () {
   if (modal) modal.style.display = 'none';
 };
 
+// Affiche/masque le bouton "S'inscrire" sur la page de connexion selon
+// l'état courant des inscriptions (ouvertes/fermées, heure limite, quota).
 function updateRegistrationButton() {
   const btn = document.getElementById('registerOpenBtn');
   const note = document.getElementById('registerClosedNote');
@@ -577,6 +615,7 @@ function updateRegistrationButton() {
 }
 window.updateRegistrationButton = updateRegistrationButton;
 
+// Rafraîchit le panneau admin "Inscriptions" : formulaire de config + liste des inscrits.
 function refreshAdminRegistrationUI() {
   const openEl = document.getElementById('reg_open');
   const deadlineEl = document.getElementById('reg_deadline');
@@ -615,15 +654,54 @@ function refreshAdminRegistrationUI() {
 }
 window.refreshAdminRegistrationUI = refreshAdminRegistrationUI;
 
+// Importe les inscrits (liste "registrations") dans la liste des joueurs
+// du tournoi : ajuste le nombre de joueurs à la config valide la plus proche
+// et remplit les champs joueur 1..N avec les noms des inscrits, dans l'ordre.
+window.importRegistrationsToPlayers = function () {
+  if (!isAdmin()) return;
+  const list = window.REG_LIST || [];
+  const names = list.map(r => (r.name || '').trim()).filter(Boolean);
+  if (names.length === 0) { alert('Aucun inscrit à importer pour le moment.'); return; }
+
+  const options = PLAYER_OPTIONS_BY_TERRAIN[TERRAINS] || PLAYER_OPTIONS_BY_TERRAIN[5];
+  const validValues = options.map(o => o.value);
+  let target = validValues.find(v => v >= names.length);
+  let extra = 0;
+  if (!target) {
+    target = validValues[validValues.length - 1];
+    extra = names.length - target;
+  }
+
+  const msg = extra > 0
+    ? ('Il y a ' + names.length + ' inscrits pour un maximum de ' + target + ' joueurs sur ' + TERRAINS + ' terrains. Les ' + extra + ' dernier(s) inscrit(s) ne seront pas importés. Continuer ?')
+    : ('Importer ' + names.length + ' inscrit(s) dans la liste des ' + target + ' joueurs ? Les noms actuellement saisis seront remplacés.');
+  if (!confirm(msg)) return;
+
+  const select = document.getElementById('playerCount');
+  if (select) select.value = target.toString();
+  N = target;
+  updateActiveCount();
+  ensurePositions();
+  buildPlayerInputs();
+  names.slice(0, target).forEach((name, i) => {
+    const input = document.getElementById('player' + (i + 1));
+    if (input) input.value = name;
+  });
+  scheduleAutoSave();
+  showNotice(Math.min(names.length, target) + ' inscrit(s) importé(s) dans la liste des joueurs');
+};
+
 // ══════════════════════════════════════════════════════════
-// CHRONO DE MATCH (synchronisé via Firestore)
+// CHRONO DE MATCH (synchronisé via Firestore : mêmes minutes,
+// démarrage/pause/reset visibles instantanément sur tous les
+// écrans — app, TV, spectateurs)
 // ══════════════════════════════════════════════════════════
 let TIMER_STATES = { global: { durationSeconds: 900, remainingSeconds: 900, running: false, endsAt: null } };
-let TIMER_PER_TERRAIN = false;
+let TIMER_PER_TERRAIN = false; // false = un seul chrono partagé ; true = un chrono indépendant par terrain
 let timerUnsubs = {};
 let timerTickInterval = null;
 let timerAlerted = {};
-let beepedSeconds = {};
+let beepedSeconds = {}; // clé -> Set des secondes déjà "bipées" pour le décompte en cours (30s, 5,4,3,2,1)
 
 function timerDocId(key) { return key === 'global' ? 'timer' : ('timer_terrain_' + key); }
 
@@ -648,6 +726,8 @@ function unwatchTimer(key) {
   if (timerUnsubs[key]) { timerUnsubs[key](); delete timerUnsubs[key]; }
 }
 
+// Mode chrono (partagé / par terrain), lui-même synchronisé via Firestore
+// pour que le réglage soit identique sur tous les appareils.
 function watchTimerMode() {
   onSnapshot(doc(db, 'tournamentStatus', 'timerMode'), (snap) => {
     const perTerrain = !!(snap.exists() && snap.data().perTerrain);
@@ -675,7 +755,7 @@ function applyChronoModeUI() {
     perTerrainPanel.style.display = 'block';
     unwatchTimer('global');
     buildChronoPerTerrainPanel();
-    for (let n = 1; n <= (window.TERRAINS || 1); n++) watchTimer(String(n));
+    for (let n = 1; n <= (TERRAINS || 1); n++) watchTimer(String(n));
   } else {
     globalPanel.style.display = '';
     perTerrainPanel.style.display = 'none';
@@ -687,7 +767,7 @@ function buildChronoPerTerrainPanel() {
   const panel = document.getElementById('chronoPerTerrainPanel');
   if (!panel) return;
   let html = '';
-  for (let n = 1; n <= (window.TERRAINS || 1); n++) {
+  for (let n = 1; n <= (TERRAINS || 1); n++) {
     html += `
       <div style="border:1px solid #eee;border-radius:6px;padding:8px;margin:6px 0">
         <div style="font-weight:600;font-size:0.8rem;margin-bottom:4px">Terrain ${n}</div>
@@ -709,7 +789,6 @@ watchTimerMode();
 watchTimer('global');
 
 function computeTimerRemaining(key) {
-  key = key || 'global';
   const st = TIMER_STATES[key] || TIMER_STATES.global;
   if (st.running && st.endsAt) {
     const end = new Date(st.endsAt).getTime();
@@ -722,7 +801,13 @@ function formatChrono(totalSeconds) {
   const s = totalSeconds % 60;
   return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
 }
-
+// ── Audio partagé pour les bips/sirène du chrono ────────────
+// iOS Safari et Chrome Android coupent le son de tout AudioContext créé ou
+// activé EN DEHORS d'un geste utilisateur direct (clic/tap). Comme les bips
+// de fin de chrono se déclenchent automatiquement (via setInterval), un
+// nouveau contexte créé à ce moment-là reste muet sur mobile. On réutilise
+// donc un seul contexte partagé, débloqué dès la première interaction de
+// l'utilisateur avec la page.
 let sharedAudioCtx = null;
 function getSharedAudioCtx() {
   try {
@@ -739,8 +824,10 @@ function playChronoBeep() {
   try {
     const ctx = getSharedAudioCtx();
     if (!ctx) return;
+    // Sirène de fin de chrono : balayage de fréquence aller-retour,
+    // répété plusieurs fois, plus longue et plus audible qu'un simple bip.
     const cycles = 4;
-    const cycleDuration = 0.5;
+    const cycleDuration = 0.5; // secondes
     const now = ctx.currentTime;
     const totalDuration = cycles * cycleDuration;
     const osc = ctx.createOscillator();
@@ -759,8 +846,10 @@ function playChronoBeep() {
     gain.gain.linearRampToValueAtTime(0, now + totalDuration);
     osc.start(now);
     osc.stop(now + totalDuration);
-  } catch (e) { }
+  } catch (e) { /* audio non disponible sur ce navigateur */ }
 }
+// Bip court utilisé pour l'alerte à 30 secondes et le décompte des 5
+// dernières secondes (distinct de la sirène finale, plus discret).
 function playTickBeep(freq, duration) {
   try {
     const ctx = getSharedAudioCtx();
@@ -774,31 +863,22 @@ function playTickBeep(freq, duration) {
     gain.gain.setValueAtTime(0.28, ctx.currentTime);
     osc.start();
     osc.stop(ctx.currentTime + duration);
-  } catch (e) { }
+  } catch (e) { /* audio non disponible sur ce navigateur */ }
 }
-
-// ✅ CORRECTIF : utilise TIMER_STATES.global (avant : TIMER_STATE qui n'existait pas)
 function renderTimerDisplay(key) {
-  key = key || 'global';
-  const st = TIMER_STATES[key] || TIMER_STATES.global;
+  const st = TIMER_STATES[key];
+  if (!st) return;
   const remaining = computeTimerRemaining(key);
   const label = formatChrono(remaining);
-  const el = document.getElementById(key === 'global' ? 'chronoDisplay' : ('chronoDisplay_' + key));
-  if (el) {
-    el.textContent = label;
+  const ids = key === 'global' ? ['chronoDisplay', 'ecranChrono'] : ['chronoDisplay_' + key];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = el.id === 'ecranChrono' ? '<i class="fas fa-stopwatch"></i> ' + label : label;
     el.classList.remove('chrono-warning', 'chrono-alert');
     if (remaining === 0) el.classList.add('chrono-alert');
     else if (remaining <= 60) el.classList.add('chrono-warning');
-  }
-  if (key === 'global') {
-    const ecranEl = document.getElementById('ecranChrono');
-    if (ecranEl) {
-      ecranEl.innerHTML = '<i class="fas fa-stopwatch"></i> ' + label;
-      ecranEl.classList.remove('chrono-warning', 'chrono-alert');
-      if (remaining === 0) ecranEl.classList.add('chrono-alert');
-      else if (remaining <= 60) ecranEl.classList.add('chrono-warning');
-    }
-  }
+  });
   if (!beepedSeconds[key]) beepedSeconds[key] = new Set();
   if (st.running) {
     if (remaining === 30 && !beepedSeconds[key].has(30)) {
@@ -814,36 +894,32 @@ function renderTimerDisplay(key) {
     playChronoBeep();
   }
 }
-function renderTimerDisplays() {
-  renderTimerDisplay('global');
-  if (TIMER_PER_TERRAIN) {
-    for (let n = 1; n <= (window.TERRAINS || 1); n++) renderTimerDisplay(String(n));
-  }
+function renderAllTimerDisplays() {
+  Object.keys(TIMER_STATES).forEach(renderTimerDisplay);
 }
 function timerTick() {
   clearInterval(timerTickInterval);
-  timerTickInterval = setInterval(renderTimerDisplays, 1000);
-  renderTimerDisplays();
+  timerTickInterval = setInterval(renderAllTimerDisplays, 1000);
+  renderAllTimerDisplays();
 }
 timerTick();
 
 window.adminSetTimerDuration = async function (key) {
-  if (!isScorer()) return;
   key = key || 'global';
+  if (!isScorer()) return;
   const minEl = document.getElementById(key === 'global' ? 'chronoMinutes' : ('chronoMinutes_' + key));
   const minutes = minEl ? parseInt(minEl.value) || 15 : 15;
   try {
     await setDoc(doc(db, 'tournamentStatus', timerDocId(key)), {
       durationSeconds: minutes * 60, remainingSeconds: minutes * 60, running: false, endsAt: null
     }, { merge: true });
-    if (typeof window.showNotice === 'function') window.showNotice('Durée du chrono réglée sur ' + minutes + ' min');
+    showNotice('Durée du chrono réglée sur ' + minutes + ' min' + (key !== 'global' ? ' (terrain ' + key + ')' : ''));
   } catch (e) { alert('Erreur : ' + e.message); }
 };
 window.startTimer = async function (key) {
-  if (!isScorer()) return;
   key = key || 'global';
-  const st = TIMER_STATES[key] || TIMER_STATES.global;
-  const remaining = computeTimerRemaining(key) || st.durationSeconds;
+  if (!isScorer()) return;
+  const remaining = computeTimerRemaining(key) || (TIMER_STATES[key] || TIMER_STATES.global).durationSeconds;
   try {
     await setDoc(doc(db, 'tournamentStatus', timerDocId(key)), {
       running: true, remainingSeconds: remaining, endsAt: new Date(Date.now() + remaining * 1000).toISOString()
@@ -851,8 +927,8 @@ window.startTimer = async function (key) {
   } catch (e) { alert('Erreur : ' + e.message); }
 };
 window.pauseTimer = async function (key) {
-  if (!isScorer()) return;
   key = key || 'global';
+  if (!isScorer()) return;
   const remaining = computeTimerRemaining(key);
   try {
     await setDoc(doc(db, 'tournamentStatus', timerDocId(key)), {
@@ -861,18 +937,17 @@ window.pauseTimer = async function (key) {
   } catch (e) { alert('Erreur : ' + e.message); }
 };
 window.resetTimer = async function (key) {
-  if (!isScorer()) return;
   key = key || 'global';
-  const st = TIMER_STATES[key] || TIMER_STATES.global;
+  if (!isScorer()) return;
   try {
     await setDoc(doc(db, 'tournamentStatus', timerDocId(key)), {
-      running: false, remainingSeconds: st.durationSeconds, endsAt: null
+      running: false, remainingSeconds: (TIMER_STATES[key] || TIMER_STATES.global).durationSeconds, endsAt: null
     }, { merge: true });
   } catch (e) { alert('Erreur : ' + e.message); }
 };
 
 // ══════════════════════════════════════════════════════════
-// BILAN DE SAISON
+// BILAN DE SAISON (archivage par nombre de terrains)
 // ══════════════════════════════════════════════════════════
 window.archiveCurrentSessionToSeason = async function () {
   if (!isAdmin()) return;
@@ -889,15 +964,15 @@ window.archiveCurrentSessionToSeason = async function () {
   })).filter(e => e.matches > 0);
   if (entries.length === 0) { alert('Aucun match joué à archiver pour cette séance.'); return; }
   const session = { date: new Date().toISOString(), entries: entries };
-  const key = 'terrain_' + window.TERRAINS;
+  const key = 'terrain_' + TERRAINS;
   try {
     const ref = doc(db, 'seasonArchive', key);
     const snap = await getDoc(ref);
     const sessions = snap.exists() && Array.isArray(snap.data().sessions) ? snap.data().sessions : [];
     sessions.push(session);
-    await setDoc(ref, { terrains: window.TERRAINS, sessions: sessions }, { merge: true });
-    if (typeof window.showNotice === 'function') window.showNotice('Séance archivée dans le bilan de saison (' + window.TERRAINS + ' terrains)');
-    if (typeof window.loadSeasonBilan === 'function') window.loadSeasonBilan();
+    await setDoc(ref, { terrains: TERRAINS, sessions: sessions }, { merge: true });
+    showNotice('Séance archivée dans le bilan de saison (' + TERRAINS + ' terrains)');
+    if (typeof loadSeasonBilan === 'function') loadSeasonBilan();
   } catch (e) { alert('Erreur d\'archivage : ' + e.message); }
 };
 
@@ -962,6 +1037,8 @@ function renderBilanGroup(terrains, sessions) {
   });
   html += '</tbody></table></div>';
 
+  // Liste des séances individuelles archivées : réservé à l'admin, pour
+  // pouvoir corriger ou supprimer un archivage fait par erreur.
   if (isAdmin() && sessions.length > 0) {
     html += `<div class="no-print" style="margin-top:10px">
       <div style="font-size:0.75rem;font-weight:700;color:#777;margin-bottom:4px">Séances archivées (${sessions.length}) :</div>
@@ -984,6 +1061,9 @@ function renderBilanGroup(terrains, sessions) {
   return html;
 }
 
+// Supprime une séance archivée par erreur (index dans le tableau 'sessions'
+// du document seasonArchive/terrain_N). Relit le document juste avant
+// d'écrire pour éviter d'écraser un archivage ajouté entre-temps.
 window.deleteSeasonSession = async function (terrains, index) {
   if (!isAdmin()) return;
   const cached = (window.seasonSessionsCache && window.seasonSessionsCache[terrains]) || [];
@@ -998,11 +1078,13 @@ window.deleteSeasonSession = async function (terrains, index) {
     const current = snap.exists() && Array.isArray(snap.data().sessions) ? snap.data().sessions : [];
     current.splice(index, 1);
     await setDoc(ref, { terrains: terrains, sessions: current }, { merge: true });
-    if (typeof window.showNotice === 'function') window.showNotice('Séance supprimée du bilan de saison');
-    window.loadSeasonBilan();
+    showNotice('Séance supprimée du bilan de saison');
+    loadSeasonBilan();
   } catch (e) { alert('Erreur : ' + e.message); }
 };
 
+// Ouvre un panneau permettant de corriger la date et les stats de chaque
+// joueur pour une séance archivée par erreur.
 window.openEditSeasonSession = function (terrains, index) {
   if (!isAdmin()) return;
   const cached = (window.seasonSessionsCache && window.seasonSessionsCache[terrains]) || [];
@@ -1075,15 +1157,15 @@ window.saveEditSeasonSession = async function (terrains, index) {
     const current = snap.exists() && Array.isArray(snap.data().sessions) ? snap.data().sessions : [];
     if (!current[index]) {
       alert('Cette séance n\'existe plus (déjà modifiée ou supprimée ailleurs).');
-      window.closeEditSeasonSessionModal();
-      window.loadSeasonBilan();
+      closeEditSeasonSessionModal();
+      loadSeasonBilan();
       return;
     }
     current[index] = Object.assign({}, current[index], { date: newDate, entries: newEntries });
     await setDoc(ref, { terrains: terrains, sessions: current }, { merge: true });
-    window.closeEditSeasonSessionModal();
-    if (typeof window.showNotice === 'function') window.showNotice('Séance modifiée');
-    window.loadSeasonBilan();
+    closeEditSeasonSessionModal();
+    showNotice('Séance modifiée');
+    loadSeasonBilan();
   } catch (e) { alert('Erreur : ' + e.message); }
 };
 
@@ -1123,12 +1205,13 @@ onAuthStateChanged(auth, async (user) => {
     USER_ROLES = profile.roles;
 
     if (isScorer()) {
-      window.showApp();
+      showApp();
       subscribeToTournament();
-      if (isAdmin()) window.loadUserList();
+      if (isAdmin()) loadUserList();
       return;
     }
 
+    // Compte "spectateur" : accès conditionné à l'ouverture du Live
     if (!LIVE_OPEN) {
       try {
         const snap = await getDoc(doc(db, 'tournamentStatus', 'live'));
@@ -1138,18 +1221,18 @@ onAuthStateChanged(auth, async (user) => {
     if (!LIVE_OPEN) {
       await signOut(auth);
       CURRENT_USER = null; USER_ROLES = [];
-      window.showLogin();
-      if (typeof window.showAuthMsg === 'function') window.showAuthMsg('⏰ Le Live n\'est pas encore ouvert. Revenez un peu plus tard !', 'red');
+      showLogin();
+      showAuthMsg('⏰ Le Live n\'est pas encore ouvert. Revenez un peu plus tard !', 'red');
       return;
     }
-    window.showApp();
+    showApp();
     subscribeToTournament();
 
   } else {
     CURRENT_USER = null;
     USER_ROLES   = [];
     unsubAll();
-    window.showLogin();
+    showLogin();
   }
 });
 
@@ -1158,12 +1241,13 @@ function unsubAll() {
   if (unsubUserList)   { unsubUserList();   unsubUserList   = null; }
 }
 
+// ── Actions de connexion ─────────────────────────────────
 window.loginEmail = async function () {
   const email = document.getElementById('li_email').value.trim();
   const pwd   = document.getElementById('li_pwd').value;
-  if (!email || !pwd) { window.showAuthMsg('Remplissez email et mot de passe.', 'red'); return; }
+  if (!email || !pwd) { showAuthMsg('Remplissez email et mot de passe.', 'red'); return; }
   try { await signInWithEmailAndPassword(auth, email, pwd); }
-  catch (e) { window.showAuthMsg(authErrMsg(e.code), 'red'); }
+  catch (e) { showAuthMsg(authErrMsg(e.code), 'red'); }
 };
 
 window.loginGoogle = async function () {
@@ -1172,9 +1256,9 @@ window.loginGoogle = async function () {
   } catch (e) {
     if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment' || e.code === 'auth/cancelled-popup-request') {
       try { await signInWithRedirect(auth, gProvider); }
-      catch (e2) { window.showAuthMsg(authErrMsg(e2.code), 'red'); }
+      catch (e2) { showAuthMsg(authErrMsg(e2.code), 'red'); }
     } else {
-      window.showAuthMsg(authErrMsg(e.code), 'red');
+      showAuthMsg(authErrMsg(e.code), 'red');
     }
   }
 };
@@ -1187,20 +1271,21 @@ window.logout = async function () {
     await signOut(auth);
   } else {
     CURRENT_USER = null;
-    window.showLogin();
+    showLogin();
   }
 };
 
+// ── Mode Live sans compte (spectateur anonyme) ────────────
 window.enterLiveModeAndGo = async function (target) {
   try {
     const snap = await getDoc(doc(db, 'tournamentStatus', 'live'));
     LIVE_OPEN = snap.exists() && snap.data().liveOpen === true;
   } catch (e) {
-    window.showAuthMsg('Connexion impossible pour le moment.', 'red');
+    showAuthMsg('Connexion impossible pour le moment.', 'red');
     return;
   }
   if (!LIVE_OPEN) {
-    window.showAuthMsg('⏰ Le mode Live n\'est pas encore ouvert par l\'administrateur.', 'red');
+    showAuthMsg('⏰ Le mode Live n\'est pas encore ouvert par l\'administrateur.', 'red');
     return;
   }
   CURRENT_USER = null;
@@ -1209,13 +1294,13 @@ window.enterLiveModeAndGo = async function (target) {
 
   if (target === 'ecran') {
     document.getElementById('loginScreen').style.display = 'none';
-    window.openEcranMode(true);
+    openEcranMode(true);
     return;
   }
 
-  window.showApp();
+  showApp();
   const tabMap = { joueurs: 'playersTab', live: 'matchesTab', classement: 'rankingTab', reglement: 'reglementTab' };
-  window.showTab(tabMap[target] || 'playersTab');
+  showTab(tabMap[target] || 'playersTab');
 };
 
 function authErrMsg(code) {
@@ -1232,29 +1317,29 @@ function authErrMsg(code) {
   };
   return map[code] || ('Erreur : ' + code);
 }
-window.showAuthMsg = function (msg, color) {
+function showAuthMsg(msg, color) {
   const el = document.getElementById('authMsg');
   if (el) { el.textContent = msg; el.style.color = color === 'red' ? 'var(--danger)' : 'var(--success)'; }
-};
+}
 
 // ══════════════════════════════════════════════════════════
 // UI LOGIN / APP / RÔLES
 // ══════════════════════════════════════════════════════════
-window.showLogin = function () {
+function showLogin() {
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('appScreen').style.display = 'none';
-};
-window.showApp = function () {
+}
+function showApp() {
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('appScreen').style.display = 'block';
-  window.applyRoleUI();
-};
+  applyRoleUI();
+}
 function roleBadgeLabel(roles) {
   if (roles.includes('admin')) return '👑 Admin';
   if (roles.includes('scorer')) return '✏️ Scorer';
   return '👁 Spectateur';
 }
-window.applyRoleUI = function () {
+function applyRoleUI() {
   const name = CURRENT_USER ? (CURRENT_USER.displayName || CURRENT_USER.email || '?') : '📺 Mode Live';
   const hdr = document.getElementById('hdrUserName');
   if (hdr) hdr.textContent = name + ' · ' + roleBadgeLabel(USER_ROLES);
@@ -1268,46 +1353,52 @@ window.applyRoleUI = function () {
     el.style.display = isScorer() ? '' : 'none';
   });
 
-  window.updateLiveToggleBadge();
-};
-window.updateLiveToggleBadge = function () {
+  updateLiveToggleBadge();
+}
+function updateLiveToggleBadge() {
   const btn = document.getElementById('liveToggleBadge');
   if (!btn) return;
   if (!isAdmin()) { btn.style.display = 'none'; return; }
   btn.style.display = '';
   btn.textContent = LIVE_OPEN ? '🔴 Live ouvert (cliquer pour fermer)' : '⚪ Live fermé (cliquer pour ouvrir)';
   btn.className = 'live-toggle-badge ' + (LIVE_OPEN ? 'open' : 'closed');
-};
+}
 window.toggleLiveOpen = async function () {
   if (!isAdmin()) return;
   try {
     await setDoc(doc(db, 'tournamentStatus', 'live'), { liveOpen: !LIVE_OPEN }, { merge: true });
-  } catch (e) { console.error(e); if (typeof window.showNotice === 'function') window.showNotice('Erreur : ' + e.message); }
+  } catch (e) { console.error(e); showNotice('Erreur : ' + e.message); }
 };
 
 // ══════════════════════════════════════════════════════════
-// SYNCHRONISATION DU TOURNOI
+// SYNCHRONISATION DU TOURNOI (temps réel)
 // ══════════════════════════════════════════════════════════
 function subscribeToTournament() {
   if (unsubTournament) return;
   unsubTournament = onSnapshot(doc(db, 'tournament', 'current'), (snap) => {
     if (!snap.exists()) return;
-    // ✅ CORRECTIF : passage par window.applyTournamentData (définie dans le script classique)
-    if (typeof window.applyTournamentData === 'function') window.applyTournamentData(snap.data());
+    applyTournamentData(snap.data());
   }, (e) => console.warn('subscribeToTournament error:', e));
 
+  // Filet de sécurité mobile : certains navigateurs (iOS Safari en
+  // particulier) suspendent la connexion temps réel (WebSocket) quand la
+  // page passe en arrière-plan ou que l'écran se verrouille, et ne la
+  // rétablissent pas toujours correctement. Ce sondage toutes les 4
+  // secondes va chercher l'état actuel pour rattraper les mises à jour
+  // manquées (ex. une réinitialisation faite sur un autre appareil).
   if (!tournamentPollInterval) {
     tournamentPollInterval = setInterval(async () => {
       try {
         const snap = await getDoc(doc(db, 'tournament', 'current'));
-        if (snap.exists() && typeof window.applyTournamentData === 'function') {
-          window.applyTournamentData(snap.data());
-        }
-      } catch (e) { }
+        if (snap.exists()) applyTournamentData(snap.data());
+      } catch (e) { /* silencieux : le listener temps réel reste la source principale */ }
     }, 4000);
   }
 }
 
+// Pont utilisé par le script principal (saveData / doReset) pour écrire dans Firestore.
+// Filtre automatiquement les champs autorisés selon le rôle, pour rester
+// cohérent avec les règles de sécurité Firestore.
 window.fbSaveTournament = async function (payload) {
   if (!isScorer()) throw new Error('Lecture seule.');
   const ref  = doc(db, 'tournament', 'current');
@@ -1369,6 +1460,7 @@ window.adminCreateUser = async function () {
   if (pwd.length < 6) { msg.textContent = 'Mot de passe : 6 car. minimum.'; msg.style.color = 'var(--danger)'; return; }
   if (roles.length === 0) { msg.textContent = 'Sélectionnez au moins un rôle.'; msg.style.color = 'var(--danger)'; return; }
   try {
+    // Création via la REST API Firebase Auth : ne déconnecte pas l'admin en cours
     const res = await fetch(
       'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + firebaseConfig.apiKey,
       { method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1435,6 +1527,7 @@ window.adminDeleteUser = async function (uid, name) {
 </head>
 <body>
 
+<!-- ═══════════════ ÉCRAN DE CONNEXION ═══════════════ -->
 <div id="loginScreen">
   <div class="login-card">
     <h2><i class="fas fa-table-tennis-paddle-ball"></i> Pickleball Unified</h2>
@@ -1463,6 +1556,7 @@ window.adminDeleteUser = async function (uid, name) {
   </div>
 </div>
 
+<!-- ═══════════════ MODALE INSCRIPTION ═══════════════ -->
 <div id="registrationModal" class="modal-overlay" style="display:none">
   <div class="modal-box">
     <h3><i class="fas fa-pen-to-square"></i> Inscription au tournoi</h3>
@@ -1475,6 +1569,7 @@ window.adminDeleteUser = async function (uid, name) {
   </div>
 </div>
 
+<!-- ═══════════════ ÉCRAN "FICHE JOUEUR" (accès spectateur) ═══════════════ -->
 <div id="playerScreen" class="ecran-like" style="display:none">
   <div class="ecran-header">
     <h1><i class="fas fa-user"></i> <span id="playerScreenTitle">Choisir un joueur</span></h1>
@@ -1486,6 +1581,7 @@ window.adminDeleteUser = async function (uid, name) {
   <div class="ecran-body" id="playerScreenBody"></div>
 </div>
 
+<!-- ═══════════════ MODE ÉCRAN (affichage public) ═══════════════ -->
 <div id="ecranScreen">
   <div class="ecran-header">
     <h1><i class="fas fa-table-tennis-paddle-ball"></i> Pickleball Unified</h1>
@@ -1504,6 +1600,7 @@ window.adminDeleteUser = async function (uid, name) {
   </div>
 </div>
 
+<!-- ═══════════════ APPLICATION (protégée) ═══════════════ -->
 <div class="app" id="appScreen" style="display:none">
   <header>
     <h1><i class="fas fa-table-tennis-paddle-ball"></i> Pickleball Unified</h1>
@@ -1519,7 +1616,7 @@ window.adminDeleteUser = async function (uid, name) {
       <button class="btn secondary" data-role="scorer" onclick="generateValidatedTournament()"><i class="fas fa-play"></i> Générer avec Validation</button>
       <button class="btn success" data-role="scorer" onclick="saveData()"><i class="fas fa-save"></i> Sauvegarder</button>
       <button class="btn" style="background:#455a64" onclick="openEcranMode()"><i class="fas fa-tv"></i> Écran</button>
-      <button class="btn danger" data-role="admin" onclick="resetAll(this)"><i class="fas fa-trash"></i> Réinitialiser</button>
+      <button class="btn danger" data-role="admin" onclick="resetAll()"><i class="fas fa-trash"></i> Réinitialiser</button>
     </div>
     
     <div class="status-bar">
@@ -1595,16 +1692,22 @@ window.adminDeleteUser = async function (uid, name) {
   <div id="matchesTab" class="tab">
     <div class="card">
       <span class="card-title"><i class="fas fa-stopwatch"></i> Chrono du match</span>
-      <div id="chronoDisplay" style="text-align:center;font-size:2.6rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--primary);margin:6px 0">15:00</div>
-      <div data-role="scorer" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;margin-bottom:10px">
-        <input type="number" id="chronoMinutes" min="1" value="15" style="width:70px;padding:8px;border-radius:5px;border:2px solid #ddd;font-size:0.85rem;text-align:center"> min
-        <button class="btn secondary" style="margin:0" onclick="adminSetTimerDuration()"><i class="fas fa-rotate"></i> Régler la durée</button>
+      <div data-role="scorer" style="text-align:center;margin-bottom:8px;font-size:0.8rem">
+        <label style="cursor:pointer"><input type="checkbox" id="chronoPerTerrainToggle" onchange="toggleChronoPerTerrain()"> Chronos indépendants par terrain (décoché = un seul chrono partagé)</label>
       </div>
-      <div data-role="scorer" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-        <button class="btn success" style="margin:0" onclick="startTimer()"><i class="fas fa-play"></i> Démarrer</button>
-        <button class="btn" style="margin:0;background:var(--warning)" onclick="pauseTimer()"><i class="fas fa-pause"></i> Pause</button>
-        <button class="btn" style="margin:0;background:#999" onclick="resetTimer()"><i class="fas fa-rotate-left"></i> Réinitialiser</button>
+      <div id="chronoGlobalPanel">
+        <div id="chronoDisplay" style="text-align:center;font-size:2.6rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--primary);margin:6px 0">15:00</div>
+        <div data-role="scorer" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;margin-bottom:10px">
+          <input type="number" id="chronoMinutes" min="1" value="15" style="width:70px;padding:8px;border-radius:5px;border:2px solid #ddd;font-size:0.85rem;text-align:center"> min
+          <button class="btn secondary" style="margin:0" onclick="adminSetTimerDuration('global')"><i class="fas fa-rotate"></i> Régler la durée</button>
+        </div>
+        <div data-role="scorer" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+          <button class="btn success" style="margin:0" onclick="startTimer('global')"><i class="fas fa-play"></i> Démarrer</button>
+          <button class="btn" style="margin:0;background:var(--warning)" onclick="pauseTimer('global')"><i class="fas fa-pause"></i> Pause</button>
+          <button class="btn" style="margin:0;background:#999" onclick="resetTimer('global')"><i class="fas fa-rotate-left"></i> Réinitialiser</button>
+        </div>
       </div>
+      <div id="chronoPerTerrainPanel" style="display:none"></div>
     </div>
     <div class="card" id="matchesCard">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
@@ -1799,13 +1902,11 @@ window.adminDeleteUser = async function (uid, name) {
 <div class="notice" id="notice">Message</div>
 
 <script>
-// ══════════════════════════════════════════════════════════
-// SCRIPT PRINCIPAL (non-module) : état du tournoi, grilles,
-// génération, classement, statistiques, affichage
-// ══════════════════════════════════════════════════════════
-
+// GRILLES DE MATCHS PAR NOMBRE DE TERRAINS DISPONIBLES ET NOMBRE DE JOUEURS
 const gridsByTerrain = {
+  // ===== 3 TERRAINS (8 a 16 joueurs) =====
   3: {
+  // 8 joueurs : 2 terrains (4 joueurs par tour)
   8: [
     [{players:[1,3,5,7]},{players:[2,4,6,8]}],
     [{players:[1,2,3,4]},{players:[5,6,7,8]}],
@@ -1813,6 +1914,8 @@ const gridsByTerrain = {
     [{players:[1,5,4,8]},{players:[2,6,3,7]}],
     [{players:[1,4,2,3]},{players:[5,8,6,7]}]
   ],
+  
+  // 9 joueurs : 2 terrains (4 joueurs par tour + 1 repos)
   9: [
     [{players:[2,3,4,5]},{players:[6,7,8,9]},{rest:1}],
     [{players:[1,6,3,7]},{players:[4,8,5,9]},{rest:2}],
@@ -1820,6 +1923,8 @@ const gridsByTerrain = {
     [{players:[1,2,3,5]},{players:[6,9,7,8]},{rest:4}],
     [{players:[1,9,2,6]},{players:[3,8,4,7]},{rest:5}]
   ],
+  
+  // 10 joueurs : 3 terrains (2 terrains 2x2 + 1 terrain 1x1)
   10: [
     [{players:[3,4,6,9]},{players:[5,10,7,8]},{players:[1,2],type:'1x1'}],
     [{players:[1,7,6,8]},{players:[9,10,2,5]},{players:[3,4],type:'1x1'}],
@@ -1827,6 +1932,8 @@ const gridsByTerrain = {
     [{players:[2,4,6,10]},{players:[1,9,3,5]},{players:[7,8],type:'1x1'}],
     [{players:[1,3,2,8]},{players:[7,5,4,6]},{players:[9,10],type:'1x1'}]
   ],
+  
+  // 11 joueurs : 3 terrains (2 terrains 2x2 + 1 terrain 2x1)
   11: [
     [{players:[4,6,5,7]},{players:[8,10,9,11]},{players:[1,2,3],type:'2x1'}],
     [{players:[1,5,8,11]},{players:[2,3,6,10]},{players:[4,7,9],type:'2x1'}],
@@ -1834,6 +1941,8 @@ const gridsByTerrain = {
     [{players:[2,7,5,10]},{players:[3,4,8,9]},{players:[1,6,11],type:'2x1'}],
     [{players:[6,11,7,8]},{players:[1,10,4,5]},{players:[3,9,2],type:'2x1'}]
   ],
+  
+  // 12 joueurs : 3 terrains (tous les terrains 2x2)
   12: [
     [{players:[7,5,12,9]},{players:[1,6,8,10]},{players:[4,2,3,11]}],
     [{players:[9,1,3,12]},{players:[10,2,7,8]},{players:[5,6,11,4]}],
@@ -1841,6 +1950,8 @@ const gridsByTerrain = {
     [{players:[9,8,3,6]},{players:[1,4,5,10]},{players:[2,7,12,11]}],
     [{players:[7,6,4,3]},{players:[2,11,1,8]},{players:[5,9,12,10]}]
   ],
+  
+  // 13 joueurs : 3 terrains + 1 repos
   13: [
     [{players:[1,2,3,4]},{players:[5,6,7,8]},{players:[9,10,11,13]},{rest:12}],
     [{players:[2,5,6,13]},{players:[8,9,10,3]},{players:[4,7,11,12]},{rest:1}],
@@ -1848,6 +1959,8 @@ const gridsByTerrain = {
     [{players:[1,3,6,10]},{players:[2,8,7,13]},{players:[4,12,9,11]},{rest:5}],
     [{players:[1,6,12,13]},{players:[2,7,3,9]},{players:[5,8,10,11]},{rest:4}]
   ],
+  
+  // 14 joueurs : 3 terrains + 2 repos
   14: [
     [{players:[1,3,2,4]},{players:[6,7,8,9]},{players:[11,12,13,14]},{rest:5},{rest:10}],
     [{players:[5,10,1,2]},{players:[6,12,3,7]},{players:[13,4,9,14]},{rest:8},{rest:11}],
@@ -1855,6 +1968,8 @@ const gridsByTerrain = {
     [{players:[1,6,10,12]},{players:[2,11,5,14]},{players:[7,8,13,9]},{rest:3},{rest:4}],
     [{players:[1,13,6,3]},{players:[2,8,10,11]},{players:[5,7,4,14]},{rest:9},{rest:12}]
   ],
+  
+  // 15 joueurs : 3 terrains + 3 repos
   15: [
     [{players:[2,4,7,10]},{players:[1,5,13,15]},{players:[9,14,8,6]},{rest:3},{rest:11},{rest:12}],
     [{players:[12,13,6,15]},{players:[1,14,2,9]},{players:[10,11,5,3]},{rest:4},{rest:7},{rest:8}],
@@ -1862,6 +1977,8 @@ const gridsByTerrain = {
     [{players:[15,9,8,14]},{players:[10,5,4,12]},{players:[7,13,3,11]},{rest:1},{rest:2},{rest:6}],
     [{players:[8,11,2,3]},{players:[6,12,4,1]},{players:[9,13,7,15]},{rest:5},{rest:10},{rest:14}]
   ],
+  
+  // 16 joueurs : 3 terrains + 4 repos
   16: [
     [{players:[3,14,5,13]},{players:[6,1,7,12]},{players:[8,10,11,4]},{rest:2},{rest:9},{rest:15},{rest:16}],
     [{players:[12,15,11,8]},{players:[4,7,16,9]},{players:[2,13,5,1]},{rest:3},{rest:6},{rest:10},{rest:14}],
@@ -1870,7 +1987,10 @@ const gridsByTerrain = {
     [{players:[12,6,4,8]},{players:[5,16,11,1]},{players:[2,15,13,7]},{rest:3},{rest:9},{rest:10},{rest:14}]
   ]
   },
+
+  // ===== 4 TERRAINS (12 a 20 joueurs) =====
   4: {
+  // 12 joueurs : 3 terrains (6 joueurs par tour)
    12: [
     [{players:[7,5,12,9]},{players:[1,6,8,10]},{players:[4,2,3,11]}],
     [{players:[9,1,3,12]},{players:[10,2,7,8]},{players:[5,6,11,4]}],
@@ -1878,6 +1998,9 @@ const gridsByTerrain = {
     [{players:[9,8,3,6]},{players:[1,4,5,10]},{players:[2,7,12,11]}],
     [{players:[7,6,4,3]},{players:[2,11,1,8]},{players:[5,9,12,10]}]
   ],
+
+  
+  // 13 joueurs : 3 terrains (6 joueurs par tour + 1 repos)
   13: [
     [{players:[1,2,3,4]},{players:[5,6,7,8]},{players:[9,10,11,13]}, {rest:12}],
     [{players:[2,5,6,13]},{players:[8,9,10,3]},{players:[4,7,11,12]}, {rest:1}],
@@ -1885,6 +2008,9 @@ const gridsByTerrain = {
     [{players:[1,3,6,10]},{players:[2,8,7,13]},{players:[4,12,9,11]}, {rest:5}],
     [{players:[1,6,12,13]},{players:[2,7,3,9]},{players:[5,8,10,11]}, {rest:4}]
   ],
+
+  
+  // 14 joueurs : 4 terrains (3 terrains 2x2 + 1 terrain 1x1)
   14: [
     [{players:[1,2,3,4]},{players:[5,6,7,8]},{players:[9,10,11,12]},{players:[13,14],type:'1x1'}],
     [{players:[1,5,9,11]},{players:[10,2,7,14]},{players:[3,6,12,13]},{players:[4,8],type:'1x1'}],
@@ -1892,6 +2018,8 @@ const gridsByTerrain = {
     [{players:[1,7,14,8]},{players:[11,13,9,6]},{players:[12,2,3,5]},{players:[4,10],type:'1x1'}],
     [{players:[1,8,12,10]},{players:[13,2,7,4]},{players:[14,3,5,11]},{players:[6,9],type:'1x1'}]
   ],
+  
+  // 15 joueurs : 4 terrains (3 terrains 2x2 + 1 terrain 2x1)
   15: [
     [{players:[1,2,3,4]},{players:[5,6,7,8]},{players:[9,10,11,12]},{players:[13,14,15],type:'2x1'}],
     [{players:[1,5,9,13]},{players:[6,15,12,2]},{players:[4,14,7,3]},{players:[10,11,8],type:'2x1'}],
@@ -1899,6 +2027,8 @@ const gridsByTerrain = {
     [{players:[2,7,15,3]},{players:[1,9,11,14]},{players:[8,12,13,10]},{players:[4,5,6],type:'2x1'}],
     [{players:[5,7,13,8]},{players:[14,9,12,6]},{players:[4,10,11,15]},{players:[2,3,1],type:'2x1'}]
   ],
+  
+  // 16 joueurs : 4 terrains (tous les terrains 2x2)
   16: [
     [{players:[1,2,3,4]},{players:[5,6,7,8]},{players:[9,10,11,12]},{players:[13,14,15,16]}],
     [{players:[1,5,9,13]},{players:[2,10,6,14]},{players:[3,7,11,15]},{players:[12,8,4,16]}],
@@ -1906,6 +2036,8 @@ const gridsByTerrain = {
     [{players:[1,7,10,14]},{players:[2,11,8,15]},{players:[3,5,12,16]},{players:[4,9,6,13]}],
     [{players:[6,12,8,13]},{players:[2,9,11,14]},{players:[3,16,1,10]},{players:[4,7,5,15]}]
   ],
+
+  // 17 joueurs : 4 terrains + 1 repos
   17: [
     [{players:[1,2,3,4]},{players:[5,6,7,8]},{players:[9,10,11,12]},{players:[13,14,15,16]}, {rest:17}],
     [{players:[17,1,15,9]},{players:[13,3,6,10]},{players:[5,7,2,11]},{players:[14,4,8,12]}, {rest:16}],
@@ -1913,6 +2045,8 @@ const gridsByTerrain = {
     [{players:[15,12,7,10]},{players:[16,11,2,8]},{players:[17,5,9,3]},{players:[13,4,6,1]}, {rest:14}],
     [{players:[14,8,1,12]},{players:[5,3,15,11]},{players:[17,6,2,10]},{players:[16,4,7,9]}, {rest:13}]
   ],
+  
+  // 18 joueurs : 4 terrains + 2 repos
   18: [
     [{players:[1,2,3,4]},{players:[5,6,7,8]},{players:[9,10,11,12]},{players:[13,14,15,16]},{rest:17},{rest:18}],
     [{players:[9,11,5,1]},{players:[18,13,2,6]},{players:[10,14,3,7]},{players:[17,15,4,8]},{rest:12},{rest:16}],
@@ -1920,6 +2054,8 @@ const gridsByTerrain = {
     [{players:[15,18,7,9]},{players:[5,17,8,10]},{players:[12,16,4,6]},{players:[1,14,2,11]},{rest:3},{rest:13}],
     [{players:[13,15,8,11]},{players:[9,16,3,12]},{players:[5,14,4,17]},{players:[7,18,1,6]},{rest:2},{rest:10}]
   ],
+  
+  // 19 joueurs : 4 terrains + 3 repos
   19: [
     [{players:[1,2,3,4]},{players:[5,6,7,8]},{players:[9,10,11,12]},{players:[13,14,15,16]},{rest:17},{rest:18},{rest:19}],
     [{players:[17,1,5,9]},{players:[18,13,2,6]},{players:[19,10,14,3]},{players:[7,4,15,11]},{rest:8},{rest:12},{rest:16}],
@@ -1927,6 +2063,8 @@ const gridsByTerrain = {
     [{players:[14,17,7,9]},{players:[10,18,8,5]},{players:[2,16,15,1]},{players:[12,19,4,6]},{rest:3},{rest:11},{rest:13}],
     [{players:[13,15,11,19]},{players:[3,16,5,12]},{players:[8,10,4,17]},{players:[7,18,2,9]},{rest:1},{rest:14},{rest:6}]
   ],
+  
+  // 20 joueurs : 4 terrains + 4 repos
   20: [
     [{players:[1,2,3,4]},{players:[5,6,7,8]},{players:[9,10,11,12]},{players:[17,14,15,16]},{rest:13},{rest:18},{rest:19},{rest:20}],
     [{players:[17,3,5,9]},{players:[18,6,13,2]},{players:[19,10,14,1]},{players:[20,7,11,15]},{rest:4},{rest:8},{rest:12},{rest:16}],
@@ -1935,7 +2073,10 @@ const gridsByTerrain = {
     [{players:[20,15,8,11]},{players:[3,16,19,12]},{players:[5,13,4,10]},{players:[1,18,6,2]},{rest:7},{rest:17},{rest:14},{rest:9}]
   ]
   },
+
+  // ===== 5 TERRAINS (16 a 20 joueurs) =====
   5: {
+  // 16 joueurs : 4 terrains (8 joueurs par tour)
   16: [
     [{players:[1,2,3,4]},{players:[5,6,7,8]},{players:[9,10,11,12]},{players:[13,14,15,16]}],
     [{players:[1,5,9,13]},{players:[2,10,6,14]},{players:[3,7,11,15]},{players:[12,8,4,16]}],
@@ -1943,6 +2084,8 @@ const gridsByTerrain = {
     [{players:[1,7,10,14]},{players:[2,11,8,15]},{players:[3,5,12,16]},{players:[4,9,6,13]}],
     [{players:[6,12,8,13]},{players:[2,9,11,14]},{players:[3,16,1,10]},{players:[4,7,5,15]}]
   ],
+  
+  // 17 joueurs : 4 terrains + 1 repos (8 joueurs par tour)
   17: [
     [{players:[1,2,3,4]},{players:[5,6,7,8]},{players:[9,10,11,12]},{players:[13,14,15,16]}, {rest:17}],
     [{players:[17,1,15,9]},{players:[13,3,6,10]},{players:[5,7,2,11]},{players:[14,4,8,12]}, {rest:16}],
@@ -1950,6 +2093,8 @@ const gridsByTerrain = {
     [{players:[15,12,7,10]},{players:[16,11,2,8]},{players:[17,5,9,3]},{players:[13,4,6,1]}, {rest:14}],
     [{players:[14,8,1,12]},{players:[5,3,15,11]},{players:[17,6,2,10]},{players:[16,4,7,9]}, {rest:13}]
   ],
+  
+  // 18 joueurs : 5 terrains (4 terrains normaux + 1 terrain 1x1)
   18: [
     [{players:[1,2,3,4]},{players:[5,6,7,8]},{players:[9,10,11,12]},{players:[13,14,15,16]},{players:[17,18], type:'1x1'}],
     [{players:[1,3,9,13]},{players:[18,2,6,10]},{players:[14,17,5,7]},{players:[11,15,4,8]},{players:[16,12], type:'1x1'}],
@@ -1957,6 +2102,8 @@ const gridsByTerrain = {
     [{players:[1,7,9,18]},{players:[17,2,8,10]},{players:[13,3,5,15]},{players:[16,12,4,11]},{players:[6,14], type:'1x1'}],
     [{players:[1,8,11,14]},{players:[18,5,2,9]},{players:[13,10,4,6]},{players:[17,7,15,3]},{players:[16,12], type:'1x1'}]
   ],
+  
+  // 19 joueurs : 5 terrains (4 terrains normaux + 1 terrain 2x1)
   19: [
     [{players:[1,2,3,4]},{players:[5,6,7,8]},{players:[9,10,11,12]},{players:[13,14,15,16]},{players:[17,18,19], type:'2x1'}],
     [{players:[17,1,5,9]},{players:[13,18,8,6]},{players:[10,14,19,3]},{players:[7,11,15,4]},{players:[16,2,12], type:'2x1'}],
@@ -1964,6 +2111,8 @@ const gridsByTerrain = {
     [{players:[18,10,5,1]},{players:[17,6,4,19]},{players:[12,8,2,14]},{players:[16,7,3,13]},{players:[15,9,11], type:'2x1'}],
     [{players:[8,16,15,19]},{players:[11,1,6,13]},{players:[18,2,4,9]},{players:[5,10,12,17]},{players:[3,7,14], type:'2x1'}]
   ],
+  
+  // 20 joueurs : 5 terrains (tous les terrains normaux)
   20: [
     [{players:[1,2,3,4]},{players:[5,6,7,8]},{players:[9,10,11,12]},{players:[13,14,15,16]},{players:[17,18,19,20]}],
     [{players:[1,5,9,13]},{players:[18,2,6,10]},{players:[3,17,14,8]},{players:[11,4,19,15]},{players:[7,16,12,20]}],
@@ -1974,6 +2123,7 @@ const gridsByTerrain = {
   }
 };
 
+// Options du menu "Nombre de joueurs" selon le nombre de terrains choisi
 const PLAYER_OPTIONS_BY_TERRAIN = {
   3: [
     {value:8,  label:"8 joueurs (2 terrains)"},
@@ -2006,6 +2156,7 @@ const PLAYER_OPTIONS_BY_TERRAIN = {
   ]
 };
 
+// Texte informatif "terrains" affiche lors du changement de nombre de joueurs
 function getTerrainInfoText(terrains, n) {
   if (terrains === 3) {
     if (n === 8 || n === 9) return "2 terrains";
@@ -2029,6 +2180,7 @@ function getTerrainInfoText(terrains, n) {
   return "";
 }
 
+// Legende "Organisation par Nombre de Joueurs" selon le nombre de terrains choisi
 const LEGEND_BY_TERRAIN = {
   3: [
     "8-9 joueurs : 2 terrains (matchs 2x2)",
@@ -2056,19 +2208,16 @@ const LEGEND_BY_TERRAIN = {
 let positions = [];
 let TERRAINS = 3;
 let N = 16;
+// Indique qu'un tournoi a réellement été "Généré avec Validation" (par
+// opposition à un simple choix de terrains/joueurs, qui remplit positions
+// par défaut en interne mais ne doit PAS déclencher l'affichage des matchs
+// chez les autres appareils synchronisés).
 let tournamentGenerated = false;
 let autoSaveTimer = null;
 let playerReplacements = {};
 let replacementLog = [];
 let matchScores = {};
 let specialMatchScores = {};
-
-// ✅ Verrou anti-écrasement pendant l'import des inscriptions
-window.__importInProgress = false;
-
-// ✅ Expose TERRAINS / N sur window (utilisés par le module Firebase pour le chrono)
-Object.defineProperty(window, 'TERRAINS', { get: () => TERRAINS });
-Object.defineProperty(window, 'N', { get: () => N });
 
 function showNotice(message) {
   const notice = document.getElementById('notice');
@@ -2078,13 +2227,14 @@ function showNotice(message) {
     setTimeout(() => notice.style.display = 'none', 3000);
   }
 }
-window.showNotice = showNotice;
 
 function populatePlayerCountOptions(preferredN) {
   const select = document.getElementById('playerCount');
   if (!select) return;
+  
   const options = PLAYER_OPTIONS_BY_TERRAIN[TERRAINS] || PLAYER_OPTIONS_BY_TERRAIN[5];
   select.innerHTML = options.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+  
   const validValues = options.map(o => o.value);
   if (preferredN && validValues.includes(preferredN)) {
     N = preferredN;
@@ -2097,11 +2247,13 @@ function populatePlayerCountOptions(preferredN) {
 function changeTerrainCount() {
   const select = document.getElementById('terrainCount');
   TERRAINS = parseInt(select.value);
+  
   populatePlayerCountOptions(N);
   updateActiveCount();
   ensurePositions();
   buildPlayerInputs();
   scheduleAutoSave();
+  
   const terrainInfo = getTerrainInfoText(TERRAINS, N);
   showNotice('Terrains disponibles : ' + TERRAINS + ' - Configuration pour ' + N + ' joueurs - ' + terrainInfo);
 }
@@ -2113,6 +2265,7 @@ function changePlayerCount() {
   ensurePositions();
   buildPlayerInputs();
   scheduleAutoSave();
+  
   const terrainInfo = getTerrainInfoText(TERRAINS, N);
   showNotice('Configuration pour ' + N + ' joueurs - ' + terrainInfo);
 }
@@ -2120,13 +2273,7 @@ function changePlayerCount() {
 function buildPlayerInputs() {
   const container = document.getElementById('playersInputs');
   if (!container) return;
-  // Mémorise les valeurs actuelles AVANT de reconstruire, pour ne pas perdre
-  // une saisie en cours (l'import inscriptions se fait juste après).
-  const currentValues = {};
-  for (let i = 1; i <= 20; i++) {
-    const el = document.getElementById('player' + i);
-    if (el) currentValues[i] = el.value;
-  }
+  
   container.innerHTML = '';
   for (let i = 1; i <= 20; i++) {
     const wrapper = document.createElement('div');
@@ -2135,20 +2282,29 @@ function buildPlayerInputs() {
     wrapper.innerHTML = `
       <div class="player-number">${i}</div>
       <input type="text" class="player-input" id="player${i}" placeholder="Joueur ${i}" 
-             value="${currentValues[i] !== undefined ? currentValues[i].replace(/"/g,'&quot;') : 'Joueur ' + i}">
+             value="Joueur ${i}">
     `;
     container.appendChild(wrapper);
   }
+  
   for (let i = 1; i <= 20; i++) {
     const input = document.getElementById('player' + i);
     if (input) {
       input.addEventListener('focus', function() {
-        if (this.value === 'Joueur ' + i) { this.value = ''; }
+        if (this.value === 'Joueur ' + i) {
+          this.value = '';
+        }
       });
+      
       input.addEventListener('blur', function() {
-        if (this.value.trim() === '') { this.value = 'Joueur ' + i; }
+        if (this.value.trim() === '') {
+          this.value = 'Joueur ' + i;
+        }
       });
-      input.addEventListener('input', function() { scheduleAutoSave(); });
+      
+      input.addEventListener('input', function() {
+        scheduleAutoSave();
+      });
     }
   }
 }
@@ -2160,20 +2316,23 @@ function getPlayerName(playerNumber) {
   }
   return 'Joueur ' + playerNumber;
 }
-window.getPlayerName = getPlayerName;
 
 function getActivePlayerNumbers() {
   const arr = [];
   for (let i = 1; i <= N; i++) arr.push(i);
   return arr;
 }
-window.getActivePlayerNumbers = getActivePlayerNumbers;
 
 function updateActiveCount() {
   const countText = document.getElementById('activeCountText');
-  if (countText) countText.textContent = N + ' joueurs actifs';
+  if (countText) {
+    countText.textContent = N + ' joueurs actifs';
+  }
+  
   const activePlayersCount = document.getElementById('activePlayersCount');
-  if (activePlayersCount) activePlayersCount.textContent = N;
+  if (activePlayersCount) {
+    activePlayersCount.textContent = N;
+  }
 }
 
 function ensurePositions() {
@@ -2187,6 +2346,7 @@ function ensurePositions() {
 function updatePositions() {
   const container = document.getElementById('positionsList');
   if (!container) return;
+  
   container.innerHTML = '';
   positions.forEach((p, idx) => {
     const div = document.createElement('div');
@@ -2200,16 +2360,19 @@ function updatePositions() {
 }
 
 function shufflePositions() {
-  if (!positions || positions.length === 0) ensurePositions();
+  if (!positions || positions.length === 0) {
+    ensurePositions();
+  }
+  
   for (let i = positions.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [positions[i], positions[j]] = [positions[j], positions[i]];
   }
+  
   updatePositions();
   scheduleAutoSave();
   showNotice('Tirage mélangé avec succès');
 }
-window.shufflePositions = shufflePositions;
 
 function getGridForN() {
   const grids = gridsByTerrain[TERRAINS] || gridsByTerrain[5];
@@ -2218,6 +2381,14 @@ function getGridForN() {
   return grids[firstKey];
 }
 
+// Remplacements de joueurs : modèle "report automatique" — une fois un
+// remplaçant déclaré à partir d'un tour donné, il reste en jeu à la place
+// du joueur d'origine pour TOUS les tours suivants, sans avoir à le
+// resélectionner à chaque tour. playerReplacements[joueurOrigine] est un
+// historique trié par tour de départ croissant ; plusieurs remplacements
+// successifs du même joueur d'origine sont possibles (ex. si le
+// remplaçant doit lui-même être remplacé plus tard).
+// playerReplacements = { [originalPlayerId]: [{substitute, fromRound}, ...] }
 function getReplacementPlayer(round, originalPlayer) {
   const history = playerReplacements[originalPlayer];
   if (!history || history.length === 0) return originalPlayer;
@@ -2237,14 +2408,20 @@ function logReplacement(round, court, position, oldPlayer, newPlayer, courtType 
     newPlayer: getPlayerName(newPlayer),
     timestamp: new Date().toLocaleTimeString()
   };
+  
   replacementLog.unshift(logEntry);
-  if (replacementLog.length > 20) replacementLog = replacementLog.slice(0, 20);
+  
+  if (replacementLog.length > 20) {
+    replacementLog = replacementLog.slice(0, 20);
+  }
 }
 
 function updateReplacementLogDisplay() {
   const statsArea = document.getElementById('statsArea');
   if (!statsArea) return;
+  
   let logSection = document.getElementById('replacementLogSection');
+  
   if (!logSection) {
     logSection = document.createElement('div');
     logSection.id = 'replacementLogSection';
@@ -2252,7 +2429,9 @@ function updateReplacementLogDisplay() {
     logSection.style.marginTop = '20px';
     statsArea.appendChild(logSection);
   }
+  
   let html = `<span class="card-title"><i class="fas fa-exchange-alt"></i> Journal des Remplacements</span>`;
+  
   if (replacementLog.length === 0) {
     html += `<p style="text-align:center;color:#666;padding:20px;font-size:0.9rem">Aucun remplacement effectué</p>`;
   } else {
@@ -2271,14 +2450,18 @@ function updateReplacementLogDisplay() {
     });
     html += `</div>`;
   }
+  
   logSection.innerHTML = html;
 }
 
+// VALIDATION DES CONTRAINTES
 function validateAllConstraints() {
   const relationships = calculateDetailedRelationships();
   const players = getActivePlayerNumbers();
   const violations = [];
   const warnings = [];
+  
+  // Règle 1: Un joueur ne joue qu'une fois avec le même coéquipier
   players.forEach(playerId => {
     Object.entries(relationships[playerId].partners).forEach(([partnerId, count]) => {
       if (count > 1) {
@@ -2290,6 +2473,8 @@ function validateAllConstraints() {
       }
     });
   });
+  
+  // Règle 2: Un joueur ne joue que 2 fois contre le même adversaire
   players.forEach(playerId => {
     Object.entries(relationships[playerId].opponents).forEach(([opponentId, count]) => {
       if (count > 2) {
@@ -2301,11 +2486,14 @@ function validateAllConstraints() {
       }
     });
   });
+  
+  // Règle 3: Pas de confrontation consécutive avec le même adversaire
   const grid = getGridForN();
   for (let r = 0; r < grid.length - 1; r++) {
     players.forEach(playerId => {
       const currentOpponents = getOpponentsInRound(playerId, r);
       const nextOpponents = getOpponentsInRound(playerId, r + 1);
+      
       currentOpponents.forEach(opponentId => {
         if (nextOpponents.includes(opponentId)) {
           violations.push({
@@ -2317,6 +2505,8 @@ function validateAllConstraints() {
       });
     });
   }
+  
+  // Règle 4: Maximum 1 repos par joueur (sauf impossibilité)
   players.forEach(playerId => {
     const restCount = relationships[playerId].rests.size;
     if (restCount > 1) {
@@ -2327,50 +2517,63 @@ function validateAllConstraints() {
       });
     }
   });
+  
   return { violations, warnings, isValid: violations.length === 0 };
 }
 
 function generateValidatedTournament() {
   ensurePositions();
   const validation = validateAllConstraints();
+  
   if (!validation.isValid) {
     showNotice('⚠️ Le tournoi généré ne respecte pas toutes les règles !');
   } else {
     showNotice('✅ Tournoi généré avec succès - Toutes les règles sont respectées');
   }
+  
   generateTournament();
   calculateRanking();
   updateStats();
   tournamentGenerated = true;
   scheduleAutoSave();
 }
-window.generateValidatedTournament = generateValidatedTournament;
 
 function displayDetailedValidation(validation) {
   const container = document.getElementById('constraintsList');
   const section = document.getElementById('constraintsAnalysis');
+  
   if (!container || !section) return;
+  
   container.innerHTML = '';
   section.style.display = 'block';
+  
   validation.violations.forEach(violation => {
     const div = document.createElement('div');
     div.className = 'constraint-item violation';
-    div.innerHTML = `<i class="fas fa-exclamation-circle constraint-icon" style="color:var(--danger)"></i>
-      <div class="constraint-text"><strong>Violation :</strong> ${violation.message}</div>`;
+    div.innerHTML = `
+      <i class="fas fa-exclamation-circle constraint-icon" style="color:var(--danger)"></i>
+      <div class="constraint-text"><strong>Violation :</strong> ${violation.message}</div>
+    `;
     container.appendChild(div);
   });
+  
   validation.warnings.forEach(warning => {
     const div = document.createElement('div');
     div.className = 'constraint-item warning';
-    div.innerHTML = `<i class="fas fa-exclamation-triangle constraint-icon" style="color:var(--warning)"></i>
-      <div class="constraint-text"><strong>Avertissement :</strong> ${warning.message}</div>`;
+    div.innerHTML = `
+      <i class="fas fa-exclamation-triangle constraint-icon" style="color:var(--warning)"></i>
+      <div class="constraint-text"><strong>Avertissement :</strong> ${warning.message}</div>
+    `;
     container.appendChild(div);
   });
+  
   if (validation.violations.length === 0 && validation.warnings.length === 0) {
     const div = document.createElement('div');
     div.className = 'constraint-item success';
-    div.innerHTML = `<i class="fas fa-check-circle constraint-icon" style="color:var(--success)"></i>
-      <div class="constraint-text"><strong>Parfait !</strong> Toutes les règles sont respectées</div>`;
+    div.innerHTML = `
+      <i class="fas fa-check-circle constraint-icon" style="color:var(--success)"></i>
+      <div class="constraint-text"><strong>Parfait !</strong> Toutes les règles sont respectées</div>
+    `;
     container.appendChild(div);
   }
 }
@@ -2378,21 +2581,32 @@ function displayDetailedValidation(validation) {
 function getOpponentsInRound(playerId, round) {
   const opponents = new Set();
   const grid = getGridForN();
+  
   if (!grid[round]) return [];
+  
   for (let courtIdx = 0; courtIdx < grid[round].length; courtIdx++) {
     const courtObj = grid[round][courtIdx];
+    
+    // Gérer le cas des repos explicites de la grille
     if (courtObj.rest) continue;
+    
     const pos = courtObj.players;
     const originalMapped = pos.map(p => {
       if (p <= positions.length) return positions[p - 1];
       return null;
     }).filter(p => p !== null);
-    const mapped = originalMapped.map((player, position) => getReplacementPlayer(round, player));
+    
+    const mapped = originalMapped.map((player, position) => 
+      getReplacementPlayer(round, player)
+    );
+    
     if (mapped.includes(playerId)) {
       if (courtObj.type === '1x1' && mapped.length === 2) {
+        // Match 1x1
         const opponent = mapped.find(p => p !== playerId);
         if (opponent) opponents.add(opponent);
       } else if (courtObj.type === '2x1' && mapped.length === 3) {
+        // Match 2x1
         const playerIndex = mapped.indexOf(playerId);
         if (playerIndex < 2) {
           if (mapped[2]) opponents.add(mapped[2]);
@@ -2401,13 +2615,18 @@ function getOpponentsInRound(playerId, round) {
           if (mapped[1]) opponents.add(mapped[1]);
         }
       } else if (mapped.length === 4) {
+        // Match normal
         const playerIndex = mapped.indexOf(playerId);
         const teamIndex = playerIndex < 2 ? 0 : 1;
         const opponentIndices = teamIndex === 0 ? [2, 3] : [0, 1];
-        opponentIndices.forEach(idx => { if (mapped[idx]) opponents.add(mapped[idx]); });
+        
+        opponentIndices.forEach(idx => {
+          if (mapped[idx]) opponents.add(mapped[idx]);
+        });
       }
     }
   }
+  
   return Array.from(opponents);
 }
 
@@ -2415,30 +2634,55 @@ function generateTournament() {
   ensurePositions();
   const grid = getGridForN();
   const container = document.getElementById('matchesDisplay');
+  
   if (!container) return;
+  
   container.innerHTML = '';
+  
   const preValidation = validateAllConstraints();
+  
   for (let r = 0; r < grid.length; r++) {
     const round = grid[r];
     const roundDiv = document.createElement('div');
     roundDiv.className = 'round-border';
+    
     const roundTitle = document.createElement('div');
     roundTitle.className = 'round-title';
+    
     let roundStatus = '';
     const roundViolations = preValidation.violations.filter(v => 
       v.message.includes(`Tour ${r + 1}`) || v.message.includes(`Tours ${r + 1}`)
     );
-    if (roundViolations.length > 0) roundStatus = ' ⚠️';
+    
+    if (roundViolations.length > 0) {
+      roundStatus = ' ⚠️';
+    }
+    
     roundTitle.innerHTML = `<i class="fas fa-flag"></i> Tour ${r + 1}${roundStatus}`;
     roundDiv.appendChild(roundTitle);
+    
     const plays = new Set();
     const explicitRests = new Set();
     let courtIndex = 0;
+    
+    // Terrains normaux
     for (let c = 0; c < round.length; c++) {
       const courtObj = round[c];
+      
+      // Gérer les repos explicitement prévus par la grille : 'rest' est un
+      // NUMÉRO DE POSITION dans la grille (1..N), exactement comme les
+      // numéros dans 'players' — il doit donc passer par le même mapping
+      // positions[] (+ remplacement) pour retrouver le vrai joueur affecté
+      // à cette position après un "Mélanger". Sans ce mapping, le mauvais
+      // joueur s'affichait en repos (celui dont le numéro correspond à la
+      // position brute, pas au joueur réellement mélangé dessus), pendant
+      // que le vrai joueur au repos apparaissait aussi sur un terrain —
+      // d'où les doublons.
       if (courtObj.rest) {
         const restSlot = courtObj.rest;
-        const restPlayer = (restSlot <= positions.length) ? getReplacementPlayer(r, positions[restSlot - 1]) : null;
+        const restPlayer = (restSlot <= positions.length)
+          ? getReplacementPlayer(r, positions[restSlot - 1])
+          : null;
         if (restPlayer) {
           explicitRests.add(restPlayer);
           const restDiv = document.createElement('div');
@@ -2448,22 +2692,28 @@ function generateTournament() {
         }
         continue;
       }
+      
       const pos = courtObj.players;
       const originalMapped = pos.map(p => {
         if (p <= positions.length) return positions[p - 1];
         return null;
       }).filter(p => p !== null);
       const mapped = originalMapped.map(p => getReplacementPlayer(r, p));
+      
       mapped.forEach(m => { if (m) plays.add(m); });
+      
       if (mapped.length >= 2) {
         const courtDiv = document.createElement('div');
         courtDiv.className = courtObj.type ? 'match special-match' : 'match';
+        
         const activePlayers = getActivePlayerNumbers();
         const playerOptions = activePlayers.map(p => 
           `<option value="${p}">${getPlayerName(p)}</option>`
         ).join('');
+        
         let courtContent = '';
         let currentScores = {};
+        
         if (courtObj.type === '1x1' && mapped.length === 2) {
           currentScores = specialMatchScores[r] && specialMatchScores[r][courtIndex] ? specialMatchScores[r][courtIndex] : {1: '', 2: ''};
           courtContent = `
@@ -2553,11 +2803,14 @@ function generateTournament() {
             </div>
           `;
         }
+        
         courtDiv.innerHTML = courtContent;
         roundDiv.appendChild(courtDiv);
         courtIndex++;
       }
     }
+    
+    // Liste des joueurs en repos non couverts par un {rest:X} explicite de la grille
     {
       const activePlayers = getActivePlayerNumbers();
       const exempt = activePlayers.filter(p => !plays.has(p) && !explicitRests.has(p));
@@ -2565,29 +2818,37 @@ function generateTournament() {
         const exemptNames = exempt.map(p => `<span class="player-color-${p}">${getPlayerName(p)}</span>`);
         const exemptDiv = document.createElement('div');
         exemptDiv.style.cssText = 'margin-top:6px;padding:6px;background:#fff3cd;border-radius:3px;font-size:0.8rem';
+        
         const excessiveRest = exempt.filter(p => {
           const relationships = calculateDetailedRelationships();
           return relationships[p].rests.size >= 2;
         });
+        
         if (excessiveRest.length > 0) {
           exemptDiv.style.background = '#ffeaea';
           exemptDiv.style.border = '1px solid var(--danger)';
         }
+        
         exemptDiv.innerHTML = `<strong><i class="fas fa-coffee"></i> Repos :</strong> ${exemptNames.join(', ')}`;
         roundDiv.appendChild(exemptDiv);
       }
     }
+    
     container.appendChild(roundDiv);
   }
+  
   loadReplacements();
+  
   document.querySelectorAll('.score-input').forEach(input => {
     input.addEventListener('input', function() {
       const round = this.dataset.round;
       const court = this.dataset.court;
       const side = this.dataset.side;
       const score = this.value;
+      
       const grid = getGridForN();
       const courtObj = grid[round] && grid[round][court];
+      
       if (courtObj && (courtObj.type === '1x1' || courtObj.type === '2x1')) {
         if (!specialMatchScores[round]) specialMatchScores[round] = {};
         if (!specialMatchScores[round][court]) specialMatchScores[round][court] = {};
@@ -2597,6 +2858,7 @@ function generateTournament() {
         if (!matchScores[round][court]) matchScores[round][court] = {};
         matchScores[round][court][side] = score;
       }
+      
       scheduleAutoSave();
       calculateRanking();
       updateStats();
@@ -2604,19 +2866,26 @@ function generateTournament() {
   });
 }
 
+// [Les autres fonctions restent identiques...]
+
 function loadReplacements() {
   const grid = getGridForN();
+  
   for (let r = 0; r < grid.length; r++) {
     const round = grid[r];
     for (let c = 0; c < round.length; c++) {
       const courtObj = round[c];
       if (courtObj.rest) continue;
+      
       courtObj.players.forEach((p, position) => {
         if (p > positions.length) return;
         const originalPlayer = positions[p - 1];
         const effective = getReplacementPlayer(r, originalPlayer);
+        
         const select = document.querySelector(`[data-round="${r}"][data-court="${c}"][data-position="${position}"]`);
-        if (select) select.value = (effective !== originalPlayer) ? effective : '';
+        if (select) {
+          select.value = (effective !== originalPlayer) ? effective : '';
+        }
       });
     }
   }
@@ -2625,39 +2894,62 @@ function loadReplacements() {
 function calculateRanking() {
   const players = getActivePlayerNumbers();
   const stats = {};
+  
   players.forEach(p => {
-    stats[p] = { name: getPlayerName(p), scored: 0, conceded: 0, wins: 0, draws: 0, losses: 0, matches: 0 };
+    stats[p] = { 
+      name: getPlayerName(p), 
+      scored: 0, 
+      conceded: 0, 
+      wins: 0, 
+      draws: 0,
+      losses: 0, 
+      matches: 0 
+    };
   });
+  
   const grid = getGridForN();
+  
   for (let r = 0; r < grid.length; r++) {
     const round = grid[r];
+    
     for (let court = 0; court < round.length; court++) {
       const courtObj = round[court];
-      if (courtObj.rest) continue;
+      if (courtObj.rest) continue; // Ignorer les repos
+      
       const pos = courtObj.players;
       const originalMapped = pos.map(p => {
         if (p <= positions.length) return positions[p - 1];
         return null;
       }).filter(p => p !== null && players.includes(p));
-      const mapped = originalMapped.map((player, position) => getReplacementPlayer(r, player));
+      
+      const mapped = originalMapped.map((player, position) => 
+        getReplacementPlayer(r, player)
+      );
+      
       let scores;
       if (courtObj.type === '1x1' || courtObj.type === '2x1') {
         scores = specialMatchScores[r] && specialMatchScores[r][court] ? specialMatchScores[r][court] : {1: 0, 2: 0};
       } else {
         scores = matchScores[r] && matchScores[r][court] ? matchScores[r][court] : {1: 0, 2: 0};
       }
+      
       const score1 = parseInt(scores[1]) || 0;
       const score2 = parseInt(scores[2]) || 0;
+      
       if ((score1 > 0 || score2 > 0)) {
-        if (courtObj.type === '1x1' && mapped.length === 2) process1v1Stats(stats, mapped, score1, score2);
-        else if (courtObj.type === '2x1' && mapped.length === 3) process2v1Stats(stats, mapped, score1, score2);
-        else if (mapped.length === 4) processMatchStats(stats, mapped, score1, score2);
+        if (courtObj.type === '1x1' && mapped.length === 2) {
+          process1v1Stats(stats, mapped, score1, score2);
+        } else if (courtObj.type === '2x1' && mapped.length === 3) {
+          process2v1Stats(stats, mapped, score1, score2);
+        } else if (mapped.length === 4) {
+          processMatchStats(stats, mapped, score1, score2);
+        }
       }
     }
   }
+  
   updateRankingDisplay(stats);
 }
-window.calculateRanking = calculateRanking;
 
 function processMatchStats(stats, players, score1, score2) {
   stats[players[0]].scored += score1;
@@ -2668,16 +2960,24 @@ function processMatchStats(stats, players, score1, score2) {
   stats[players[2]].conceded += score1;
   stats[players[3]].scored += score2;
   stats[players[3]].conceded += score1;
+  
   players.forEach(p => stats[p].matches++);
+  
   if (score1 > score2) {
-    stats[players[0]].wins++; stats[players[1]].wins++;
-    stats[players[2]].losses++; stats[players[3]].losses++;
+    stats[players[0]].wins++;
+    stats[players[1]].wins++;
+    stats[players[2]].losses++;
+    stats[players[3]].losses++;
   } else if (score2 > score1) {
-    stats[players[0]].losses++; stats[players[1]].losses++;
-    stats[players[2]].wins++; stats[players[3]].wins++;
+    stats[players[0]].losses++;
+    stats[players[1]].losses++;
+    stats[players[2]].wins++;
+    stats[players[3]].wins++;
   } else if (score1 === score2 && score1 > 0) {
-    stats[players[0]].draws++; stats[players[1]].draws++;
-    stats[players[2]].draws++; stats[players[3]].draws++;
+    stats[players[0]].draws++;
+    stats[players[1]].draws++;
+    stats[players[2]].draws++;
+    stats[players[3]].draws++;
   }
 }
 
@@ -2686,13 +2986,18 @@ function process1v1Stats(stats, players, score1, score2) {
   stats[players[0]].conceded += score2;
   stats[players[1]].scored += score2;
   stats[players[1]].conceded += score1;
+  
   players.forEach(p => stats[p].matches++);
+  
   if (score1 > score2) {
-    stats[players[0]].wins++; stats[players[1]].losses++;
+    stats[players[0]].wins++;
+    stats[players[1]].losses++;
   } else if (score2 > score1) {
-    stats[players[0]].losses++; stats[players[1]].wins++;
+    stats[players[0]].losses++;
+    stats[players[1]].wins++;
   } else if (score1 === score2 && score1 > 0) {
-    stats[players[0]].draws++; stats[players[1]].draws++;
+    stats[players[0]].draws++;
+    stats[players[1]].draws++;
   }
 }
 
@@ -2703,25 +3008,36 @@ function process2v1Stats(stats, players, score1, score2) {
   stats[players[1]].conceded += score2;
   stats[players[2]].scored += score2;
   stats[players[2]].conceded += score1;
+  
   players.forEach(p => stats[p].matches++);
+  
   if (score1 > score2) {
-    stats[players[0]].wins++; stats[players[1]].wins++; stats[players[2]].losses++;
+    stats[players[0]].wins++;
+    stats[players[1]].wins++;
+    stats[players[2]].losses++;
   } else if (score2 > score1) {
-    stats[players[0]].losses++; stats[players[1]].losses++; stats[players[2]].wins++;
+    stats[players[0]].losses++;
+    stats[players[1]].losses++;
+    stats[players[2]].wins++;
   } else if (score1 === score2 && score1 > 0) {
-    stats[players[0]].draws++; stats[players[1]].draws++; stats[players[2]].draws++;
+    stats[players[0]].draws++;
+    stats[players[1]].draws++;
+    stats[players[2]].draws++;
   }
 }
 
 function updateRankingDisplay(stats) {
   window.lastRankingStats = stats;
   const ranking = Object.values(stats).map(s => ({
-    ...s, diff: s.scored - s.conceded, points: (s.wins * 3) + s.draws
+    ...s,
+    diff: s.scored - s.conceded,
+    points: (s.wins * 3) + s.draws
   })).sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
     if (b.diff !== a.diff) return b.diff - a.diff;
     return b.scored - a.scored;
   });
+  
   const tbody = document.getElementById('rankingBody');
   if (tbody) {
     tbody.innerHTML = '';
@@ -2730,9 +3046,18 @@ function updateRankingDisplay(stats) {
       const pos = idx + 1;
       let medalClass = '';
       let medalIcon = '';
-      if (pos === 1) { medalClass = 'gold'; medalIcon = '🥇'; }
-      else if (pos === 2) { medalClass = 'silver'; medalIcon = '🥈'; }
-      else if (pos === 3) { medalClass = 'bronze'; medalIcon = '🥉'; }
+      
+      if (pos === 1) {
+        medalClass = 'gold';
+        medalIcon = '🥇';
+      } else if (pos === 2) {
+        medalClass = 'silver';
+        medalIcon = '🥈';
+      } else if (pos === 3) {
+        medalClass = 'bronze';
+        medalIcon = '🥉';
+      }
+      
       tr.innerHTML = `
         <td>${pos}${medalIcon}</td>
         <td style="text-align:left" class="player-color-${getPlayerNumberFromName(p.name)}">${p.name}</td>
@@ -2744,10 +3069,15 @@ function updateRankingDisplay(stats) {
         <td>${p.draws}</td>
         <td>${p.losses}</td>
       `;
-      if (medalClass) tr.querySelector('td:nth-child(1)').classList.add(medalClass);
+      
+      if (medalClass) {
+        tr.querySelector('td:nth-child(1)').classList.add(medalClass);
+      }
+      
       tbody.appendChild(tr);
     });
   }
+  
   updateStatusBar();
 }
 
@@ -2755,26 +3085,34 @@ function updateStatusBar() {
   const completedMatchesElement = document.getElementById('completedMatches');
   const tournamentProgressElement = document.getElementById('tournamentProgress');
   const totalReplacementsElement = document.getElementById('totalReplacements');
+  
   if (completedMatchesElement && tournamentProgressElement && totalReplacementsElement) {
     let completedMatches = 0;
     let totalMatches = 0;
+    
     const grid = getGridForN();
     for (let r = 0; r < grid.length; r++) {
       for (let c = 0; c < grid[r].length; c++) {
         if (grid[r][c].rest) continue;
         totalMatches++;
+        
         let scores;
         if (grid[r][c].type === '1x1' || grid[r][c].type === '2x1') {
           scores = specialMatchScores[r] && specialMatchScores[r][c] ? specialMatchScores[r][c] : {1: 0, 2: 0};
         } else {
           scores = matchScores[r] && matchScores[r][c] ? matchScores[r][c] : {1: 0, 2: 0};
         }
-        if ((scores[1] && parseInt(scores[1]) > 0) || (scores[2] && parseInt(scores[2]) > 0)) completedMatches++;
+        
+        if ((scores[1] && parseInt(scores[1]) > 0) || (scores[2] && parseInt(scores[2]) > 0)) {
+          completedMatches++;
+        }
       }
     }
+    
     completedMatchesElement.textContent = completedMatches;
     const progress = totalMatches > 0 ? Math.round((completedMatches / totalMatches) * 100) : 0;
     tournamentProgressElement.textContent = progress + '%';
+    
     let totalReplacements = 0;
     Object.keys(playerReplacements).forEach(originalPlayer => {
       totalReplacements += playerReplacements[originalPlayer].length;
@@ -2794,47 +3132,72 @@ function calculateDetailedRelationships() {
   const players = getActivePlayerNumbers();
   const relationships = {};
   const grid = getGridForN();
+  
   players.forEach(p => {
     relationships[p] = {
       name: getPlayerName(p),
-      partners: {}, opponents: {}, matches: 0, rests: new Set()
+      partners: {},
+      opponents: {},
+      matches: 0,
+      rests: new Set()
     };
   });
+  
   for (let r = 0; r < grid.length; r++) {
     const playersInRound = new Set();
     const round = grid[r];
+    
     for (let courtIdx = 0; courtIdx < round.length; courtIdx++) {
       const courtObj = round[courtIdx];
+      
       if (courtObj.rest) {
+        // 'rest' est un numéro de position, à faire passer par positions[]
+        // comme pour les joueurs sur les terrains (voir generateTournament).
         const restPlayer = (courtObj.rest <= positions.length) ? positions[courtObj.rest - 1] : null;
         if (restPlayer && relationships[restPlayer]) relationships[restPlayer].rests.add(r + 1);
         continue;
       }
+      
       const pos = courtObj.players;
       const originalMapped = pos.map(p => {
         if (p <= positions.length) return positions[p - 1];
         return null;
       }).filter(p => p !== null && players.includes(p));
-      const mapped = originalMapped.map((player, position) => getReplacementPlayer(r, player));
+      
+      const mapped = originalMapped.map((player, position) => 
+        getReplacementPlayer(r, player)
+      );
+      
       mapped.forEach(m => { if (m) playersInRound.add(m); });
     }
+    
     players.forEach(p => {
-      if (!playersInRound.has(p) && !relationships[p].rests.has(r + 1)) relationships[p].rests.add(r + 1);
+      if (!playersInRound.has(p) && !relationships[p].rests.has(r + 1)) {
+        relationships[p].rests.add(r + 1);
+      }
     });
   }
+  
   for (let r = 0; r < grid.length; r++) {
     const round = grid[r];
+    
     for (let courtIdx = 0; courtIdx < round.length; courtIdx++) {
       const courtObj = round[courtIdx];
       if (courtObj.rest) continue;
+      
       const pos = courtObj.players;
       const originalMapped = pos.map(p => {
         if (p <= positions.length) return positions[p - 1];
         return null;
       }).filter(p => p !== null && players.includes(p));
-      const mapped = originalMapped.map((player, position) => getReplacementPlayer(r, player));
+      
+      const mapped = originalMapped.map((player, position) => 
+        getReplacementPlayer(r, player)
+      );
+      
       if (mapped.length >= 2) {
         mapped.forEach(p => relationships[p].matches++);
+        
         if (courtObj.type === '1x1' && mapped.length === 2) {
           relationships[mapped[0]].opponents[mapped[1]] = (relationships[mapped[0]].opponents[mapped[1]] || 0) + 1;
           relationships[mapped[1]].opponents[mapped[0]] = (relationships[mapped[1]].opponents[mapped[0]] || 0) + 1;
@@ -2850,6 +3213,7 @@ function calculateDetailedRelationships() {
           relationships[mapped[1]].partners[mapped[0]] = (relationships[mapped[1]].partners[mapped[0]] || 0) + 1;
           relationships[mapped[2]].partners[mapped[3]] = (relationships[mapped[2]].partners[mapped[3]] || 0) + 1;
           relationships[mapped[3]].partners[mapped[2]] = (relationships[mapped[3]].partners[mapped[2]] || 0) + 1;
+          
           [mapped[0], mapped[1]].forEach(p1 => {
             [mapped[2], mapped[3]].forEach(p2 => {
               relationships[p1].opponents[p2] = (relationships[p1].opponents[p2] || 0) + 1;
@@ -2860,61 +3224,88 @@ function calculateDetailedRelationships() {
       }
     }
   }
+  
   return relationships;
 }
 
 function calculateTotalMatches(relationships) {
   let total = 0;
-  Object.values(relationships).forEach(rel => { total += rel.matches; });
+  Object.values(relationships).forEach(rel => {
+    total += rel.matches;
+  });
   return total / 2;
 }
 
 function getTopScorer() {
   const players = getActivePlayerNumbers();
   let topScorer = { name: "Aucun", scored: 0 };
+  
   players.forEach(p => {
     const stats = calculatePlayerStats(p);
-    if (stats.scored > topScorer.scored) topScorer = { name: getPlayerName(p), scored: stats.scored };
+    if (stats.scored > topScorer.scored) {
+      topScorer = { name: getPlayerName(p), scored: stats.scored };
+    }
   });
+  
   return topScorer.scored > 0 ? topScorer.name : "Aucun";
 }
 
 function getMostWins() {
   const players = getActivePlayerNumbers();
   let mostWins = { name: "Aucun", wins: 0 };
+  
   players.forEach(p => {
     const stats = calculatePlayerStats(p);
-    if (stats.wins > mostWins.wins) mostWins = { name: getPlayerName(p), wins: stats.wins };
+    if (stats.wins > mostWins.wins) {
+      mostWins = { name: getPlayerName(p), wins: stats.wins };
+    }
   });
+  
   return mostWins.wins > 0 ? mostWins.name : "Aucun";
 }
 
 function getMostMatches(relationships) {
   let mostMatches = 0;
   let playerName = '';
+  
   Object.entries(relationships).forEach(([playerId, rel]) => {
     if (rel.matches > mostMatches) {
       mostMatches = rel.matches;
       playerName = rel.name;
     }
   });
+  
   return playerName || "Aucun";
 }
 
 function calculatePlayerStats(playerId) {
-  const stats = { scored: 0, conceded: 0, wins: 0, draws: 0, losses: 0 };
+  const stats = { 
+    scored: 0, 
+    conceded: 0, 
+    wins: 0, 
+    draws: 0,
+    losses: 0
+  };
+  
   const grid = getGridForN();
+  
   for (let r = 0; r < grid.length; r++) {
     const round = grid[r];
+    
     for (let court = 0; court < round.length; court++) {
       const courtObj = round[court];
       if (courtObj.rest) continue;
+      
       const pos = courtObj.players;
       const originalMapped = pos.map(p => {
         if (p <= positions.length) return positions[p - 1];
         return null;
       }).filter(p => p !== null);
-      const mapped = originalMapped.map((player, position) => getReplacementPlayer(r, player));
+      
+      const mapped = originalMapped.map((player, position) => 
+        getReplacementPlayer(r, player)
+      );
+      
       if (mapped.includes(playerId)) {
         let scores;
         if (courtObj.type === '1x1' || courtObj.type === '2x1') {
@@ -2922,49 +3313,73 @@ function calculatePlayerStats(playerId) {
         } else {
           scores = matchScores[r] && matchScores[r][court] ? matchScores[r][court] : {1: 0, 2: 0};
         }
+        
         const score1 = parseInt(scores[1]) || 0;
         const score2 = parseInt(scores[2]) || 0;
+        
         if (score1 > 0 || score2 > 0) {
           if (courtObj.type === '1x1' && mapped.length === 2) {
             if (mapped[0] === playerId) {
-              stats.scored += score1; stats.conceded += score2;
-              if (score1 > score2) stats.wins++; else if (score2 > score1) stats.losses++; else if (score1 === score2) stats.draws++;
+              stats.scored += score1;
+              stats.conceded += score2;
+              if (score1 > score2) stats.wins++;
+              else if (score2 > score1) stats.losses++;
+              else if (score1 === score2) stats.draws++;
             } else {
-              stats.scored += score2; stats.conceded += score1;
-              if (score2 > score1) stats.wins++; else if (score1 > score2) stats.losses++; else if (score1 === score2) stats.draws++;
+              stats.scored += score2;
+              stats.conceded += score1;
+              if (score2 > score1) stats.wins++;
+              else if (score1 > score2) stats.losses++;
+              else if (score1 === score2) stats.draws++;
             }
           } else if (courtObj.type === '2x1' && mapped.length === 3) {
             const playerIndex = mapped.indexOf(playerId);
             if (playerIndex < 2) {
-              stats.scored += score1; stats.conceded += score2;
-              if (score1 > score2) stats.wins++; else if (score2 > score1) stats.losses++; else if (score1 === score2) stats.draws++;
+              stats.scored += score1;
+              stats.conceded += score2;
+              if (score1 > score2) stats.wins++;
+              else if (score2 > score1) stats.losses++;
+              else if (score1 === score2) stats.draws++;
             } else {
-              stats.scored += score2; stats.conceded += score1;
-              if (score2 > score1) stats.wins++; else if (score1 > score2) stats.losses++; else if (score1 === score2) stats.draws++;
+              stats.scored += score2;
+              stats.conceded += score1;
+              if (score2 > score1) stats.wins++;
+              else if (score1 > score2) stats.losses++;
+              else if (score1 === score2) stats.draws++;
             }
           } else if (mapped.length === 4) {
             const teamIndex = mapped.indexOf(playerId) < 2 ? 0 : 1;
             if (teamIndex === 0) {
-              stats.scored += score1; stats.conceded += score2;
-              if (score1 > score2) stats.wins++; else if (score2 > score1) stats.losses++; else if (score1 === score2) stats.draws++;
+              stats.scored += score1;
+              stats.conceded += score2;
+              if (score1 > score2) stats.wins++;
+              else if (score2 > score1) stats.losses++;
+              else if (score1 === score2) stats.draws++;
             } else {
-              stats.scored += score2; stats.conceded += score1;
-              if (score2 > score1) stats.wins++; else if (score1 > score2) stats.losses++; else if (score1 === score2) stats.draws++;
+              stats.scored += score2;
+              stats.conceded += score1;
+              if (score2 > score1) stats.wins++;
+              else if (score1 > score2) stats.losses++;
+              else if (score1 === score2) stats.draws++;
             }
           }
         }
       }
     }
   }
+  
   return stats;
 }
 
 function updateStats() {
   const players = getActivePlayerNumbers();
   const container = document.getElementById('statsArea');
+  
   if (!container) return;
+  
   const relationships = calculateDetailedRelationships();
   const validation = validateAllConstraints();
+  
   const legendItems = (LEGEND_BY_TERRAIN[TERRAINS] || []).map(entry => {
     const sepIdx = entry.indexOf(' : ');
     const label = sepIdx >= 0 ? entry.slice(0, sepIdx) : entry;
@@ -2975,12 +3390,14 @@ function updateStats() {
           <div><strong>${label} :</strong> ${desc}</div>
         </div>`;
   }).join('');
+  
   let html = `
     <div class="card">
       <span class="card-title"><i class="fas fa-clipboard-list"></i> Organisation par Nombre de Joueurs (${TERRAINS} terrains)</span>
       <div class="criteria-grid">${legendItems}
       </div>
     </div>
+    
     <div class="stats-grid">
       <div class="stat-card">
         <h3><i class="fas fa-chart-bar"></i> Statistiques Générales</h3>
@@ -3001,6 +3418,7 @@ function updateStats() {
           <span class="stat-value" style="color:${validation.violations.length > 0 ? 'var(--danger)' : 'var(--success)'}">${validation.violations.length}</span>
         </div>
       </div>
+      
       <div class="stat-card">
         <h3><i class="fas fa-trophy"></i> Leaders</h3>
         <div class="stat-item">
@@ -3018,13 +3436,16 @@ function updateStats() {
       </div>
     </div>
   `;
+  
   html += `<div class="card" style="margin-top:20px;">`;
   html += `<span class="card-title"><i class="fas fa-table"></i> Statistiques par Joueur</span>`;
   html += `<table class="stats-table">`;
   html += `<thead><tr><th>Joueur</th><th>Matchs</th><th>Partenaires</th><th>Adversaires</th><th>Repos</th></tr></thead>`;
   html += `<tbody>`;
+  
   players.forEach(playerId => {
     const rel = relationships[playerId];
+    
     html += `<tr>`;
     html += `<td class="player-color-${playerId}"><strong>${rel.name}</strong></td>`;
     html += `<td><strong>${rel.matches}</strong></td>`;
@@ -3048,10 +3469,14 @@ function updateStats() {
     html += `</td>`;
     html += `</tr>`;
   });
+  
   html += `</tbody></table></div>`;
+  
   container.innerHTML = html;
+  
   updateReplacementLogDisplay();
   displayDetailedValidation(validation);
+  
   setTimeout(() => {
     const updatedValidation = validateAllConstraints();
     displayDetailedValidation(updatedValidation);
@@ -3059,21 +3484,25 @@ function updateStats() {
 }
 
 function scheduleAutoSave() {
-  if (autoSaveTimer) clearTimeout(autoSaveTimer);
+  if (autoSaveTimer) {
+    clearTimeout(autoSaveTimer);
+  }
   autoSaveTimer = setTimeout(saveData, 1000);
 }
 
 function saveData() {
-  if (typeof window.fbSaveTournament !== 'function') {
+  if (typeof fbSaveTournament !== 'function') {
     showNotice('Firebase non initialisé');
     return;
   }
+  
   const players = {};
   for (let i = 1; i <= 20; i++) {
     const el = document.getElementById('player' + i);
     if (el) players[i] = el.value;
   }
-  window.fbSaveTournament({
+  
+  fbSaveTournament({
     players: players,
     positions: positions,
     TERRAINS: TERRAINS,
@@ -3090,12 +3519,18 @@ function saveData() {
     showNotice('Erreur lors de la sauvegarde : ' + (e.message || e));
   });
 }
-window.saveData = saveData;
 
-// ✅ Exposée sur window pour être appelée depuis le module Firebase
+// Applique les données reçues de Firestore (abonnement temps réel) à l'état local et au DOM.
+// Appelée par le module Firebase (subscribeToTournament) à chaque mise à jour, pour tous les rôles.
 function applyTournamentData(data) {
-  // Verrou import inscriptions : évite d'écraser une saisie en cours
-  if (window.__importInProgress) return;
+  // Ne pas écraser une saisie de score (ou de remplaçant) en cours de
+  // frappe : le score tapé n'est reflété dans matchScores/Firestore qu'après
+  // le délai de sauvegarde automatique, donc une mise à jour reçue entre-
+  // temps (sondage 4s, ou un autre appareil) contenait encore l'ancienne
+  // valeur et effaçait ce qui venait d'être tapé en reconstruisant tout
+  // l'affichage des matchs. On ignore simplement cette mise à jour tant que
+  // le champ est actif ; la synchronisation reprend dès que l'utilisateur
+  // en sort (ou à la prochaine mise à jour, une fois la saisie enregistrée).
   const activeEl = document.activeElement;
   if (activeEl && (activeEl.classList.contains('score-input') || activeEl.classList.contains('replacement-select'))) {
     return;
@@ -3107,54 +3542,77 @@ function applyTournamentData(data) {
   playerReplacements = data.playerReplacements || {};
   replacementLog = data.replacementLog || [];
   tournamentGenerated = !!data.generated;
-
+  
   const terrainSelect = document.getElementById('terrainCount');
   if (terrainSelect) terrainSelect.value = TERRAINS.toString();
-
+  
   populatePlayerCountOptions(data.N || 12);
   buildPlayerInputs();
-
+  
   for (let i = 1; i <= 20; i++) {
     const el = document.getElementById('player' + i);
-    if (el && data.players && data.players[i]) el.value = data.players[i];
+    if (el && data.players && data.players[i]) {
+      el.value = data.players[i];
+    }
   }
-
+  
   updateActiveCount();
   ensurePositions();
 
+  // Reconstruit l'affichage Matchs/Classement/Statistiques uniquement quand
+  // le tournoi a réellement été "Généré avec Validation" (drapeau explicite
+  // 'generated'), pas seulement parce que positions/terrains ont une valeur
+  // par défaut — sinon un simple changement du nombre de joueurs/terrains
+  // déclenche l'affichage automatique des matchs chez tout le monde.
+  // Le second test (scores déjà présents) reste en repli pour d'anciennes
+  // données sauvegardées avant l'ajout de ce drapeau.
   if (data.generated || Object.keys(matchScores).length > 0 || Object.keys(specialMatchScores).length > 0) {
     generateTournament();
     calculateRanking();
     updateStats();
   } else {
+    // Aucun tournoi actif dans les données reçues (ex. réinitialisation
+    // faite sur un autre appareil) : on efface aussi l'affichage local,
+    // sinon un ancien tournoi resterait visible à l'écran indéfiniment.
     clearGeneratedDisplay();
   }
-  if (typeof window.ecranOpen !== 'undefined' && window.ecranOpen) {
-    window.renderEcranPanels();
+  
+  if (typeof ecranOpen !== 'undefined' && ecranOpen) {
+    renderEcranPanels();
   }
 }
-window.applyTournamentData = applyTournamentData;
 
-// ✅ resetAll : le bouton se passe lui-même en argument (plus de event global)
-function resetAll(btn) {
-  if (!btn) btn = document.querySelector('[onclick*="resetAll"]');
-  if (!btn) return;
+function resetAll() {
+  const btn = event.target;
   if (btn.textContent.includes('Confirmer')) {
-    doReset(btn);
+    doReset();
   } else {
     btn.textContent = 'Confirmer la réinitialisation';
     btn.style.background = '#dc3545';
     showNotice('Cliquez à nouveau pour confirmer');
+    
     setTimeout(() => {
       btn.innerHTML = '<i class="fas fa-trash"></i> Réinitialiser';
       btn.style.background = '';
     }, 3000);
   }
 }
-window.resetAll = resetAll;
 
+// Vide l'affichage des matchs/classement/stats (placeholders inclus).
+// Utilisé aussi bien lors d'une réinitialisation locale que lorsqu'un
+// AUTRE appareil (ex. mobile) vient de réinitialiser le tournoi : sans
+// ça, un appareil qui affichait déjà un tournoi garde l'ancien affichage
+// à l'écran indéfiniment après une réinitialisation distante.
 function clearGeneratedDisplay() {
-  const containers = ['matchesDisplay', 'rankingBody', 'statsArea', 'constraintsList', 'replacementLogSection'];
+  // 'positionsList' n'est PAS inclus ici : le tirage des positions
+  // (bouton "Mélanger") est valide dès qu'il existe, indépendamment du
+  // fait que le tournoi ait été "Généré avec Validation" ou non. Le
+  // vider ici l'effaçait juste après un mélange dès que la synchronisation
+  // repassait par cette fonction (ex. avant toute génération).
+  const containers = [
+    'matchesDisplay', 'rankingBody',
+    'statsArea', 'constraintsList', 'replacementLogSection'
+  ];
   containers.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = '';
@@ -3171,7 +3629,7 @@ function clearGeneratedDisplay() {
   }
 }
 
-function doReset(btn) {
+function doReset() {
   positions = [];
   TERRAINS = 3;
   matchScores = {};
@@ -3179,162 +3637,105 @@ function doReset(btn) {
   playerReplacements = {};
   replacementLog = [];
   tournamentGenerated = false;
+  
   const terrainSelect = document.getElementById('terrainCount');
   if (terrainSelect) terrainSelect.value = '3';
+  
   populatePlayerCountOptions(12);
+  
   for (let i = 1; i <= 20; i++) {
     const el = document.getElementById('player' + i);
-    if (el) el.value = 'Joueur ' + i;
+    if (el) {
+      el.value = 'Joueur ' + i;
+    }
   }
+  
   clearGeneratedDisplay();
+  
   const statsArea = document.getElementById('statsArea');
-  if (statsArea) statsArea.innerHTML = '<p style="text-align:center;color:#666;padding:20px;font-size:0.9rem">Les statistiques apparaîtront après génération du tournoi</p>';
+  if (statsArea) {
+    statsArea.innerHTML = '<p style="text-align:center;color:#666;padding:20px;font-size:0.9rem">Les statistiques apparaîtront après génération du tournoi</p>';
+  }
+  
   updateStatusBar();
   updateActiveCount();
   ensurePositions();
   buildPlayerInputs();
+  
   const players = {};
   for (let i = 1; i <= 20; i++) {
     const el = document.getElementById('player' + i);
     if (el) players[i] = el.value;
   }
-  if (typeof window.fbSaveTournament === 'function') {
-    window.fbSaveTournament({
-      players: players, positions: [], TERRAINS: 3, N: 12,
-      matchScores: {}, specialMatchScores: {},
-      playerReplacements: {}, replacementLog: [],
+  if (typeof fbSaveTournament === 'function') {
+    fbSaveTournament({
+      players: players,
+      positions: [],
+      TERRAINS: 3,
+      N: 12,
+      matchScores: {},
+      specialMatchScores: {},
+      playerReplacements: {},
+      replacementLog: [],
       generated: false
     }).catch(e => console.error('Erreur reset Firestore:', e));
   }
-  if (btn) {
-    btn.innerHTML = '<i class="fas fa-trash"></i> Réinitialiser';
-    btn.style.background = '';
-  }
+  
+  const btn = event.target;
+  btn.innerHTML = '<i class="fas fa-trash"></i> Réinitialiser';
+  btn.style.background = '';
+  
   showNotice('Réinitialisation complète effectuée');
 }
 
-// ✅ showTab : plus de event global
-function showTab(tabName, btnEl) {
-  document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-  const tab = document.getElementById(tabName);
-  if (tab) tab.classList.add('active');
-  const clicked = btnEl || document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
-  if (clicked) clicked.classList.add('active');
-}
-window.showTab = showTab;
-
 function updatePlayerReplacement(round, court, position, newPlayerId) {
   const grid = getGridForN();
+  
   if (grid[round] && grid[round][court]) {
     const originalMapped = grid[round][court].players.map(p => positions[p - 1]);
     const oldPlayer = originalMapped[position];
-    if (!playerReplacements[oldPlayer]) playerReplacements[oldPlayer] = [];
+    
+    if (!playerReplacements[oldPlayer]) {
+      playerReplacements[oldPlayer] = [];
+    }
+    
+    // On retire toute déclaration existante précisément à ce tour (on la remplace ou l'annule)
     playerReplacements[oldPlayer] = playerReplacements[oldPlayer].filter(e => e.fromRound !== round);
+    
     if (newPlayerId === '') {
+      // Annulation à partir de ce tour : on retire aussi toute déclaration future,
+      // pour revenir au joueur d'origine (ou à un remplacement antérieur toujours actif) ici et ensuite.
       playerReplacements[oldPlayer] = playerReplacements[oldPlayer].filter(e => e.fromRound < round);
-      if (playerReplacements[oldPlayer].length === 0) delete playerReplacements[oldPlayer];
+      if (playerReplacements[oldPlayer].length === 0) {
+        delete playerReplacements[oldPlayer];
+      }
     } else {
       playerReplacements[oldPlayer].push({ substitute: parseInt(newPlayerId), fromRound: round });
       playerReplacements[oldPlayer].sort((a, b) => a.fromRound - b.fromRound);
+      
       logReplacement(round, court, position, oldPlayer, parseInt(newPlayerId), 'principal');
       showNotice(`${getPlayerName(oldPlayer)} remplacé(e) par ${getPlayerName(parseInt(newPlayerId))} à partir du Tour ${round + 1} (et pour tous les tours suivants)`);
     }
+    
     scheduleAutoSave();
     generateTournament();
     calculateRanking();
     updateStats();
   }
 }
-window.updatePlayerReplacement = updatePlayerReplacement;
 
 // ══════════════════════════════════════════════════════════
-// IMPORT DES INSCRIPTIONS → JOUEURS
-// ✅ Correctif : verrou anti-écrasement + sauvegarde immédiate
-// ══════════════════════════════════════════════════════════
-window.importRegistrationsToPlayers = function () {
-  if (!(typeof USER_ROLES !== 'undefined' && (USER_ROLES.includes('admin') || USER_ROLES.includes('scorer')))
-      && !document.querySelector('[data-role="admin"]')) {
-    // fallback : vérifie via le bouton visible
-  }
-  const list = window.REG_LIST || [];
-  const names = list.map(r => (r.name || '').trim()).filter(Boolean);
-  if (names.length === 0) { alert('Aucun inscrit à importer pour le moment.'); return; }
-
-  const options = PLAYER_OPTIONS_BY_TERRAIN[TERRAINS] || PLAYER_OPTIONS_BY_TERRAIN[5];
-  const validValues = options.map(o => o.value);
-  let target = validValues.find(v => v >= names.length);
-  let extra = 0;
-  if (!target) {
-    target = validValues[validValues.length - 1];
-    extra = names.length - target;
-  }
-
-  const msg = extra > 0
-    ? ('Il y a ' + names.length + ' inscrits pour un maximum de ' + target + ' joueurs sur ' + TERRAINS + ' terrains. Les ' + extra + ' dernier(s) inscrit(s) ne seront pas importés. Continuer ?')
-    : ('Importer ' + names.length + ' inscrit(s) dans la liste des ' + target + ' joueurs ? Les noms actuellement saisis seront remplacés.');
-  if (!confirm(msg)) return;
-
-  // ✅ Verrou : empêche applyTournamentData d'écraser les noms importés
-  window.__importInProgress = true;
-
-  const select = document.getElementById('playerCount');
-  if (select) select.value = target.toString();
-  N = target;
-  updateActiveCount();
-  ensurePositions();
-  buildPlayerInputs();
-
-  names.slice(0, target).forEach((name, i) => {
-    const input = document.getElementById('player' + (i + 1));
-    if (input) input.value = name;
-  });
-
-  // ✅ Sauvegarde immédiate (pas d'autoSave différé de 1s qui serait écrasé)
-  if (typeof window.fbSaveTournament === 'function') {
-    const players = {};
-    for (let i = 1; i <= 20; i++) {
-      const el = document.getElementById('player' + i);
-      if (el) players[i] = el.value;
-    }
-    window.fbSaveTournament({
-      players: players,
-      positions: positions,
-      TERRAINS: TERRAINS,
-      N: N,
-      matchScores: matchScores,
-      specialMatchScores: specialMatchScores,
-      playerReplacements: playerReplacements,
-      replacementLog: replacementLog,
-      generated: tournamentGenerated
-    }).then(() => {
-      showNotice(Math.min(names.length, target) + ' inscrit(s) importé(s) dans la liste des joueurs');
-    }).catch(e => {
-      showNotice('Erreur import : ' + (e.message || e));
-    }).finally(() => {
-      // Délai de sécurité pour laisser la synchro Firestore revenir sans écraser
-      setTimeout(() => { window.__importInProgress = false; }, 2000);
-    });
-  } else {
-    window.__importInProgress = false;
-  }
-};
-
-// ══════════════════════════════════════════════════════════
-// MODE ÉCRAN (affichage public / kiosque) — ✅ correctifs TV
+// MODE ÉCRAN (affichage public / kiosque)
 // ══════════════════════════════════════════════════════════
 let ecranFromLogin = false;
 let ecranOpen = false;
 let ecranCycleTimer = null;
 let ecranClockTimer = null;
 let ecranPanelIndex = 0;
-window.ecranOpen = false;
-window.TERRAINS = 3;
 
 function openEcranMode(fromLogin) {
   ecranFromLogin = !!fromLogin;
   ecranOpen = true;
-  window.ecranOpen = true;
   document.getElementById('appScreen').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('ecranScreen').style.display = 'flex';
@@ -3344,8 +3745,13 @@ function openEcranMode(fromLogin) {
   startEcranClock();
   startEcranCycle();
 }
-window.openEcranMode = openEcranMode;
 
+// Le plein écran natif (Fullscreen API) fonctionne sur ordinateur (Chrome,
+// Firefox, Edge, Safari macOS) et sur Android Chrome, mais PAS sur Safari
+// iOS (non supporté par iOS pour les pages web classiques) : le bouton est
+// donc masqué automatiquement sur iPhone/iPad. Pour un vrai plein écran sur
+// iPhone, ajouter la page à l'écran d'accueil (Partager → Sur l'écran
+// d'accueil) : elle s'ouvre alors sans la barre Safari.
 function fullscreenIsSupported() {
   const el = document.documentElement;
   return !!(document.fullscreenEnabled || document.webkitFullscreenEnabled
@@ -3376,7 +3782,6 @@ document.addEventListener('webkitfullscreenchange', updateEcranFullscreenBtn);
 
 function closeEcranMode() {
   ecranOpen = false;
-  window.ecranOpen = false;
   stopEcranCycle();
   stopEcranClock();
   if (isCurrentlyFullscreen()) {
@@ -3384,13 +3789,12 @@ function closeEcranMode() {
     if (exit) exit.call(document).catch(() => {});
   }
   document.getElementById('ecranScreen').style.display = 'none';
-  if (ecranFromLogin && typeof window.logout === 'function') {
-    window.logout();
+  if (ecranFromLogin && typeof logout === 'function') {
+    logout();
   } else {
     document.getElementById('appScreen').style.display = 'block';
   }
 }
-window.closeEcranMode = closeEcranMode;
 
 function startEcranClock() {
   stopEcranClock();
@@ -3426,38 +3830,31 @@ function showEcranPanel(idx, scheduleNext) {
   const dots = [document.getElementById('ecranDot0'), document.getElementById('ecranDot1')];
   panels.forEach((p, i) => { if (p) p.classList.toggle('active', i === idx); });
   dots.forEach((d, i) => { if (d) d.classList.toggle('active', i === idx); });
-
-  // ✅ Reflow forcé APRÈS le passage display:block (sinon clientHeight=0)
-  if (panels[idx]) {
-    void panels[idx].offsetHeight;
-    const inner = panels[idx].querySelector('.ecran-panel-inner');
-    if (inner) void inner.offsetHeight;
-  }
-
+  // Le panneau qui vient de passer à display:block avait une hauteur nulle
+  // pendant qu'il était masqué : on recalcule son besoin de défilement
+  // maintenant qu'il est réellement visible (sinon le calcul précédent,
+  // fait pendant qu'il était caché, concluait toujours "pas besoin de défiler").
+  // Le passage au panneau suivant n'est programmé QU'APRÈS cette mesure
+  // fraîche (et avec elle), pour ne jamais changer de vue avant la fin
+  // réelle du défilement du contenu actuellement affiché.
   setTimeout(() => {
     setupEcranAutoScroll(panels[idx]);
     if (scheduleNext) scheduleNextEcranPanel();
-  }, 150);
+  }, 60);
 }
 
+// Ré-affiche le contenu de l'écran (appelé au cycle et à chaque mise à jour Firestore live)
 function renderEcranPanels() {
   if (!ecranOpen) return;
   const matchesPanel = document.getElementById('ecranPanelMatches');
   const rankingPanel = document.getElementById('ecranPanelRanking');
   if (matchesPanel) matchesPanel.innerHTML = '<div class="ecran-panel-inner">' + buildEcranMatchesHTML() + '</div>';
   if (rankingPanel) rankingPanel.innerHTML = '<div class="ecran-panel-inner">' + buildEcranRankingHTML() + '</div>';
-
-  // ✅ Ne mesurer QUE le panneau actif (l'autre a clientHeight=0)
-  const activePanel = document.querySelector('.ecran-panel.active');
-  if (activePanel) {
-    void activePanel.offsetHeight;
-    const inner = activePanel.querySelector('.ecran-panel-inner');
-    if (inner) void inner.offsetHeight;
-    setTimeout(() => setupEcranAutoScroll(activePanel), 120);
-  }
+  setTimeout(setupAllEcranAutoScroll, 100);
 }
-window.renderEcranPanels = renderEcranPanels;
 
+// Détermine le tour "en cours" à afficher : le premier tour comportant au
+// moins un match sans score complet, sinon le dernier tour.
 function findCurrentRoundForEcran() {
   const grid = getGridForN();
   for (let r = 0; r < grid.length; r++) {
@@ -3475,6 +3872,7 @@ function buildOneEcranRoundHTML(grid, r, label) {
   const round = grid[r];
   let html = `<div class="ecran-round-title">${label}</div><div class="ecran-courts">`;
   let restLine = '';
+
   round.forEach((courtObj, c) => {
     if (courtObj.rest) {
       const restPlayer = (courtObj.rest <= positions.length) ? getReplacementPlayer(r, positions[courtObj.rest - 1]) : null;
@@ -3486,10 +3884,16 @@ function buildOneEcranRoundHTML(grid, r, label) {
     const sc = (courtObj.type === '1x1' || courtObj.type === '2x1')
       ? ((specialMatchScores[r] && specialMatchScores[r][c]) ? specialMatchScores[r][c] : { 1: '', 2: '' })
       : ((matchScores[r] && matchScores[r][c]) ? matchScores[r][c] : { 1: '', 2: '' });
+
     let team1 = [], team2 = [];
-    if (courtObj.type === '1x1' && mapped.length === 2) { team1 = [mapped[0]]; team2 = [mapped[1]]; }
-    else if (courtObj.type === '2x1' && mapped.length === 3) { team1 = [mapped[0], mapped[1]]; team2 = [mapped[2]]; }
-    else { team1 = [mapped[0], mapped[1]]; team2 = [mapped[2], mapped[3]]; }
+    if (courtObj.type === '1x1' && mapped.length === 2) {
+      team1 = [mapped[0]]; team2 = [mapped[1]];
+    } else if (courtObj.type === '2x1' && mapped.length === 3) {
+      team1 = [mapped[0], mapped[1]]; team2 = [mapped[2]];
+    } else {
+      team1 = [mapped[0], mapped[1]]; team2 = [mapped[2], mapped[3]];
+    }
+
     html += `<div class="ecran-court">
       <div class="ecran-court-title">Terrain ${c + 1}</div>
       <div class="ecran-team"><span>${team1.filter(Boolean).map(getPlayerName).join(' & ')}</span><span class="ecran-score">${sc[1] !== '' ? sc[1] : '–'}</span></div>
@@ -3497,11 +3901,15 @@ function buildOneEcranRoundHTML(grid, r, label) {
       <div class="ecran-team"><span>${team2.filter(Boolean).map(getPlayerName).join(' & ')}</span><span class="ecran-score">${sc[2] !== '' ? sc[2] : '–'}</span></div>
     </div>`;
   });
+
   html += '</div>';
   if (restLine) html += `<div class="ecran-rest"><i class="fas fa-mug-hot"></i> Repos : ${restLine}</div>`;
   return html;
 }
 
+// Affiche le tour en cours, puis tous les tours suivants ("à venir") à la
+// suite : la page défile automatiquement (setupAllEcranAutoScroll) si le
+// contenu dépasse la hauteur de l'écran, comme dans une appli Americano.
 function buildEcranMatchesHTML() {
   const grid = getGridForN();
   if (!grid || grid.length === 0) {
@@ -3509,6 +3917,7 @@ function buildEcranMatchesHTML() {
   }
   const r = findCurrentRoundForEcran();
   let html = buildOneEcranRoundHTML(grid, r, `▶ En cours — Tour ${r + 1} / ${grid.length}`);
+
   for (let nr = r + 1; nr < grid.length; nr++) {
     html += `<hr style="border:none;border-top:1px solid rgba(255,255,255,0.15);margin:18px 0">`;
     html += buildOneEcranRoundHTML(grid, nr, `À venir — Tour ${nr + 1} / ${grid.length}`);
@@ -3525,26 +3934,31 @@ function buildEcranRankingHTML() {
   getActivePlayerNumbers().forEach(p => {
     stats[p] = { name: getPlayerName(p), wins: 0, draws: 0, losses: 0, scored: 0, conceded: 0 };
   });
+  
   for (let r = 0; r < grid.length; r++) {
     for (let c = 0; c < grid[r].length; c++) {
       const courtObj = grid[r][c];
       if (courtObj.rest) continue;
       const sc = (matchScores[r] && matchScores[r][c]) ? matchScores[r][c] : null;
       if (!sc || sc[1] === '' || sc[2] === '' || sc[1] === undefined || sc[2] === undefined) continue;
+      
       const originalMapped = courtObj.players.map(p => (p <= positions.length ? positions[p - 1] : null)).filter(p => p !== null);
       const mapped = originalMapped.map(p => getReplacementPlayer(r, p));
       let team1 = [], team2 = [];
       if (courtObj.type === '1x1' && mapped.length === 2) { team1 = [mapped[0]]; team2 = [mapped[1]]; }
       else if (courtObj.type === '2x1' && mapped.length === 3) { team1 = [mapped[0], mapped[1]]; team2 = [mapped[2]]; }
       else { team1 = [mapped[0], mapped[1]]; team2 = [mapped[2], mapped[3]]; }
+      
       const s1 = parseInt(sc[1]) || 0, s2 = parseInt(sc[2]) || 0;
       team1.filter(Boolean).forEach(p => { if (!stats[p]) return; stats[p].scored += s1; stats[p].conceded += s2; });
       team2.filter(Boolean).forEach(p => { if (!stats[p]) return; stats[p].scored += s2; stats[p].conceded += s1; });
+      
       if (s1 > s2) { team1.filter(Boolean).forEach(p => stats[p] && stats[p].wins++); team2.filter(Boolean).forEach(p => stats[p] && stats[p].losses++); }
       else if (s2 > s1) { team2.filter(Boolean).forEach(p => stats[p] && stats[p].wins++); team1.filter(Boolean).forEach(p => stats[p] && stats[p].losses++); }
       else if (s1 === s2 && s1 > 0) { team1.concat(team2).filter(Boolean).forEach(p => stats[p] && stats[p].draws++); }
     }
   }
+  
   const ranking = Object.values(stats).map(s => ({
     ...s, diff: s.scored - s.conceded, points: (s.wins * 3) + s.draws
   })).sort((a, b) => {
@@ -3552,6 +3966,7 @@ function buildEcranRankingHTML() {
     if (b.diff !== a.diff) return b.diff - a.diff;
     return b.scored - a.scored;
   });
+  
   let html = '<table class="ecran-ranking-table"><thead><tr><th>#</th><th>Joueur</th><th>Pts</th><th>Diff</th><th>V</th></tr></thead><tbody>';
   ranking.forEach((p, i) => {
     html += `<tr><td>${i + 1}</td><td>${p.name}</td><td>${p.points}</td><td>${p.diff > 0 ? '+' : ''}${p.diff}</td><td>${p.wins}</td></tr>`;
@@ -3561,51 +3976,46 @@ function buildEcranRankingHTML() {
 }
 
 // ══════════════════════════════════════════════════════════
-// DÉFILEMENT AUTOMATIQUE DES PANNEAUX ÉCRAN
-// ✅ Fallback JS (requestAnimationFrame + scrollTop) pour TV / vieux Android
-//    qui ne rafraîchissent pas toujours les @keyframes transform
+// DÉFILEMENT AUTOMATIQUE DES PANNEAUX ÉCRAN (type appli Americano)
+// Si le contenu (classement complet, matchs en cours + à venir) dépasse
+// la hauteur visible, on fait défiler doucement de haut en bas puis on
+// revient en haut, en boucle.
+//
+// Piloté en CSS (transform + @keyframes) plutôt qu'en JS (scrollTop par
+// intervalle) : sur mobile, notamment iOS Safari, les changements de
+// scrollTop faits par JavaScript ne se répercutent pas toujours à l'écran
+// de façon fiable, alors qu'une animation CSS est gérée par le moteur de
+// rendu lui-même et reste fluide sur tous les appareils.
 // ══════════════════════════════════════════════════════════
 let ecranPanelDurations = { ecranPanelMatches: 12000, ecranPanelRanking: 12000 };
-let ecranScrollRAF = {};
-
 function setupEcranAutoScroll(panelEl) {
   if (!panelEl) return;
   const key = panelEl.id;
   const inner = panelEl.querySelector('.ecran-panel-inner');
-
-  // Nettoyer toute animation précédente
-  if (ecranScrollRAF[key]) { cancelAnimationFrame(ecranScrollRAF[key]); delete ecranScrollRAF[key]; }
-  panelEl.scrollTop = 0;
-
+  panelEl.classList.remove('ecran-scrolling');
+  if (inner) { inner.style.animationDuration = ''; inner.style.removeProperty('--ecran-scroll-dist'); }
   if (!inner) { ecranPanelDurations[key] = 12000; return; }
-
   const maxScroll = inner.scrollHeight - panelEl.clientHeight;
-  if (maxScroll <= 20) { ecranPanelDurations[key] = 12000; return; }
-
+  if (maxScroll <= 20) { ecranPanelDurations[key] = 12000; return; } // tout tient à l'écran, pas besoin de défiler
+  // Durée nécessaire pour un aller (bas) puis un retour (haut) complet, pauses incluses,
+  // afin que le panneau reste affiché assez longtemps pour tout lire avant l'alternance.
   const cycleDuration = Math.min(45000, Math.max(12000, Math.round(maxScroll * 60) + 4000));
   ecranPanelDurations[key] = cycleDuration;
-
-  // ✅ Fallback JS : scrollTop animé (fiable sur TV et vieux navigateurs)
-  let start = performance.now();
-  const step = (now) => {
-    if (!ecranOpen) return;
-    if (panelEl.classList.contains('ecran-manual')) {
-      // L'utilisateur a pris la main : on gèle l'auto-scroll
-      start = now;
-      ecranScrollRAF[key] = requestAnimationFrame(step);
-      return;
-    }
-    const t = ((now - start) % cycleDuration) / cycleDuration;
-    const tri = t < 0.5 ? (t * 2) : (2 - t * 2);
-    panelEl.scrollTop = tri * maxScroll;
-    ecranScrollRAF[key] = requestAnimationFrame(step);
-  };
-  ecranScrollRAF[key] = requestAnimationFrame(step);
+  inner.style.setProperty('--ecran-scroll-dist', '-' + maxScroll + 'px');
+  inner.style.animationDuration = cycleDuration + 'ms';
+  panelEl.classList.add('ecran-scrolling');
+}
+function setupAllEcranAutoScroll() {
+  setupEcranAutoScroll(document.getElementById('ecranPanelMatches'));
+  setupEcranAutoScroll(document.getElementById('ecranPanelRanking'));
 }
 
-// ══════════════════════════════════════════════════════════
-// DÉFILEMENT MANUEL (interrompt l'auto-scroll pendant 6s)
-// ══════════════════════════════════════════════════════════
+// ── Défilement manuel sur le mode Écran ──────────────────────
+// Le défilement automatique est piloté en CSS (transform), donc il ne
+// répond pas nativement au doigt/à la molette. On détecte l'interaction
+// de l'utilisateur pour figer l'animation et repasser en scroll natif
+// (overflow-y:auto) le temps qu'il consulte manuellement, puis on relance
+// le défilement auto après quelques secondes d'inactivité.
 let ecranManualTimers = new WeakMap();
 function ecranEnableManualScroll(panelEl) {
   if (!panelEl) return;
@@ -3627,96 +4037,74 @@ function ecranEnableManualScroll(panelEl) {
 });
 
 // ══════════════════════════════════════════════════════════
-// IMPRESSION — ✅ Réécrite pour mobile (iOS Safari, Chrome Android)
-//   - iframe isolé, attend le chargement des CSS
-//   - <select>/<input> convertis en texte (sinon page blanche)
-//   - reflow forcé + attente readyState
+// IMPRESSION
+// Ajoute temporairement la classe .print-target à l'élément visé (les
+// styles @media print masquent tout le reste de la page), lance
+// window.print(), puis nettoie.
 // ══════════════════════════════════════════════════════════
+// Impression via un document isolé (iframe caché) contenant UNIQUEMENT
+// l'élément à imprimer, plutôt que la technique "cacher tout le reste de
+// la page avec visibility:hidden + positionner la cible en absolute"
+// utilisée avant. Cette dernière est connue pour produire des pages
+// blanches sur certains navigateurs mobiles (Safari iOS, Chrome Android) :
+// leur moteur d'impression ne respecte pas toujours visibility:visible sur
+// un descendant d'un ancêtre visibility:hidden, ni le repositionnement en
+// absolute. En imprimant un document séparé qui ne contient QUE la cible,
+// il n'y a plus rien à cacher et le problème ne peut pas se produire.
 function printSection(elementId) {
   const el = document.getElementById(elementId);
   if (!el) { alert('Rien à imprimer.'); return; }
 
+  // L'iframe doit avoir une taille réelle : à 0x0 certains navigateurs
+  // mobiles (Safari iOS, Chrome Android) n'exécutent pas la mise en page
+  // interne et impriment une page blanche. On la place hors écran plutôt
+  // que de la réduire à rien.
   const iframe = document.createElement('iframe');
   iframe.style.cssText = 'position:fixed;left:-10000px;top:0;width:800px;height:1200px;border:0';
   document.body.appendChild(iframe);
+  const doc = iframe.contentWindow.document;
 
-  const buildAndPrint = () => {
+  // On ne copie que les feuilles de style (liens + <style>), jamais les
+  // <script> de l'en-tête : les réexécuter dans l'iframe relancerait
+  // l'initialisation Firebase/l'appli entière.
+  let stylesHtml = '';
+  document.querySelectorAll('head link[rel="stylesheet"], head style').forEach(node => {
+    stylesHtml += node.outerHTML;
+  });
+
+  doc.open();
+  doc.write('<!DOCTYPE html><html><head><meta charset="utf-8">' + stylesHtml + '</head><body></body></html>');
+  doc.close();
+
+  const clone = el.cloneNode(true);
+  clone.classList.add('print-target');
+  doc.body.appendChild(clone);
+
+  // Laisse le temps aux feuilles de style externes (icônes Font Awesome
+  // notamment) de se charger avant de déclencher l'impression.
+  setTimeout(() => {
     try {
-      const doc = iframe.contentWindow.document;
-      const stylesHtml = Array.from(document.querySelectorAll('head link[rel="stylesheet"], head style'))
-        .map(n => n.outerHTML).join('');
-
-      doc.open();
-      doc.write('<!DOCTYPE html><html><head><meta charset="utf-8">'
-        + '<meta name="viewport" content="width=device-width,initial-scale=1">'
-        + stylesHtml + '</head><body></body></html>');
-      doc.close();
-
-      const appendClone = () => {
-        if (!doc.body) { setTimeout(appendClone, 50); return; }
-
-        const clone = el.cloneNode(true);
-        clone.classList.add('print-target');
-
-        // ✅ Convertir <select> et <input> en texte : sur mobile, les champs
-        //    de formulaire imprimés sortent souvent vides ou cassés.
-        clone.querySelectorAll('select').forEach(sel => {
-          const span = doc.createElement('span');
-          span.textContent = (sel.options[sel.selectedIndex] && sel.options[sel.selectedIndex].textContent) || sel.value || '';
-          span.style.fontWeight = '600';
-          sel.parentNode.replaceChild(span, sel);
-        });
-        clone.querySelectorAll('input').forEach(inp => {
-          const span = doc.createElement('span');
-          if (inp.type === 'checkbox') {
-            span.textContent = inp.checked ? '☑' : '☐';
-          } else {
-            span.textContent = inp.value || '';
-          }
-          inp.parentNode.replaceChild(span, inp);
-        });
-
-        doc.body.appendChild(clone);
-
-        // Attendre le chargement des CSS externes (Font Awesome) avant print
-        const links = Array.from(doc.querySelectorAll('link[rel="stylesheet"]'));
-        let pending = links.length;
-        let printed = false;
-        const go = () => {
-          if (printed) return;
-          printed = true;
-          try {
-            iframe.contentWindow.focus();
-            iframe.contentWindow.print();
-          } catch (e) { alert('Erreur impression : ' + e.message); }
-          setTimeout(() => { if (iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 1500);
-        };
-        if (pending === 0) { setTimeout(go, 400); return; }
-        links.forEach(l => {
-          l.addEventListener('load', () => { if (--pending === 0) setTimeout(go, 400); });
-          l.addEventListener('error', () => { if (--pending === 0) setTimeout(go, 400); });
-        });
-        // Filet de sécurité si un CSS ne charge jamais
-        setTimeout(go, 3500);
-      };
-
-      if (doc.readyState === 'complete') appendClone();
-      else iframe.contentWindow.addEventListener('load', appendClone, { once: true });
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
     } catch (e) {
       alert('Erreur impression : ' + e.message);
-      if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
     }
-  };
-
-  if (iframe.contentWindow.document.readyState === 'complete') buildAndPrint();
-  else iframe.addEventListener('load', buildAndPrint, { once: true });
+    setTimeout(() => { if (iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 1000);
+  }, 400);
 }
 window.printSection = printSection;
 
 // ══════════════════════════════════════════════════════════
 // FICHE JOUEUR (accessible depuis le bouton "Joueur" de la page de connexion)
+// Liste des joueurs actifs -> sélection -> matchs (passés & à venir) du joueur
 // ══════════════════════════════════════════════════════════
 window.openPlayerScreenFromLogin = async function () {
+  try {
+    if (typeof getDoc === 'function') { /* noop, ensures scope */ }
+  } catch (e) {}
+  if (typeof window.registrationIsOpenNow !== 'function') {
+    // rôles pas encore chargés ; on tente quand même via LIVE_OPEN check côté module
+  }
   document.getElementById('loginScreen').style.display = 'none';
   const scr = document.getElementById('playerScreen');
   scr.style.display = 'flex';
@@ -3744,8 +4132,9 @@ function renderPlayerPickList() {
   html += '</div>';
   body.innerHTML = html;
 }
-window.renderPlayerPickList = renderPlayerPickList;
 
+// Construit et affiche la liste complète des matchs (déroulement) d'un joueur,
+// tour par tour : partenaire, adversaires, score, terrain.
 window.renderPlayerMatchHistory = function (playerId) {
   const grid = getGridForN();
   const body = document.getElementById('playerScreenBody');
@@ -3808,17 +4197,39 @@ window.renderPlayerMatchHistory = function (playerId) {
   body.innerHTML = html;
 };
 
-// Initialisation locale
+function showTab(tabName, btnEl) {
+  document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  
+  const tab = document.getElementById(tabName);
+  if (tab) tab.classList.add('active');
+  
+  const clicked = btnEl || (typeof event !== 'undefined' && event ? event.target.closest('.tab-btn') : null);
+  if (clicked) {
+    clicked.classList.add('active');
+  } else {
+    const fallback = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+    if (fallback) fallback.classList.add('active');
+  }
+  
+  showNotice('Onglet ' + tabName.replace('Tab', '') + ' activé');
+}
+
+// Initialisation locale (l'écran de connexion Firebase gère l'accès et le
+// chargement des données réelles ensuite, via subscribeToTournament)
 document.addEventListener('DOMContentLoaded', function() {
   try {
     populatePlayerCountOptions(16);
     buildPlayerInputs();
+    
     for (let i = 1; i <= 20; i++) {
       const el = document.getElementById('player' + i);
       if (el && !el.value) el.value = 'Joueur ' + i;
     }
+    
     updateActiveCount();
     ensurePositions();
+    
   } catch (error) {
     console.error('Erreur lors de l\'initialisation:', error);
     showNotice('Erreur d\'initialisation');
