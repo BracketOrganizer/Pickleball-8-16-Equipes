@@ -3950,6 +3950,14 @@ let ecranOpen = false;
 let ecranCycleTimer = null;
 let ecranClockTimer = null;
 let ecranPanelIndex = 0;
+// Mémorise le dernier contenu HTML injecté dans chaque panneau, pour ne
+// reconstruire le DOM et relancer l'animation de défilement QUE quand le
+// contenu affiché a réellement changé. Sans ça, le sondage Firestore 4s
+// (voir subscribeToTournament) appelle renderEcranPanels() en continu et
+// redémarre l'animation avant qu'elle ait eu le temps d'avancer : l'écran
+// paraît figé en haut au lieu de défiler.
+let lastEcranMatchesHTML = null;
+let lastEcranRankingHTML = null;
 
 // ── Réglages du mode Écran (mémorisés sur CET écran/ordinateur, comme
 // dans les autres apps — chaque TV peut avoir ses propres réglages) ──
@@ -4129,13 +4137,28 @@ function showEcranPanel(idx, scheduleNext) {
 }
 
 // Ré-affiche le contenu de l'écran (appelé au cycle et à chaque mise à jour Firestore live)
+// Ne touche au DOM d'un panneau (et ne relance donc son animation de
+// défilement) QUE si son contenu a réellement changé depuis le dernier
+// rendu — sinon le sondage 4s (ou tout autre appel rapproché) couperait
+// l'animation en cours avant qu'elle ait pu progresser visiblement.
 function renderEcranPanels() {
   if (!ecranOpen) return;
   const matchesPanel = document.getElementById('ecranPanelMatches');
   const rankingPanel = document.getElementById('ecranPanelRanking');
-  if (matchesPanel) matchesPanel.innerHTML = '<div class="ecran-panel-inner">' + buildEcranMatchesHTML() + '</div>';
-  if (rankingPanel) rankingPanel.innerHTML = '<div class="ecran-panel-inner">' + buildEcranRankingHTML() + '</div>';
-  setTimeout(setupAllEcranAutoScroll, 100);
+  const matchesHTML = buildEcranMatchesHTML();
+  const rankingHTML = buildEcranRankingHTML();
+  let needsRescroll = false;
+  if (matchesPanel && matchesHTML !== lastEcranMatchesHTML) {
+    matchesPanel.innerHTML = '<div class="ecran-panel-inner">' + matchesHTML + '</div>';
+    lastEcranMatchesHTML = matchesHTML;
+    needsRescroll = true;
+  }
+  if (rankingPanel && rankingHTML !== lastEcranRankingHTML) {
+    rankingPanel.innerHTML = '<div class="ecran-panel-inner">' + rankingHTML + '</div>';
+    lastEcranRankingHTML = rankingHTML;
+    needsRescroll = true;
+  }
+  if (needsRescroll) setTimeout(setupAllEcranAutoScroll, 100);
 }
 
 // Détermine le tour "en cours" à afficher : le premier tour comportant au
