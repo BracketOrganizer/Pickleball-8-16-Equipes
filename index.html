@@ -1276,16 +1276,21 @@ window.logout = async function () {
 
 // ── Mode Live sans compte (spectateur anonyme) ────────────
 window.enterLiveModeAndGo = async function (target) {
-  try {
-    const snap = await getDoc(doc(db, 'tournamentStatus', 'live'));
-    LIVE_OPEN = snap.exists() && snap.data().liveOpen === true;
-  } catch (e) {
-    showAuthMsg('Connexion impossible pour le moment.', 'red');
-    return;
-  }
-  if (!LIVE_OPEN) {
-    showAuthMsg('⏰ Le mode Live n\'est pas encore ouvert par l\'administrateur.', 'red');
-    return;
+  // Le Règlement reste consultable que le Live soit ouvert ou fermé — seul
+  // le contenu lié au déroulement du tournoi en cours (écran, matchs,
+  // classement) est conditionné à l'ouverture du Live par l'admin.
+  if (target !== 'reglement') {
+    try {
+      const snap = await getDoc(doc(db, 'tournamentStatus', 'live'));
+      LIVE_OPEN = snap.exists() && snap.data().liveOpen === true;
+    } catch (e) {
+      showAuthMsg('Connexion impossible pour le moment.', 'red');
+      return;
+    }
+    if (!LIVE_OPEN) {
+      showAuthMsg('⏰ Le mode Live n\'est pas encore ouvert par l\'administrateur.', 'red');
+      return;
+    }
   }
   CURRENT_USER = null;
   USER_ROLES = ['spectateur'];
@@ -1301,6 +1306,35 @@ window.enterLiveModeAndGo = async function (target) {
   showApp();
   const tabMap = { joueurs: 'playersTab', live: 'matchesTab', classement: 'rankingTab', reglement: 'reglementTab' };
   showTab(tabMap[target] || 'playersTab');
+};
+
+// Fiche joueur accessible depuis le bouton "Joueur" de la page de connexion
+// (mode spectateur, sans compte) : soumise au même contrôle Live
+// ouvert/fermé que les autres boutons spectateur (hors Règlement). Définie
+// ici (script module) et non dans le script classique plus bas, car elle a
+// besoin de db/getDoc/doc et de LIVE_OPEN/CURRENT_USER/USER_ROLES ; elle
+// appelle renderPlayerPickList(), déclarée plus bas, mais accessible ici via
+// window car un script classique expose ses fonctions globalement.
+window.openPlayerScreenFromLogin = async function () {
+  try {
+    const snap = await getDoc(doc(db, 'tournamentStatus', 'live'));
+    LIVE_OPEN = snap.exists() && snap.data().liveOpen === true;
+  } catch (e) {
+    showAuthMsg('Connexion impossible pour le moment.', 'red');
+    return;
+  }
+  if (!LIVE_OPEN) {
+    showAuthMsg('⏰ Le mode Live n\'est pas encore ouvert par l\'administrateur.', 'red');
+    return;
+  }
+  CURRENT_USER = null;
+  USER_ROLES = ['spectateur'];
+  subscribeToTournament();
+  subscribeToMessages();
+  document.getElementById('loginScreen').style.display = 'none';
+  const scr = document.getElementById('playerScreen');
+  scr.style.display = 'flex';
+  renderPlayerPickList();
 };
 
 function authErrMsg(code) {
@@ -4581,19 +4615,12 @@ const PRINT_EXTRA_CSS = `
 // ══════════════════════════════════════════════════════════
 // FICHE JOUEUR (accessible depuis le bouton "Joueur" de la page de connexion)
 // Liste des joueurs actifs -> sélection -> matchs (passés & à venir) du joueur
+// La fonction openPlayerScreenFromLogin() elle-même est définie plus haut,
+// dans le script type="module" (avec enterLiveModeAndGo) : c'est le seul
+// endroit du fichier où db/getDoc/doc et LIVE_OPEN/CURRENT_USER/USER_ROLES
+// sont accessibles. Elle appelle renderPlayerPickList() ci-dessous une fois
+// le contrôle Live effectué.
 // ══════════════════════════════════════════════════════════
-window.openPlayerScreenFromLogin = async function () {
-  try {
-    if (typeof getDoc === 'function') { /* noop, ensures scope */ }
-  } catch (e) {}
-  if (typeof window.registrationIsOpenNow !== 'function') {
-    // rôles pas encore chargés ; on tente quand même via LIVE_OPEN check côté module
-  }
-  document.getElementById('loginScreen').style.display = 'none';
-  const scr = document.getElementById('playerScreen');
-  scr.style.display = 'flex';
-  renderPlayerPickList();
-};
 window.closePlayerScreen = function () {
   document.getElementById('playerScreen').style.display = 'none';
   document.getElementById('playerScreenPrintBtn').style.display = 'none';
